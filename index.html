@@ -160,22 +160,35 @@ async function startScanner(target){
   await stopScanner();
   const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader';
   box.classList.remove('hidden');
-  activeScanner=new Html5Qrcode(readerId,{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF]});
+  activeScanner=new Html5Qrcode(readerId);
+  let detected=false;
   const onSuccess=async text=>{
+    if(detected)return;
     const value=String(text||'').trim(); if(!value)return;
+    detected=true;
     if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
     if(navigator.vibrate) try{navigator.vibrate(80)}catch(e){}
     await stopScanner();
   };
   try{
     await activeScanner.start(
-      {facingMode:{ideal:'environment'}},
-      {fps:25,qrbox:(vw,vh)=>{const w=Math.min(Math.floor(vw*0.88),420);return {width:w,height:Math.max(110,Math.floor(w*0.38))}},aspectRatio:1.777778,disableFlip:true,experimentalFeatures:{useBarCodeDetectorIfSupported:true}},
+      {facingMode:'environment'},
+      {fps:20,qrbox:{width:280,height:150},aspectRatio:1.6,disableFlip:true},
       onSuccess,()=>{}
     );
   }catch(e){
-    await stopScanner();
-    alert('Camera could not start. Please allow camera permission and open the site using HTTPS.');
+    try{
+      if(activeScanner){try{await activeScanner.clear()}catch(_){} activeScanner=null}
+      activeScanner=new Html5Qrcode(readerId);
+      await activeScanner.start(
+        {facingMode:'environment'},
+        {fps:10,qrbox:{width:250,height:140}},
+        onSuccess,()=>{}
+      );
+    }catch(e2){
+      await stopScanner();
+      alert('Camera could not start. On iPhone, allow Camera access for Safari and reload the page.');
+    }
   }
 }
 function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
