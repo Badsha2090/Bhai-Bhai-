@@ -3,962 +3,215 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Bhai Bhai Building Materials</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<title>Bhai Bhai Building Materials Trading LLC</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f5f7fb;color:#111827}
-header{background:#111827;color:#fff;padding:18px 16px}
-header h1{margin:0;font-size:20px}
-header p{margin:5px 0 0;color:#d1d5db;font-size:13px}
-.wrap{max-width:1100px;margin:auto;padding:16px}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.auth{max-width:460px;margin:24px auto}
-.hidden{display:none!important}
-h2{margin-top:0}
-label{display:block;font-size:13px;font-weight:700;margin-bottom:12px}
-input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;font-size:16px}
-.btn{border:0;border-radius:10px;padding:12px 14px;font-weight:700;font-size:15px}
-.primary{background:#2563eb;color:#fff}
-.gray{background:#e5e7eb}
-.muted{color:#6b7280;font-size:13px}
-.msg{margin-top:12px;font-size:13px}
-.nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-.nav button{border:0;border-radius:10px;padding:10px 13px;background:#e5e7eb;font-weight:700}
-.nav button.active{background:#2563eb;color:#fff}
-.section{display:none}
-.section.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.metric .v{font-size:22px;font-weight:800;margin-top:4px}
-.metric .l{font-size:12px;color:#6b7280}
-form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.full{grid-column:1/-1}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:720px}
-th,td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:left}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f5f7fb;color:#111827}
+header{background:#111827;color:#fff;padding:18px 16px}header h1{margin:0;font-size:20px}header p{margin:5px 0 0;color:#d1d5db;font-size:13px}
+.wrap{max-width:1100px;margin:auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.auth{max-width:460px;margin:24px auto}.hidden{display:none!important}h2{margin-top:0}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:12px}input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;font-size:16px}
+.btn{border:0;border-radius:10px;padding:12px 14px;font-weight:700;font-size:15px}.primary{background:#2563eb;color:#fff}.gray{background:#e5e7eb}
+.row{display:flex;gap:10px;flex-wrap:wrap}.muted{color:#6b7280;font-size:13px}.msg{margin-top:12px;font-size:13px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.nav button{border:0;border-radius:10px;padding:10px 13px;background:#e5e7eb;font-weight:700}.nav button.active{background:#2563eb;color:#fff}
+.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.metric .v{font-size:22px;font-weight:800;margin-top:4px}.metric .l{font-size:12px;color:#6b7280}
+form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:left}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-@media(max-width:640px){
- form.dataform{grid-template-columns:1fr}
- .full{grid-column:auto}
- .grid{grid-template-columns:1fr 1fr}
-}
+.scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px}.smallbtn{padding:9px 11px;font-size:13px}
+@media(max-width:640px){form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
-
 <body>
-
 <header>
-<h1>Bhai Bhai Building Materials Trading LLC</h1>
-<p>Online Login • Purchase • Sales • Barcode • Shared Stock</p>
+  <h1>Bhai Bhai Building Materials Trading LLC</h1>
+  <p>2 User Login • Purchase • Sales • Barcode • Stock</p>
 </header>
 
 <div class="wrap">
+  <div id="authView" class="auth">
+    <div class="card" id="setupCard">
+      <h2>Create 2 Logins</h2>
+      <p class="muted">First time: set two users below.</p>
+      <label>User 1 Name<input id="u1name" placeholder="e.g. Badsha"></label>
+      <label>User 1 Username<input id="u1user" placeholder="e.g. admin1"></label>
+      <label>User 1 Password<input id="u1pass" type="password" placeholder="Minimum 4 characters"></label>
+      <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0">
+      <label>User 2 Name<input id="u2name"></label>
+      <label>User 2 Username<input id="u2user"></label>
+      <label>User 2 Password<input id="u2pass" type="password"></label>
+      <button class="btn primary" id="createBtn">Create 2 Logins</button>
+      <div id="setupMsg" class="msg"></div>
+    </div>
 
-<div id="authView" class="auth">
-<div class="card">
-<h2>Login</h2>
-<p class="muted">Use your Supabase email and password.</p>
+    <div class="card hidden" id="loginCard">
+      <h2>Login</h2>
+      <label>Username<input id="loginUser"></label>
+      <label>Password<input id="loginPass" type="password"></label>
+      <button class="btn primary" id="loginBtn">Login</button>
+      <button class="btn gray" id="resetBtn" style="margin-left:6px">Reset Users</button>
+      <div id="loginMsg" class="msg"></div>
+    </div>
+  </div>
 
-<label>Email
-<input id="loginEmail" type="email" placeholder="example@gmail.com">
-</label>
+  <div id="appView" class="hidden">
+    <div class="top">
+      <strong id="who"></strong>
+      <button class="btn gray" id="logoutBtn">Logout</button>
+    </div>
 
-<label>Password
-<input id="loginPassword" type="password">
-</label>
+    <div class="nav">
+      <button class="active" data-tab="dashboard">Dashboard</button>
+      <button data-tab="purchase">Purchase</button>
+      <button data-tab="sales">Sales</button>
+      <button data-tab="stock">Stock</button>
+    </div>
 
-<button class="btn primary" id="loginBtn">Login</button>
+    <section id="dashboard" class="section active">
+      <div class="grid">
+        <div class="card metric"><div class="l">Total Purchase</div><div id="mPurchase" class="v">৳0.00</div></div>
+        <div class="card metric"><div class="l">Total Sales</div><div id="mSales" class="v">৳0.00</div></div>
+        <div class="card metric"><div class="l">Current Stock</div><div id="mStock" class="v">0</div></div>
+        <div class="card metric"><div class="l">Stock Value</div><div id="mStockValue" class="v">৳0.00</div></div>
+        <div class="card metric"><div class="l">Today's Sales</div><div id="mTodaySales" class="v">৳0.00</div></div>
+        <div class="card metric"><div class="l">Today's Purchase</div><div id="mTodayPurchase" class="v">৳0.00</div></div>
+        <div class="card metric"><div class="l">Low Stock</div><div id="mLow" class="v">0</div></div>
+        <div class="card metric"><div class="l">Profit</div><div id="mProfit" class="v">৳0.00</div></div>
+      </div>
+    </section>
 
-<div id="loginMsg" class="msg"></div>
-</div>
-</div>
+    <section id="purchase" class="section">
+      <div class="card">
+        <h2>Add Purchase</h2>
+        <form id="purchaseForm" class="dataform">
+          <label>Item Name<input id="pItem" required></label>
+          <label>Barcode<div class="scan-row"><input id="pBarcode" inputmode="numeric" placeholder="Scan or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="pScanBtn">📷 Scan</button><button class="btn gray smallbtn" type="button" id="pGenBtn">Auto Barcode</button></div></label>
+          <label>Quantity<input id="pQty" type="number" step="0.01" min="0.01" required></label>
+          <label>Purchase Price / Unit<input id="pPrice" type="number" step="0.01" min="0" required></label>
+          <label>Date<input id="pDate" type="date" required></label>
+          <label>Total<input id="pTotal" readonly></label>
+          <div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
+        </form>
+        <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div id="pReader" class="scanner-reader"></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
+    </section>
 
-<div id="appView" class="hidden">
+    <section id="sales" class="section">
+      <div class="card">
+        <h2>Add Sale</h2>
+        <form id="saleForm" class="dataform">
+          <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
+          <label>Item Name<input id="sItem" readonly></label>
+          <label>Available Stock<input id="sAvailable" readonly></label>
+          <label>Sale Quantity<input id="sQty" type="number" step="0.01" min="0.01" required></label>
+          <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
+          <label>Date<input id="sDate" type="date" required></label>
+          <label>Total<input id="sTotal" readonly></label>
+          <div class="full"><button class="btn primary" type="submit">Save Sale</button></div>
+        </form>
+        <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div id="sReader" class="scanner-reader"></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+    </section>
 
-<div class="top">
-<strong id="who"></strong>
-<button class="btn gray" id="logoutBtn">Logout</button>
-</div>
-
-<div class="nav">
-<button class="active" data-tab="dashboard">Dashboard</button>
-<button data-tab="purchase">Purchase</button>
-<button data-tab="sales">Sales</button>
-<button data-tab="stock">Stock</button>
-</div>
-
-<section id="dashboard" class="section active">
-<div class="grid">
-
-<div class="card metric">
-<div class="l">Total Purchase</div>
-<div id="mPurchase" class="v">৳0.00</div>
-</div>
-
-<div class="card metric">
-<div class="l">Total Sales</div>
-<div id="mSales" class="v">৳0.00</div>
-</div>
-
-<div class="card metric">
-<div class="l">Current Stock</div>
-<div id="mStock" class="v">0</div>
-</div>
-
-<div class="card metric">
-<div class="l">Stock Value</div>
-<div id="mStockValue" class="v">৳0.00</div>
-</div>
-
-<div class="card metric">
-<div class="l">Today's Sales</div>
-<div id="mTodaySales" class="v">৳0.00</div>
-</div>
-
-<div class="card metric">
-<div class="l">Today's Purchase</div>
-<div id="mTodayPurchase" class="v">৳0.00</div>
-</div>
-
-<div class="card metric">
-<div class="l">Low Stock</div>
-<div id="mLow" class="v">0</div>
-</div>
-
-<div class="card metric">
-<div class="l">Profit</div>
-<div id="mProfit" class="v">৳0.00</div>
-</div>
-
-</div>
-</section>
-
-<section id="purchase" class="section">
-
-<div class="card">
-
-<h2>Add Purchase</h2>
-
-<form id="purchaseForm" class="dataform">
-
-<label>Item Name
-<input id="pItem" required>
-</label>
-
-<label>Barcode
-<input id="pBarcode" required>
-</label>
-
-<label>Quantity
-<input id="pQty" type="number" step="0.01" min="0.01" required>
-</label>
-
-<label>Purchase Price / Unit
-<input id="pPrice" type="number" step="0.01" min="0" required>
-</label>
-
-<label>Date
-<input id="pDate" type="date" required>
-</label>
-
-<label>Total
-<input id="pTotal" readonly>
-</label>
-
-<div class="full">
-<button class="btn primary" type="submit">Save Purchase</button>
+    <section id="stock" class="section">
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+    </section>
+  </div>
 </div>
 
-</form>
-</div>
-
-<div class="card" style="margin-top:14px">
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Date</th>
-<th>Item</th>
-<th>Barcode</th>
-<th>Qty</th>
-<th>Total</th>
-<th>By</th>
-</tr>
-</thead>
-<tbody id="purchaseRows"></tbody>
-</table>
-</div>
-</div>
-
-</section>
-
-<section id="sales" class="section">
-
-<div class="card">
-
-<h2>Add Sale</h2>
-
-<form id="saleForm" class="dataform">
-
-<label>Barcode
-<input id="sBarcode" required>
-</label>
-
-<label>Item Name
-<input id="sItem" readonly>
-</label>
-
-<label>Available Stock
-<input id="sAvailable" readonly>
-</label>
-
-<label>Sale Quantity
-<input id="sQty" type="number" step="0.01" min="0.01" required>
-</label>
-
-<label>Sale Price / Unit
-<input id="sPrice" type="number" step="0.01" min="0" required>
-</label>
-
-<label>Date
-<input id="sDate" type="date" required>
-</label>
-
-<label>Total
-<input id="sTotal" readonly>
-</label>
-
-<div class="full">
-<button class="btn primary" type="submit">Save Sale</button>
-</div>
-
-</form>
-</div>
-
-<div class="card" style="margin-top:14px">
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Date</th>
-<th>Item</th>
-<th>Barcode</th>
-<th>Qty</th>
-<th>Total</th>
-</tr>
-</thead>
-<tbody id="saleRows"></tbody>
-</table>
-</div>
-</div>
-
-</section>
-
-<section id="stock" class="section">
-
-<div class="card">
-<div class="table-wrap">
-
-<table>
-<thead>
-<tr>
-<th>Item</th>
-<th>Barcode</th>
-<th>Current Stock</th>
-<th>Purchase Price</th>
-<th>Selling Price</th>
-<th>Stock Value</th>
-</tr>
-</thead>
-
-<tbody id="stockRows"></tbody>
-
-</table>
-</div>
-</div>
-
-</section>
-
-</div>
-</div>
-
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-
-const SUPABASE_URL = "https://rpyhkgwbhflwbjcsbpiw.supabase.co"
-const SUPABASE_KEY = "sb_publishable_wsHzLIr68xt3pQHFIQEuEQ_ZALOHNBk"
-
-const sb = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-const $ = id => document.getElementById(id);
-
-const today = () =>
-  new Date().toISOString().slice(0,10);
-
-const money = n =>
-  '৳' + Number(n || 0).toLocaleString(undefined,{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
-
-let currentUser = null;
-
-let products = [];
-let movements = [];
-let sales = [];
-let saleItems = [];
-
-function showLogin(){
-  $('authView').classList.remove('hidden');
-  $('appView').classList.add('hidden');
+(function(){
+const USERS='bbbm_users_iphone_v1', DB='bbbm_db_iphone_v1';
+const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10), money=n=>'৳'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+let currentUser=null, db={purchases:[],sales:[]};
+function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
+function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+db=safeGet(DB,{purchases:[],sales:[]});
+function users(){return safeGet(USERS,[])}
+function allBarcodes(){return new Set([...(db.purchases||[]).map(x=>String(x.barcode||'')),...(db.sales||[]).map(x=>String(x.barcode||''))].filter(Boolean))}
+function ean13Check(d12){let sum=0;for(let i=0;i<12;i++)sum+=(+d12[i])*(i%2?3:1);return String((10-(sum%10))%10)}
+function generateBarcode(){
+  const used=allBarcodes();
+  for(let tries=0;tries<100;tries++){
+    const tail=String(Date.now()).slice(-8)+String(Math.floor(Math.random()*100)).padStart(2,'0');
+    const base=('29'+tail).slice(0,12);
+    const code=base+ean13Check(base);
+    if(!used.has(code)) return code;
+  }
+  const base='29'+String(Math.floor(Math.random()*1e10)).padStart(10,'0');
+  return base+ean13Check(base);
 }
-
-function openApp(){
-  $('authView').classList.add('hidden');
-  $('appView').classList.remove('hidden');
-
-  $('who').textContent =
-    'Logged in: ' + currentUser.email;
-
-  $('pDate').value = today();
-  $('sDate').value = today();
-
-  loadData();
+function fillPurchaseFromBarcode(){let code=$('pBarcode').value.trim(),x=stockMap()[code];if(x&&!$('pItem').value.trim())$('pItem').value=x.item}
+function fillSaleFromBarcode(){let x=stockMap()[$('sBarcode').value.trim()];$('sItem').value=x?x.item:'';$('sAvailable').value=x?x.current:''}
+let activeScanner=null;
+async function stopScanner(){
+  if(activeScanner){try{await activeScanner.stop()}catch(e){} try{await activeScanner.clear()}catch(e){} activeScanner=null}
+  $('pScannerBox').classList.add('hidden');$('sScannerBox').classList.add('hidden');
 }
-
-$('loginBtn').onclick = async function(){
-
-  $('loginMsg').textContent = 'Logging in...';
-
-  const {data,error} =
-    await sb.auth.signInWithPassword({
-      email:$('loginEmail').value.trim(),
-      password:$('loginPassword').value
-    });
-
-  if(error){
-    $('loginMsg').textContent =
-      'Login failed: ' + error.message;
-    return;
-  }
-
-  currentUser = data.user;
-
-  $('loginMsg').textContent = '';
-
-  openApp();
-};
-
-$('logoutBtn').onclick = async function(){
-
-  await sb.auth.signOut();
-
-  currentUser = null;
-
-  showLogin();
-};
-
-async function checkSession(){
-
-  const {data} =
-    await sb.auth.getSession();
-
-  if(data.session){
-
-    currentUser =
-      data.session.user;
-
-    openApp();
-
-  }else{
-
-    showLogin();
-
-  }
-
-}
-
-async function loadData(){
-
-  const p =
-    await sb
-      .from('products')
-      .select('*')
-      .order('created_at',{
-        ascending:false
-      });
-
-  const m =
-    await sb
-      .from('stock_movements')
-      .select('*')
-      .order('created_at',{
-        ascending:false
-      });
-
-  const s =
-    await sb
-      .from('sales')
-      .select('*')
-      .order('created_at',{
-        ascending:false
-      });
-
-  const si =
-    await sb
-      .from('sale_items')
-      .select('*')
-      .order('created_at',{
-        ascending:false
-      });
-
-  if(p.error){
-    alert('Product load error: '+p.error.message);
-    return;
-  }
-
-  if(m.error){
-    alert('Stock load error: '+m.error.message);
-    return;
-  }
-
-  if(s.error){
-    alert('Sales load error: '+s.error.message);
-    return;
-  }
-
-  if(si.error){
-    alert('Sale items load error: '+si.error.message);
-    return;
-  }
-
-  products = p.data || [];
-  movements = m.data || [];
-  sales = s.data || [];
-  saleItems = si.data || [];
-
-  render();
-}
-
-function movementInfo(m){
-
+async function startScanner(target){
+  if(typeof Html5Qrcode==='undefined'){alert('Barcode scanner library could not load. Check internet connection.');return}
+  await stopScanner();
+  const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader';
+  box.classList.remove('hidden');
+  activeScanner=new Html5Qrcode(readerId);
+  const onSuccess=async text=>{
+    const value=String(text||'').trim(); if(!value)return;
+    if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
+    if(navigator.vibrate) try{navigator.vibrate(80)}catch(e){}
+    await stopScanner();
+  };
   try{
-
-    return JSON.parse(m.note || '{}');
-
+    await activeScanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:140},aspectRatio:1.6},onSuccess,()=>{});
   }catch(e){
-
-    return {};
-
+    await stopScanner();
+    alert('Camera could not start. Please allow camera permission and open the site using HTTPS.');
   }
-
 }
+function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
+function showLogin(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden')}
+function openApp(){ $('authView').classList.add('hidden'); $('appView').classList.remove('hidden'); $('who').textContent='Logged in: '+currentUser.name; $('pDate').value=today(); $('sDate').value=today(); render()}
+if(users().length===2) showLogin(); else showSetup();
 
+$('createBtn').onclick=function(){
+ const a={name:$('u1name').value.trim(),username:$('u1user').value.trim(),password:$('u1pass').value};
+ const b={name:$('u2name').value.trim(),username:$('u2user').value.trim(),password:$('u2pass').value};
+ if(!a.name||!a.username||a.password.length<4||!b.name||!b.username||b.password.length<4){$('setupMsg').textContent='Fill all fields. Password minimum 4 characters.';return}
+ if(a.username===b.username){$('setupMsg').textContent='Usernames must be different.';return}
+ safeSet(USERS,[a,b]); $('setupMsg').textContent='2 logins created.'; showLogin();
+};
+$('loginBtn').onclick=function(){
+ const u=users().find(x=>x.username===$('loginUser').value.trim()&&x.password===$('loginPass').value);
+ if(!u){$('loginMsg').textContent='Wrong username or password.';return}
+ currentUser=u;openApp()
+};
+$('logoutBtn').onclick=async function(){await stopScanner();currentUser=null;showLogin()};
+$('resetBtn').onclick=function(){if(confirm('Reset both users?')){try{localStorage.removeItem(USERS)}catch(e){};showSetup()}};
+
+function stockMap(){
+ let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,purchased:0,sold:0,cost:0};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item});
+ db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,purchased:0,sold:0,cost:0};m[s.barcode].sold+=+s.qty});
+ Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+}
 function render(){
-
-  const purchaseMoves =
-    movements.filter(
-      x => x.movement_type === 'purchase'
-    );
-
-  const totalPurchase =
-    purchaseMoves.reduce(
-      (a,x)=>{
-        const i = movementInfo(x);
-        return a + Number(i.total || 0);
-      },0
-    );
-
-  const totalSales =
-    sales.reduce(
-      (a,x)=>a+Number(x.total || 0),
-      0
-    );
-
-  const currentStock =
-    products.reduce(
-      (a,x)=>a+Number(x.stock_qty || 0),
-      0
-    );
-
-  const stockValue =
-    products.reduce(
-      (a,x)=>
-        a +
-        Number(x.stock_qty || 0) *
-        Number(x.purchase_price || 0),
-      0
-    );
-
-  const todayPurchase =
-    purchaseMoves
-    .filter(x=>{
-      const i = movementInfo(x);
-      return i.date === today();
-    })
-    .reduce((a,x)=>{
-      const i = movementInfo(x);
-      return a + Number(i.total || 0);
-    },0);
-
-  const todaySales =
-    sales
-    .filter(
-      x => String(x.created_at || '').slice(0,10) === today()
-    )
-    .reduce(
-      (a,x)=>a+Number(x.total || 0),
-      0
-    );
-
-  const lowStock =
-    products.filter(
-      x =>
-        Number(x.stock_qty || 0) <=
-        Number(x.min_stock || 5)
-    ).length;
-
-  let cogs = 0;
-
-  saleItems.forEach(x=>{
-
-    const p =
-      products.find(
-        y=>y.id===x.product_id
-      );
-
-    if(p){
-
-      cogs +=
-        Number(x.quantity || 0) *
-        Number(p.purchase_price || 0);
-
-    }
-
-  });
-
-  $('mPurchase').textContent =
-    money(totalPurchase);
-
-  $('mSales').textContent =
-    money(totalSales);
-
-  $('mStock').textContent =
-    currentStock;
-
-  $('mStockValue').textContent =
-    money(stockValue);
-
-  $('mTodaySales').textContent =
-    money(todaySales);
-
-  $('mTodayPurchase').textContent =
-    money(todayPurchase);
-
-  $('mLow').textContent =
-    lowStock;
-
-  $('mProfit').textContent =
-    money(totalSales-cogs);
-
-  $('purchaseRows').innerHTML =
-    purchaseMoves.length
-    ?
-    purchaseMoves.map(x=>{
-
-      const i = movementInfo(x);
-
-      return `
-      <tr>
-      <td>${i.date || ''}</td>
-      <td>${i.item || ''}</td>
-      <td>${i.barcode || ''}</td>
-      <td>${x.quantity}</td>
-      <td>${money(i.total)}</td>
-      <td>${i.by || ''}</td>
-      </tr>`;
-
-    }).join('')
-    :
-    '<tr><td colspan="6">No purchase yet.</td></tr>';
-
-  $('saleRows').innerHTML =
-    saleItems.length
-    ?
-    saleItems.map(x=>{
-
-      const s =
-        sales.find(
-          z=>z.id===x.sale_id
-        );
-
-      return `
-      <tr>
-      <td>${String(s?.created_at || '').slice(0,10)}</td>
-      <td>${x.product_name || ''}</td>
-      <td>${products.find(p=>p.id===x.product_id)?.barcode || ''}</td>
-      <td>${x.quantity}</td>
-      <td>${money(x.total)}</td>
-      </tr>`;
-
-    }).join('')
-    :
-    '<tr><td colspan="5">No sale yet.</td></tr>';
-
-  $('stockRows').innerHTML =
-    products.length
-    ?
-    products.map(x=>`
-
-    <tr>
-
-    <td>${x.product_name}</td>
-
-    <td>${x.barcode || ''}</td>
-
-    <td>${x.stock_qty}</td>
-
-    <td>${money(x.purchase_price)}</td>
-
-    <td>${money(x.selling_price)}</td>
-
-    <td>
-    ${money(
-      Number(x.stock_qty || 0) *
-      Number(x.purchase_price || 0)
-    )}
-    </td>
-
-    </tr>
-
-    `).join('')
-    :
-    '<tr><td colspan="6">No stock yet.</td></tr>';
-
+ const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
+ const cs=vals.reduce((a,b)=>a+b.current,0),sv=vals.reduce((a,b)=>a+b.value,0),tdp=db.purchases.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0),tds=db.sales.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0);
+ let cogs=0;db.sales.forEach(s=>{let x=m[s.barcode];if(x)cogs+=+s.qty*x.avg});
+ $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=cs;$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
+ $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${p.qty}</td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="6">No purchase yet.</td></tr>';
+ $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${s.qty}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="6">No sale yet.</td></tr>';
+ $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td>${x.purchased}</td><td>${x.sold}</td><td>${x.current}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="6">No stock yet.</td></tr>';
 }
-
-function calcP(){
-
-  $('pTotal').value =
-    (
-      (+$('pQty').value || 0) *
-      (+$('pPrice').value || 0)
-    ).toFixed(2);
-
-}
-
-function calcS(){
-
-  $('sTotal').value =
-    (
-      (+$('sQty').value || 0) *
-      (+$('sPrice').value || 0)
-    ).toFixed(2);
-
-}
-
-$('pQty').oninput = calcP;
-
-$('pPrice').oninput = calcP;
-
-$('sQty').oninput = calcS;
-
-$('sPrice').oninput = calcS;
-
-$('sBarcode').oninput =
-function(){
-
-  const code =
-    $('sBarcode').value.trim();
-
-  const p =
-    products.find(
-      x=>x.barcode===code
-    );
-
-  $('sItem').value =
-    p ? p.product_name : '';
-
-  $('sAvailable').value =
-    p ? p.stock_qty : '';
-
-  if(p){
-    $('sPrice').value =
-      p.selling_price || '';
-    calcS();
-  }
-
-};
-
-$('purchaseForm').onsubmit =
-async function(e){
-
-  e.preventDefault();
-
-  const item =
-    $('pItem').value.trim();
-
-  const barcode =
-    $('pBarcode').value.trim();
-
-  const qty =
-    Number($('pQty').value);
-
-  const price =
-    Number($('pPrice').value);
-
-  const date =
-    $('pDate').value;
-
-  let product =
-    products.find(
-      x=>x.barcode===barcode
-    );
-
-  if(product){
-
-    const newStock =
-      Number(product.stock_qty || 0)
-      + qty;
-
-    const {error} =
-      await sb
-      .from('products')
-      .update({
-        product_name:item,
-        purchase_price:price,
-        stock_qty:newStock,
-        updated_at:new Date().toISOString()
-      })
-      .eq('id',product.id);
-
-    if(error){
-      alert(error.message);
-      return;
-    }
-
-  }else{
-
-    const r =
-      await sb
-      .from('products')
-      .insert({
-        product_name:item,
-        barcode:barcode,
-        purchase_price:price,
-        selling_price:0,
-        stock_qty:qty,
-        min_stock:5
-      })
-      .select()
-      .single();
-
-    if(r.error){
-      alert(r.error.message);
-      return;
-    }
-
-    product = r.data;
-  }
-
-  const info = {
-    item,
-    barcode,
-    price,
-    total:qty*price,
-    date,
-    by:currentUser.email
-  };
-
-  const {error} =
-    await sb
-    .from('stock_movements')
-    .insert({
-      product_id:product.id,
-      movement_type:'purchase',
-      quantity:qty,
-      note:JSON.stringify(info)
-    });
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  this.reset();
-
-  $('pDate').value=today();
-
-  await loadData();
-
-  alert('Purchase saved.');
-
-};
-
-$('saleForm').onsubmit =
-async function(e){
-
-  e.preventDefault();
-
-  const code =
-    $('sBarcode').value.trim();
-
-  const product =
-    products.find(
-      x=>x.barcode===code
-    );
-
-  if(!product){
-
-    alert('Barcode not found.');
-    return;
-
-  }
-
-  const qty =
-    Number($('sQty').value);
-
-  const price =
-    Number($('sPrice').value);
-
-  if(qty >
-     Number(product.stock_qty || 0)){
-
-    alert(
-      'Not enough stock. Available: '+
-      product.stock_qty
-    );
-
-    return;
-
-  }
-
-  const total =
-    qty * price;
-
-  const invoiceNo =
-    'INV-' + Date.now();
-
-  const sr =
-    await sb
-    .from('sales')
-    .insert({
-      invoice_no:invoiceNo,
-      subtotal:total,
-      total:total,
-      paid:total,
-      due:0
-    })
-    .select()
-    .single();
-
-  if(sr.error){
-
-    alert(sr.error.message);
-    return;
-
-  }
-
-  const {error:itemError} =
-    await sb
-    .from('sale_items')
-    .insert({
-      sale_id:sr.data.id,
-      product_id:product.id,
-      product_name:product.product_name,
-      quantity:qty,
-      unit_price:price,
-      total:total
-    });
-
-  if(itemError){
-
-    alert(itemError.message);
-    return;
-
-  }
-
-  const newStock =
-    Number(product.stock_qty || 0)
-    - qty;
-
-  const {error:updateError} =
-    await sb
-    .from('products')
-    .update({
-      stock_qty:newStock,
-      selling_price:price,
-      updated_at:new Date().toISOString()
-    })
-    .eq('id',product.id);
-
-  if(updateError){
-
-    alert(updateError.message);
-    return;
-
-  }
-
-  await sb
-    .from('stock_movements')
-    .insert({
-      product_id:product.id,
-      movement_type:'sale',
-      quantity:qty,
-      note:JSON.stringify({
-        item:product.product_name,
-        barcode:code,
-        price,
-        total,
-        date:$('sDate').value,
-        by:currentUser.email
-      })
-    });
-
-  this.reset();
-
-  $('sDate').value=today();
-
-  await loadData();
-
-  alert('Sale saved.');
-
-};
-
-document
-.querySelectorAll('.nav button')
-.forEach(b=>{
-
-  b.onclick=function(){
-
-    document
-    .querySelectorAll('.nav button')
-    .forEach(
-      x=>x.classList.remove('active')
-    );
-
-    document
-    .querySelectorAll('.section')
-    .forEach(
-      x=>x.classList.remove('active')
-    );
-
-    this.classList.add('active');
-
-    $(this.dataset.tab)
-      .classList.add('active');
-
-  };
-
-});
-
-checkSession();
-
+function calcP(){$('pTotal').value=((+$('pQty').value||0)*(+$('pPrice').value||0)).toFixed(2)}
+function calcS(){$('sTotal').value=((+$('sQty').value||0)*(+$('sPrice').value||0)).toFixed(2)}
+$('pQty').oninput=calcP;$('pPrice').oninput=calcP;$('sQty').oninput=calcS;$('sPrice').oninput=calcS;
+$('sBarcode').oninput=fillSaleFromBarcode;$('pBarcode').oninput=fillPurchaseFromBarcode;
+$('pGenBtn').onclick=function(){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()};
+$('pScanBtn').onclick=()=>startScanner('purchase');$('sScanBtn').onclick=()=>startScanner('sales');$('pStopScan').onclick=stopScanner;$('sStopScan').onclick=stopScanner;
+$('purchaseForm').onsubmit=function(e){e.preventDefault();let q=+$('pQty').value,p=+$('pPrice').value,code=$('pBarcode').value.trim();if(!code){code=generateBarcode();$('pBarcode').value=code}let existing=stockMap()[code],item=$('pItem').value.trim();if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}db.purchases.push({item:item,barcode:code,qty:q,price:p,total:q*p,date:$('pDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('pDate').value=today();render();alert('Purchase saved. Barcode: '+code)};
+$('saleForm').onsubmit=function(e){e.preventDefault();let code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;if(!x){alert('Barcode not found.');return}if(q>x.current){alert('Not enough stock. Available: '+x.current);return}db.sales.push({item:x.item,barcode:code,qty:q,price:p,total:q*p,date:$('sDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('sDate').value=today();render();alert('Sale saved.')};
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=async function(){await stopScanner();document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));this.classList.add('active');$(this.dataset.tab).classList.add('active')});
+})();
 </script>
-
 </body>
 </html>
