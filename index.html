@@ -142,7 +142,13 @@ function generateBarcode(){
   const base='29'+String(Math.floor(Math.random()*1e10)).padStart(10,'0');
   return base+ean13Check(base);
 }
-function fillPurchaseFromBarcode(){let code=$('pBarcode').value.trim(),x=stockMap()[code];if(x&&!$('pItem').value.trim())$('pItem').value=x.item}
+function fillPurchaseFromBarcode(){
+  let code=$('pBarcode').value.trim(),x=stockMap()[code];
+  if(!x)return;
+  $('pItem').value=x.item||'';
+  const last=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'')===code);
+  if(last){$('pPrice').value=Number(last.price||0);calcP()}
+}
 function fillSaleFromBarcode(){let x=stockMap()[$('sBarcode').value.trim()];$('sItem').value=x?x.item:'';$('sAvailable').value=x?x.current:''}
 let activeScanner=null;
 async function stopScanner(){
@@ -154,7 +160,7 @@ async function startScanner(target){
   await stopScanner();
   const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader';
   box.classList.remove('hidden');
-  activeScanner=new Html5Qrcode(readerId);
+  activeScanner=new Html5Qrcode(readerId,{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF]});
   const onSuccess=async text=>{
     const value=String(text||'').trim(); if(!value)return;
     if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
@@ -162,7 +168,11 @@ async function startScanner(target){
     await stopScanner();
   };
   try{
-    await activeScanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:140},aspectRatio:1.6},onSuccess,()=>{});
+    await activeScanner.start(
+      {facingMode:{ideal:'environment'}},
+      {fps:25,qrbox:(vw,vh)=>{const w=Math.min(Math.floor(vw*0.88),420);return {width:w,height:Math.max(110,Math.floor(w*0.38))}},aspectRatio:1.777778,disableFlip:true,experimentalFeatures:{useBarCodeDetectorIfSupported:true}},
+      onSuccess,()=>{}
+    );
   }catch(e){
     await stopScanner();
     alert('Camera could not start. Please allow camera permission and open the site using HTTPS.');
