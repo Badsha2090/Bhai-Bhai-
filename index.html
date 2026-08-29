@@ -16,7 +16,7 @@ label{display:block;font-size:13px;font-weight:700;margin-bottom:12px}input{widt
 .section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.metric .v{font-size:22px;font-weight:800;margin-top:4px}.metric .l{font-size:12px;color:#6b7280}
 form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:left}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px}.smallbtn{padding:9px 11px;font-size:13px}
+.scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px;position:relative;overflow:hidden;border-radius:10px}.scanner-reader video,.scanner-reader canvas{width:100%!important;height:auto!important;display:block}.scanner-reader canvas{position:absolute;left:0;top:0}.smallbtn{padding:9px 11px;font-size:13px}
 @media(max-width:640px){form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -119,6 +119,7 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
@@ -150,45 +151,108 @@ function fillPurchaseFromBarcode(){
   if(last){$('pPrice').value=Number(last.price||0);calcP()}
 }
 function fillSaleFromBarcode(){let x=stockMap()[$('sBarcode').value.trim()];$('sItem').value=x?x.item:'';$('sAvailable').value=x?x.current:''}
-let activeScanner=null;
+let activeScanner=null, activeScannerType=null, quaggaDetectedHandler=null;
 async function stopScanner(){
-  if(activeScanner){try{await activeScanner.stop()}catch(e){} try{await activeScanner.clear()}catch(e){} activeScanner=null}
+  if(activeScannerType==='quagga' && typeof Quagga!=='undefined'){
+    try{Quagga.stop()}catch(e){}
+    if(quaggaDetectedHandler){try{Quagga.offDetected(quaggaDetectedHandler)}catch(e){} quaggaDetectedHandler=null}
+  }
+  if(activeScannerType==='html5' && activeScanner){
+    try{await activeScanner.stop()}catch(e){}
+    try{await activeScanner.clear()}catch(e){}
+  }
+  activeScanner=null;activeScannerType=null;
+  $('pReader').innerHTML='';$('sReader').innerHTML='';
   $('pScannerBox').classList.add('hidden');$('sScannerBox').classList.add('hidden');
 }
-async function startScanner(target){
-  if(typeof Html5Qrcode==='undefined'){alert('Barcode scanner library could not load. Check internet connection.');return}
-  await stopScanner();
-  const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader';
-  box.classList.remove('hidden');
+function acceptScannedValue(value,isPurchase){
+  value=String(value||'').replace(/\s+/g,'').trim();
+  if(!value)return false;
+  if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
+  if(navigator.vibrate)try{navigator.vibrate(80)}catch(e){}
+  return true
+}
+async function startHtml5Fallback(isPurchase,readerId){
+  if(typeof Html5Qrcode==='undefined')throw new Error('html5-qrcode unavailable');
+  activeScannerType='html5';
   activeScanner=new Html5Qrcode(readerId);
   let detected=false;
   const onSuccess=async text=>{
     if(detected)return;
-    const value=String(text||'').trim(); if(!value)return;
-    detected=true;
-    if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
-    if(navigator.vibrate) try{navigator.vibrate(80)}catch(e){}
-    await stopScanner();
+    if(!acceptScannedValue(text,isPurchase))return;
+    detected=true;await stopScanner();
   };
+  await activeScanner.start(
+    {facingMode:'environment'},
+    {fps:15,qrbox:(vw,vh)=>({width:Math.max(220,Math.min(360,Math.floor(vw*.86))),height:Math.max(110,Math.min(180,Math.floor(vh*.28)))}),disableFlip:true},
+    onSuccess,()=>{}
+  );
   try{
-    await activeScanner.start(
-      {facingMode:'environment'},
-      {fps:20,qrbox:{width:280,height:150},aspectRatio:1.6,disableFlip:true},
-      onSuccess,()=>{}
-    );
-  }catch(e){
+    await activeScanner.applyVideoConstraints({
+      width:{ideal:1920},height:{ideal:1080},
+      advanced:[{focusMode:'continuous'}]
+    });
+  }catch(e){}
+}
+async function startScanner(target){
+  await stopScanner();
+  const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader', reader=$(readerId);
+  box.classList.remove('hidden');
+
+  // Quagga2 is optimized for 1D retail barcodes (EAN/UPC/Code128 etc.).
+  if(typeof Quagga!=='undefined'){
+    activeScannerType='quagga';
     try{
-      if(activeScanner){try{await activeScanner.clear()}catch(_){} activeScanner=null}
-      activeScanner=new Html5Qrcode(readerId);
-      await activeScanner.start(
-        {facingMode:'environment'},
-        {fps:10,qrbox:{width:250,height:140}},
-        onSuccess,()=>{}
-      );
-    }catch(e2){
-      await stopScanner();
-      alert('Camera could not start. On iPhone, allow Camera access for Safari and reload the page.');
+      await new Promise((resolve,reject)=>{
+        Quagga.init({
+          inputStream:{
+            type:'LiveStream',target:reader,
+            constraints:{facingMode:'environment',width:{ideal:1920,min:640},height:{ideal:1080,min:480}}
+          },
+          locator:{patchSize:'medium',halfSample:true},
+          numOfWorkers:Math.max(1,Math.min(4,navigator.hardwareConcurrency||2)),
+          frequency:15,
+          locate:true,
+          decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader','code_39_vin_reader','i2of5_reader','2of5_reader','codabar_reader']}
+        },err=>err?reject(err):resolve())
+      });
+      let last='',hits=0,done=false;
+      quaggaDetectedHandler=async data=>{
+        if(done||!data||!data.codeResult||!data.codeResult.code)return;
+        const code=String(data.codeResult.code).trim();
+        // Require the same result twice to avoid wrong reads, but still stay fast.
+        if(code===last)hits++;else{last=code;hits=1}
+        if(hits<2)return;
+        done=true;
+        if(acceptScannedValue(code,isPurchase))await stopScanner();
+      };
+      Quagga.onDetected(quaggaDetectedHandler);
+      Quagga.start();
+      // Improve iPhone focus when the browser exposes camera-track controls.
+      setTimeout(()=>{
+        try{
+          const video=reader.querySelector('video');
+          const track=video&&video.srcObject&&video.srcObject.getVideoTracks&&video.srcObject.getVideoTracks()[0];
+          if(!track)return;
+          const caps=track.getCapabilities?track.getCapabilities():{};
+          const adv={};
+          if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
+          if(caps.zoom){const z=Math.min(caps.zoom.max||1,1.5);if(z>1)adv.zoom=z}
+          if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(()=>{});
+        }catch(e){}
+      },500);
+      return;
+    }catch(e){
+      try{Quagga.stop()}catch(_){}
+      activeScannerType=null;reader.innerHTML='';
     }
+  }
+
+  try{
+    await startHtml5Fallback(isPurchase,readerId);
+  }catch(e){
+    await stopScanner();
+    alert('Camera scanner could not start. Please allow Camera access for Safari, reload, and try again.');
   }
 }
 function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
