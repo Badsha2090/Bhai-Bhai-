@@ -16,7 +16,7 @@ label{display:block;font-size:13px;font-weight:700;margin-bottom:12px}input{widt
 .section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.metric .v{font-size:22px;font-weight:800;margin-top:4px}.metric .l{font-size:12px;color:#6b7280}
 form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:left}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px;position:relative;overflow:hidden;border-radius:10px}.scanner-reader video,.scanner-reader canvas{width:100%!important;height:auto!important;display:block}.scanner-reader canvas{position:absolute;left:0;top:0}.smallbtn{padding:9px 11px;font-size:13px}
+.scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px;position:relative;overflow:hidden;border-radius:10px}.scanner-reader video,.scanner-reader canvas{width:100%!important;height:auto!important;display:block}.scanner-reader canvas{position:absolute;left:0;top:0}.smallbtn{padding:9px 11px;font-size:13px}.scan-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0}.scan-status{font-size:12px;color:#475569;flex:1;min-width:160px}.scan-tools button,.photo-scan-label{border:0;border-radius:9px;padding:9px 11px;background:#e5e7eb;font-weight:700;font-size:13px;cursor:pointer}.photo-scan-label input{display:none}
 @media(max-width:640px){form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -90,7 +90,7 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
           <label>Total<input id="pTotal" readonly></label>
           <div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
         </form>
-        <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div id="pReader" class="scanner-reader"></div></div>
+        <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div class="scan-tools"><span id="pScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="pZoom1">1×</button><button type="button" id="pZoom15">1.5×</button><button type="button" id="pZoom2">2×</button><button type="button" id="pTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="pPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="pReader" class="scanner-reader"></div></div>
       </div>
       <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
     </section>
@@ -108,7 +108,7 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
           <label>Total<input id="sTotal" readonly></label>
           <div class="full"><button class="btn primary" type="submit">Save Sale</button></div>
         </form>
-        <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div id="sReader" class="scanner-reader"></div></div>
+        <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
       </div>
       <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
     </section>
@@ -151,8 +151,22 @@ function fillPurchaseFromBarcode(){
   if(last){$('pPrice').value=Number(last.price||0);calcP()}
 }
 function fillSaleFromBarcode(){let x=stockMap()[$('sBarcode').value.trim()];$('sItem').value=x?x.item:'';$('sAvailable').value=x?x.current:''}
-let activeScanner=null, activeScannerType=null, quaggaDetectedHandler=null;
+let activeScanner=null, activeScannerType=null, quaggaDetectedHandler=null, activeTrack=null, scanTimers=[];
+function clearScanTimers(){scanTimers.forEach(t=>clearTimeout(t));scanTimers=[]}
+function scanStatus(isPurchase,msg){const el=$(isPurchase?'pScanStatus':'sScanStatus');if(el)el.textContent=msg}
+function barcodeChecksumOK(code){
+  code=String(code||'').replace(/\D/g,'');
+  if(![8,12,13].includes(code.length))return true;
+  let body=code.slice(0,-1), check=+code.slice(-1), sum=0;
+  if(code.length===13){for(let i=0;i<body.length;i++)sum+=(+body[i])*(i%2?3:1)}
+  else if(code.length===8){for(let i=0;i<body.length;i++)sum+=(+body[i])*(i%2?3:1)}
+  else { // UPC-A 12 digits: odd positions x3, even x1
+    for(let i=0;i<body.length;i++)sum+=(+body[i])*(i%2?3:1)
+  }
+  return ((10-(sum%10))%10)===check;
+}
 async function stopScanner(){
+  clearScanTimers();activeTrack=null;
   if(activeScannerType==='quagga' && typeof Quagga!=='undefined'){
     try{Quagga.stop()}catch(e){}
     if(quaggaDetectedHandler){try{Quagga.offDetected(quaggaDetectedHandler)}catch(e){} quaggaDetectedHandler=null}
@@ -172,88 +186,91 @@ function acceptScannedValue(value,isPurchase){
   if(navigator.vibrate)try{navigator.vibrate(80)}catch(e){}
   return true
 }
+async function setCameraZoom(z){
+  if(!activeTrack)return false;
+  try{
+    const caps=activeTrack.getCapabilities?activeTrack.getCapabilities():{};
+    if(!caps.zoom)return false;
+    const min=caps.zoom.min||1,max=caps.zoom.max||1,step=caps.zoom.step||0.1;
+    let v=Math.max(min,Math.min(max,z));v=Math.round(v/step)*step;
+    await activeTrack.applyConstraints({advanced:[{zoom:v}]});return true;
+  }catch(e){return false}
+}
+async function toggleTorch(){
+  if(!activeTrack)return false;
+  try{
+    const caps=activeTrack.getCapabilities?activeTrack.getCapabilities():{};
+    if(!caps.torch)return false;
+    const settings=activeTrack.getSettings?activeTrack.getSettings():{};
+    await activeTrack.applyConstraints({advanced:[{torch:!settings.torch}]});return true;
+  }catch(e){return false}
+}
+function attachTrack(reader,isPurchase){
+  try{
+    const video=reader.querySelector('video');
+    activeTrack=video&&video.srcObject&&video.srcObject.getVideoTracks&&video.srcObject.getVideoTracks()[0]||null;
+    if(!activeTrack)return;
+    const caps=activeTrack.getCapabilities?activeTrack.getCapabilities():{};
+    const adv={};if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
+    if(Object.keys(adv).length)activeTrack.applyConstraints({advanced:[adv]}).catch(()=>{});
+    scanStatus(isPurchase,'Scanning… keep the full barcode flat and clear.');
+  }catch(e){}
+}
 async function startHtml5Fallback(isPurchase,readerId){
   if(typeof Html5Qrcode==='undefined')throw new Error('html5-qrcode unavailable');
-  activeScannerType='html5';
-  activeScanner=new Html5Qrcode(readerId);
-  let detected=false;
-  const onSuccess=async text=>{
-    if(detected)return;
-    if(!acceptScannedValue(text,isPurchase))return;
-    detected=true;await stopScanner();
-  };
-  await activeScanner.start(
-    {facingMode:'environment'},
-    {fps:15,qrbox:(vw,vh)=>({width:Math.max(220,Math.min(360,Math.floor(vw*.86))),height:Math.max(110,Math.min(180,Math.floor(vh*.28)))}),disableFlip:true},
-    onSuccess,()=>{}
-  );
-  try{
-    await activeScanner.applyVideoConstraints({
-      width:{ideal:1920},height:{ideal:1080},
-      advanced:[{focusMode:'continuous'}]
-    });
-  }catch(e){}
+  activeScannerType='html5';activeScanner=new Html5Qrcode(readerId);let detected=false;
+  const onSuccess=async text=>{if(detected)return;if(!acceptScannedValue(text,isPurchase))return;detected=true;await stopScanner()};
+  await activeScanner.start({facingMode:'environment'},
+    {fps:20,qrbox:(vw,vh)=>({width:Math.max(240,Math.min(420,Math.floor(vw*.94))),height:Math.max(120,Math.min(220,Math.floor(vh*.38)))}),disableFlip:true},
+    onSuccess,()=>{});
+  setTimeout(()=>attachTrack($(readerId),isPurchase),350);
 }
 async function startScanner(target){
   await stopScanner();
-  const isPurchase=target==='purchase', box=$(isPurchase?'pScannerBox':'sScannerBox'), readerId=isPurchase?'pReader':'sReader', reader=$(readerId);
-  box.classList.remove('hidden');
-
-  // Quagga2 is optimized for 1D retail barcodes (EAN/UPC/Code128 etc.).
+  const isPurchase=target==='purchase',box=$(isPurchase?'pScannerBox':'sScannerBox'),readerId=isPurchase?'pReader':'sReader',reader=$(readerId);
+  box.classList.remove('hidden');scanStatus(isPurchase,'Starting camera…');
   if(typeof Quagga!=='undefined'){
     activeScannerType='quagga';
     try{
       await new Promise((resolve,reject)=>{
         Quagga.init({
-          inputStream:{
-            type:'LiveStream',target:reader,
-            constraints:{facingMode:'environment',width:{ideal:1920,min:640},height:{ideal:1080,min:480}}
-          },
-          locator:{patchSize:'medium',halfSample:true},
-          numOfWorkers:Math.max(1,Math.min(4,navigator.hardwareConcurrency||2)),
-          frequency:15,
-          locate:true,
+          inputStream:{type:'LiveStream',target:reader,constraints:{facingMode:{ideal:'environment'},width:{ideal:2560,min:960},height:{ideal:1440,min:540}}},
+          locator:{patchSize:'large',halfSample:false},numOfWorkers:Math.max(1,Math.min(3,navigator.hardwareConcurrency||2)),frequency:25,locate:true,
           decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader','code_39_vin_reader','i2of5_reader','2of5_reader','codabar_reader']}
         },err=>err?reject(err):resolve())
       });
       let last='',hits=0,done=false;
       quaggaDetectedHandler=async data=>{
         if(done||!data||!data.codeResult||!data.codeResult.code)return;
-        const code=String(data.codeResult.code).trim();
-        // Require the same result twice to avoid wrong reads, but still stay fast.
+        const code=String(data.codeResult.code).trim();if(!code)return;
+        const numeric=/^\d+$/.test(code);
+        const strong=numeric&&[8,12,13].includes(code.length)&&barcodeChecksumOK(code);
         if(code===last)hits++;else{last=code;hits=1}
-        if(hits<2)return;
-        done=true;
-        if(acceptScannedValue(code,isPurchase))await stopScanner();
+        scanStatus(isPurchase,'Reading: '+code+(strong?' ✓':''));
+        if(!strong&&hits<2)return;
+        done=true;if(acceptScannedValue(code,isPurchase))await stopScanner();
       };
-      Quagga.onDetected(quaggaDetectedHandler);
-      Quagga.start();
-      // Improve iPhone focus when the browser exposes camera-track controls.
-      setTimeout(()=>{
-        try{
-          const video=reader.querySelector('video');
-          const track=video&&video.srcObject&&video.srcObject.getVideoTracks&&video.srcObject.getVideoTracks()[0];
-          if(!track)return;
-          const caps=track.getCapabilities?track.getCapabilities():{};
-          const adv={};
-          if(caps.focusMode&&caps.focusMode.includes('continuous'))adv.focusMode='continuous';
-          if(caps.zoom){const z=Math.min(caps.zoom.max||1,1.5);if(z>1)adv.zoom=z}
-          if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(()=>{});
-        }catch(e){}
-      },500);
+      Quagga.onDetected(quaggaDetectedHandler);Quagga.start();
+      setTimeout(()=>attachTrack(reader,isPurchase),350);
+      // Gentle auto-zoom sweep helps tiny barcodes without immediately cropping them.
+      scanTimers.push(setTimeout(()=>setCameraZoom(1.25),1800));
+      scanTimers.push(setTimeout(()=>setCameraZoom(1.55),3600));
+      scanTimers.push(setTimeout(()=>setCameraZoom(1.0),6000));
       return;
-    }catch(e){
-      try{Quagga.stop()}catch(_){}
-      activeScannerType=null;reader.innerHTML='';
-    }
+    }catch(e){try{Quagga.stop()}catch(_){} activeScannerType=null;reader.innerHTML=''}
   }
-
-  try{
-    await startHtml5Fallback(isPurchase,readerId);
-  }catch(e){
-    await stopScanner();
-    alert('Camera scanner could not start. Please allow Camera access for Safari, reload, and try again.');
-  }
+  try{await startHtml5Fallback(isPurchase,readerId)}catch(e){await stopScanner();alert('Camera scanner could not start. Please allow Camera access for Safari, reload, and try again.')}
+}
+function scanPhoto(file,isPurchase){
+  if(!file||typeof Quagga==='undefined'){alert('Photo scanner is not available.');return}
+  scanStatus(isPurchase,'Reading photo…');
+  const url=URL.createObjectURL(file);
+  Quagga.decodeSingle({src:url,numOfWorkers:0,locate:true,locator:{patchSize:'large',halfSample:false},decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader','i2of5_reader','2of5_reader','codabar_reader']}},async result=>{
+    URL.revokeObjectURL(url);
+    const code=result&&result.codeResult&&result.codeResult.code;
+    if(code){acceptScannedValue(code,isPurchase);await stopScanner()}
+    else{scanStatus(isPurchase,'Could not read photo. Try closer, brighter, and keep the whole barcode visible.');alert('Barcode not detected from the photo. Try again with the full barcode clear and without glare.')}
+  });
 }
 function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
 function showLogin(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden')}
@@ -295,6 +312,7 @@ $('pQty').oninput=calcP;$('pPrice').oninput=calcP;$('sQty').oninput=calcS;$('sPr
 $('sBarcode').oninput=fillSaleFromBarcode;$('pBarcode').oninput=fillPurchaseFromBarcode;
 $('pGenBtn').onclick=function(){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()};
 $('pScanBtn').onclick=()=>startScanner('purchase');$('sScanBtn').onclick=()=>startScanner('sales');$('pStopScan').onclick=stopScanner;$('sStopScan').onclick=stopScanner;
+$('pZoom1').onclick=()=>setCameraZoom(1);$('pZoom15').onclick=()=>setCameraZoom(1.5);$('pZoom2').onclick=()=>setCameraZoom(2);$('sZoom1').onclick=()=>setCameraZoom(1);$('sZoom15').onclick=()=>setCameraZoom(1.5);$('sZoom2').onclick=()=>setCameraZoom(2);$('pTorch').onclick=()=>toggleTorch();$('sTorch').onclick=()=>toggleTorch();$('pPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],true);e.target.value=''};$('sPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],false);e.target.value=''};
 $('purchaseForm').onsubmit=function(e){e.preventDefault();let q=+$('pQty').value,p=+$('pPrice').value,code=$('pBarcode').value.trim();if(!code){code=generateBarcode();$('pBarcode').value=code}let existing=stockMap()[code],item=$('pItem').value.trim();if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}db.purchases.push({item:item,barcode:code,qty:q,price:p,total:q*p,date:$('pDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('pDate').value=today();render();alert('Purchase saved. Barcode: '+code)};
 $('saleForm').onsubmit=function(e){e.preventDefault();let code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;if(!x){alert('Barcode not found.');return}if(q>x.current){alert('Not enough stock. Available: '+x.current);return}db.sales.push({item:x.item,barcode:code,qty:q,price:p,total:q*p,date:$('sDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('sDate').value=today();render();alert('Sale saved.')};
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=async function(){await stopScanner();document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));this.classList.add('active');$(this.dataset.tab).classList.add('active')});
