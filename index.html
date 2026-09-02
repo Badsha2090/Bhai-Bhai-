@@ -47,6 +47,7 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
       <label>Username<input id="loginUser"></label>
       <label>Password<input id="loginPass" type="password"></label>
       <button class="btn primary" id="loginBtn">Login</button>
+      <button class="btn gray" id="setupCloudBtn" style="margin-left:6px">First-time Cloud Setup</button>
       <div id="loginMsg" class="msg"></div>
     </div>
   </div>
@@ -322,10 +323,13 @@ async function bootstrap(){
  try{
   const session=(await cloud.auth.getSession()).data.session;
   if(session){
-   const profile=await cloud.from('bbbm_app_users').select('name,username').eq('user_id',session.user.id).single();
+   const profile=await cloud.from('bbbm_app_users').select('name,username').eq('user_id',session.user.id).maybeSingle();
    if(profile.error)throw profile.error;
-   currentUser={id:session.user.id,name:profile.data.name,username:profile.data.username};
-   await loadCloudData();openApp();return;
+   if(profile.data){
+    currentUser={id:session.user.id,name:profile.data.name,username:profile.data.username};
+    await loadCloudData();openApp();return;
+   }
+   await cloud.auth.signOut();
   }
   if(users().length===2&&!safeGet(MIGRATED,false)){prefillLocalUsers();showSetup()}else showLogin();
  }catch(e){showLogin();$('loginMsg').textContent='Cloud connection failed: '+(e.message||e)}
@@ -370,6 +374,7 @@ $('loginBtn').onclick=async function(){
   await loadCloudData();$('loginMsg').textContent='';openApp();
  }catch(e){$('loginMsg').textContent='Wrong username/password or cloud error: '+(e.message||e)}finally{btn.disabled=false}
 };
+$('setupCloudBtn').onclick=function(){prefillLocalUsers();$('setupMsg').textContent='';showSetup()};
 $('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.signOut();currentUser=null;showLogin()};
 
 function stockMap(){
