@@ -29,16 +29,16 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 <div class="wrap">
   <div id="authView" class="auth">
     <div class="card" id="setupCard">
-      <h2>Create 2 Logins</h2>
-      <p class="muted">First time: set two users below.</p>
+      <h2>Connect 2 Logins to Cloud</h2>
+      <p class="muted">On the phone that has your old data, check the two users below and connect them once.</p>
       <label>User 1 Name<input id="u1name" placeholder="e.g. Badsha"></label>
       <label>User 1 Username<input id="u1user" placeholder="e.g. admin1"></label>
-      <label>User 1 Password<input id="u1pass" type="password" placeholder="Minimum 4 characters"></label>
+      <label>User 1 Password<input id="u1pass" type="password" placeholder="Minimum 6 characters"></label>
       <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0">
       <label>User 2 Name<input id="u2name"></label>
       <label>User 2 Username<input id="u2user"></label>
       <label>User 2 Password<input id="u2pass" type="password"></label>
-      <button class="btn primary" id="createBtn">Create 2 Logins</button>
+      <button class="btn primary" id="createBtn">Connect Logins & Move Data</button>
       <div id="setupMsg" class="msg"></div>
     </div>
 
@@ -47,7 +47,6 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
       <label>Username<input id="loginUser"></label>
       <label>Password<input id="loginPass" type="password"></label>
       <button class="btn primary" id="loginBtn">Login</button>
-      <button class="btn gray" id="resetBtn" style="margin-left:6px">Reset Users</button>
       <div id="loginMsg" class="msg"></div>
     </div>
   </div>
@@ -119,17 +118,56 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
-const USERS='bbbm_users_iphone_v1', DB='bbbm_db_iphone_v1';
+const USERS='bbbm_users_iphone_v1', DB='bbbm_db_iphone_v1', MIGRATED='bbbm_cloud_migrated_v1';
+const SUPABASE_URL='https://rpyhkgwbhflwbjcsbpiw.supabase.co';
+const SUPABASE_KEY='sb_publishable_wsHzLIr68xt3pQHFIQEuEQ_ZALOHNBk';
+const cloud=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10), money=n=>'৳'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 let currentUser=null, db={purchases:[],sales:[]};
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 db=safeGet(DB,{purchases:[],sales:[]});
 function users(){return safeGet(USERS,[])}
+async function usernameEmail(username){
+  const raw=new TextEncoder().encode(String(username||'').trim().toLowerCase());
+  const digest=await crypto.subtle.digest('SHA-256',raw);
+  const hex=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
+}
+async function loadCloudData(){
+  const [pr,sr]=await Promise.all([
+    cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true})
+  ]);
+  if(pr.error)throw pr.error;if(sr.error)throw sr.error;
+  db={
+    purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name})),
+    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name}))
+  };
+  safeSet(DB,db);
+}
+async function ensureCloudUser(u){
+  const email=await usernameEmail(u.username);
+  let result=await cloud.auth.signUp({email,password:u.password});
+  if(result.error){
+    result=await cloud.auth.signInWithPassword({email,password:u.password});
+    if(result.error)throw result.error;
+  }
+  if(!result.data.session)throw new Error('Email confirmation is still ON. Turn Confirm email OFF in Supabase and try again.');
+  const user=result.data.user;
+  const found=await cloud.from('bbbm_app_users').select('user_id').eq('user_id',user.id).maybeSingle();
+  if(found.error)throw found.error;
+  if(!found.data){
+    const added=await cloud.from('bbbm_app_users').insert({user_id:user.id,name:u.name,username:u.username});
+    if(added.error)throw added.error;
+  }
+  return {id:user.id,email};
+}
 function allBarcodes(){return new Set([...(db.purchases||[]).map(x=>String(x.barcode||'')),...(db.sales||[]).map(x=>String(x.barcode||''))].filter(Boolean))}
 function ean13Check(d12){let sum=0;for(let i=0;i<12;i++)sum+=(+d12[i])*(i%2?3:1);return String((10-(sum%10))%10)}
 function generateBarcode(){
@@ -275,22 +313,64 @@ function scanPhoto(file,isPurchase){
 function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
 function showLogin(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden')}
 function openApp(){ $('authView').classList.add('hidden'); $('appView').classList.remove('hidden'); $('who').textContent='Logged in: '+currentUser.name; $('pDate').value=today(); $('sDate').value=today(); render()}
-if(users().length===2) showLogin(); else showSetup();
+function prefillLocalUsers(){
+ const old=users();if(old.length!==2)return;
+ $('u1name').value=old[0].name||'';$('u1user').value=old[0].username||'';$('u1pass').value=old[0].password||'';
+ $('u2name').value=old[1].name||'';$('u2user').value=old[1].username||'';$('u2pass').value=old[1].password||'';
+}
+async function bootstrap(){
+ try{
+  const session=(await cloud.auth.getSession()).data.session;
+  if(session){
+   const profile=await cloud.from('bbbm_app_users').select('name,username').eq('user_id',session.user.id).single();
+   if(profile.error)throw profile.error;
+   currentUser={id:session.user.id,name:profile.data.name,username:profile.data.username};
+   await loadCloudData();openApp();return;
+  }
+  if(users().length===2&&!safeGet(MIGRATED,false)){prefillLocalUsers();showSetup()}else showLogin();
+ }catch(e){showLogin();$('loginMsg').textContent='Cloud connection failed: '+(e.message||e)}
+}
 
-$('createBtn').onclick=function(){
+$('createBtn').onclick=async function(){
  const a={name:$('u1name').value.trim(),username:$('u1user').value.trim(),password:$('u1pass').value};
  const b={name:$('u2name').value.trim(),username:$('u2user').value.trim(),password:$('u2pass').value};
- if(!a.name||!a.username||a.password.length<4||!b.name||!b.username||b.password.length<4){$('setupMsg').textContent='Fill all fields. Password minimum 4 characters.';return}
+ if(!a.name||!a.username||a.password.length<6||!b.name||!b.username||b.password.length<6){$('setupMsg').textContent='Fill all fields. Password minimum 6 characters.';return}
  if(a.username===b.username){$('setupMsg').textContent='Usernames must be different.';return}
- safeSet(USERS,[a,b]); $('setupMsg').textContent='2 logins created.'; showLogin();
+ const btn=this;btn.disabled=true;$('setupMsg').textContent='Connecting users and moving phone data…';
+ try{
+  const first=await ensureCloudUser(a);await cloud.auth.signOut();
+  await ensureCloudUser(b);await cloud.auth.signOut();
+  const login=await cloud.auth.signInWithPassword({email:first.email,password:a.password});
+  if(login.error)throw login.error;
+  const old=safeGet(DB,{purchases:[],sales:[]});
+  const pc=await cloud.from('bbbm_purchases').select('id',{count:'exact',head:true});if(pc.error)throw pc.error;
+  if(pc.count===0&&old.purchases&&old.purchases.length){
+   const rows=old.purchases.map(x=>({user_id:first.id,item:x.item,barcode:String(x.barcode||''),qty:+x.qty,price:+x.price,total:+x.total,purchase_date:x.date,by_name:x.by||a.name}));
+   const moved=await cloud.from('bbbm_purchases').insert(rows);if(moved.error)throw moved.error;
+  }
+  const sc=await cloud.from('bbbm_sales').select('id',{count:'exact',head:true});if(sc.error)throw sc.error;
+  if(sc.count===0&&old.sales&&old.sales.length){
+   const rows=old.sales.map(x=>({user_id:first.id,item:x.item,barcode:String(x.barcode||''),qty:+x.qty,price:+x.price,total:+x.total,sale_date:x.date,by_name:x.by||a.name}));
+   const moved=await cloud.from('bbbm_sales').insert(rows);if(moved.error)throw moved.error;
+  }
+  safeSet(USERS,[a,b]);safeSet(MIGRATED,true);await cloud.auth.signOut();
+  $('setupMsg').textContent='Cloud setup complete. You can now login on phone or laptop.';showLogin();
+ }catch(e){$('setupMsg').textContent='Setup failed: '+(e.message||e)}finally{btn.disabled=false}
 };
-$('loginBtn').onclick=function(){
- const u=users().find(x=>x.username===$('loginUser').value.trim()&&x.password===$('loginPass').value);
- if(!u){$('loginMsg').textContent='Wrong username or password.';return}
- currentUser=u;openApp()
+$('loginBtn').onclick=async function(){
+ const btn=this,username=$('loginUser').value.trim(),password=$('loginPass').value;
+ if(!username||!password){$('loginMsg').textContent='Enter username and password.';return}
+ btn.disabled=true;$('loginMsg').textContent='Logging in…';
+ try{
+  const email=await usernameEmail(username),result=await cloud.auth.signInWithPassword({email,password});
+  if(result.error)throw result.error;
+  const profile=await cloud.from('bbbm_app_users').select('name,username').eq('user_id',result.data.user.id).single();
+  if(profile.error)throw profile.error;
+  currentUser={id:result.data.user.id,name:profile.data.name,username:profile.data.username};
+  await loadCloudData();$('loginMsg').textContent='';openApp();
+ }catch(e){$('loginMsg').textContent='Wrong username/password or cloud error: '+(e.message||e)}finally{btn.disabled=false}
 };
-$('logoutBtn').onclick=async function(){await stopScanner();currentUser=null;showLogin()};
-$('resetBtn').onclick=function(){if(confirm('Reset both users?')){try{localStorage.removeItem(USERS)}catch(e){};showSetup()}};
+$('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.signOut();currentUser=null;showLogin()};
 
 function stockMap(){
  let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,purchased:0,sold:0,cost:0};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item});
@@ -313,9 +393,30 @@ $('sBarcode').oninput=fillSaleFromBarcode;$('pBarcode').oninput=fillPurchaseFrom
 $('pGenBtn').onclick=function(){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()};
 $('pScanBtn').onclick=()=>startScanner('purchase');$('sScanBtn').onclick=()=>startScanner('sales');$('pStopScan').onclick=stopScanner;$('sStopScan').onclick=stopScanner;
 $('pZoom1').onclick=()=>setCameraZoom(1);$('pZoom15').onclick=()=>setCameraZoom(1.5);$('pZoom2').onclick=()=>setCameraZoom(2);$('sZoom1').onclick=()=>setCameraZoom(1);$('sZoom15').onclick=()=>setCameraZoom(1.5);$('sZoom2').onclick=()=>setCameraZoom(2);$('pTorch').onclick=()=>toggleTorch();$('sTorch').onclick=()=>toggleTorch();$('pPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],true);e.target.value=''};$('sPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],false);e.target.value=''};
-$('purchaseForm').onsubmit=function(e){e.preventDefault();let q=+$('pQty').value,p=+$('pPrice').value,code=$('pBarcode').value.trim();if(!code){code=generateBarcode();$('pBarcode').value=code}let existing=stockMap()[code],item=$('pItem').value.trim();if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}db.purchases.push({item:item,barcode:code,qty:q,price:p,total:q*p,date:$('pDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('pDate').value=today();render();alert('Purchase saved. Barcode: '+code)};
-$('saleForm').onsubmit=function(e){e.preventDefault();let code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;if(!x){alert('Barcode not found.');return}if(q>x.current){alert('Not enough stock. Available: '+x.current);return}db.sales.push({item:x.item,barcode:code,qty:q,price:p,total:q*p,date:$('sDate').value,by:currentUser.name});safeSet(DB,db);this.reset();$('sDate').value=today();render();alert('Sale saved.')};
+$('purchaseForm').onsubmit=async function(e){
+ e.preventDefault();let q=+$('pQty').value,p=+$('pPrice').value,code=$('pBarcode').value.trim();
+ if(!code){code=generateBarcode();$('pBarcode').value=code}
+ let existing=stockMap()[code],item=$('pItem').value.trim();
+ if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}
+ const btn=this.querySelector('[type=submit]');btn.disabled=true;
+ try{
+  const saved=await cloud.from('bbbm_purchases').insert({user_id:currentUser.id,item,barcode:code,qty:q,price:p,total:q*p,purchase_date:$('pDate').value,by_name:currentUser.name});
+  if(saved.error)throw saved.error;await loadCloudData();this.reset();$('pDate').value=today();render();alert('Purchase saved to cloud. Barcode: '+code);
+ }catch(err){alert('Purchase could not be saved: '+(err.message||err))}finally{btn.disabled=false}
+};
+$('saleForm').onsubmit=async function(e){
+ e.preventDefault();let code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;
+ if(!x){alert('Barcode not found.');return}if(q>x.current){alert('Not enough stock. Available: '+x.current);return}
+ const btn=this.querySelector('[type=submit]');btn.disabled=true;
+ try{
+  const saved=await cloud.from('bbbm_sales').insert({user_id:currentUser.id,item:x.item,barcode:code,qty:q,price:p,total:q*p,sale_date:$('sDate').value,by_name:currentUser.name});
+  if(saved.error)throw saved.error;await loadCloudData();this.reset();$('sDate').value=today();render();alert('Sale saved to cloud.');
+ }catch(err){alert('Sale could not be saved: '+(err.message||err))}finally{btn.disabled=false}
+};
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=async function(){await stopScanner();document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));this.classList.add('active');$(this.dataset.tab).classList.add('active')});
+document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
+setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
+bootstrap();
 })();
 </script>
 </body>
