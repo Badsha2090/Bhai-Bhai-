@@ -19,9 +19,64 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 .scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px;position:relative;overflow:hidden;border-radius:10px}.scanner-reader video,.scanner-reader canvas{width:100%!important;height:auto!important;display:block}.scanner-reader canvas{position:absolute;left:0;top:0}.smallbtn{padding:9px 11px;font-size:13px}.scan-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0}.scan-status{font-size:12px;color:#475569;flex:1;min-width:160px}.scan-tools button,.photo-scan-label{border:0;border-radius:9px;padding:9px 11px;background:#e5e7eb;font-weight:700;font-size:13px;cursor:pointer}.photo-scan-label input{display:none}
 @media(max-width:640px){form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
 </style>
+
+<style>
+:root{--navy:#06243f;--navy2:#0a3153;--blue:#1769e0;--line:#dfe7ef;--soft:#f4f7fb;--ink:#102033;--muted:#6b7a8c}
+body{background:#edf2f7;color:var(--ink)}
+.wrap{max-width:none;padding:0}
+#legacyHeader{background:linear-gradient(135deg,#071f35,#0a3153)}
+#appView{min-height:100vh}
+.app-shell{display:flex;min-height:100vh;background:#f4f7fb}
+.sidebar{width:238px;background:linear-gradient(180deg,#061f36 0%,#073256 100%);color:#fff;position:fixed;left:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:20;box-shadow:4px 0 18px rgba(7,31,53,.12)}
+.brand{height:82px;padding:15px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand-mark{font-size:32px}.brand-title{color:#f5b82e;font-size:20px;line-height:1;font-weight:900;letter-spacing:.5px}.brand-sub{font-size:10px;font-weight:800;letter-spacing:.6px;margin-top:5px}
+.profile-box{display:flex;gap:11px;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:23px}
+.profile-copy{min-width:0}.profile-copy strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile-copy span{font-size:11px;color:#82e4a8}
+.side-nav{display:flex;flex-direction:column;gap:4px;margin:0;padding:12px 10px;overflow:auto;flex:1}
+.side-nav button{width:100%;display:flex;align-items:center;gap:10px;color:#eaf3fb;background:transparent;border:0;border-radius:7px;padding:10px 12px;text-align:left;font-weight:700;font-size:13px;cursor:pointer}
+.side-nav button span{width:20px;text-align:center}.side-nav button small{margin-left:auto;font-size:9px;opacity:.55}
+.side-nav button:hover{background:rgba(255,255,255,.08)}.side-nav button.active{background:#1769e0;color:#fff;box-shadow:0 6px 16px rgba(23,105,224,.32)}
+.side-nav button.coming{opacity:.72}
+.sidebar-footer{padding:10px;border-top:1px solid rgba(255,255,255,.1)}
+.system-chip{display:flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.14);padding:10px;border-radius:9px}.system-chip strong{display:block;font-size:11px}.system-chip span{font-size:9px;opacity:.65}
+.logout-side{width:100%;border:0;background:transparent;color:#dbeafe;padding:10px;margin-top:5px;text-align:left;font-weight:700;cursor:pointer}
+.main-area{margin-left:238px;min-width:0;width:calc(100% - 238px)}
+.topbar{height:82px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:10}
+.page-title{font-weight:900;font-size:22px}.page-subtitle{font-size:12px;color:var(--muted);margin-top:3px}.topbar-right{display:flex;align-items:center;gap:12px}
+.sync-pill,.date-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-left:1px solid #e8edf2;font-size:11px}.sync-pill b{color:#16803a}
+.content-area{padding:20px}
+.card{border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 10px rgba(16,32,51,.04)}
+.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.metric{min-height:112px;display:flex;align-items:center;gap:14px;padding:15px;background:#fff}
+.metric-icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:23px;background:#eef4fb}
+.metric .l{font-size:10px;font-weight:900;color:#455568;letter-spacing:.15px}.metric .v{font-size:21px;margin-top:5px}.metric-note{font-size:10px;color:#7a8795;margin-top:5px}
+.metric-green{border-color:#a9dbc0}.metric-green .metric-icon{background:#dcf6e6}.metric-blue{border-color:#abd0f3}.metric-blue .metric-icon{background:#e0f0ff}.metric-orange{border-color:#f1c888}.metric-orange .metric-icon{background:#fff0dc}.metric-purple{border-color:#ceb8ea}.metric-purple .metric-icon{background:#f0e8fa}.metric-gold{border-color:#e9d59a}.metric-gold .metric-icon{background:#fff7dc}.metric-red{border-color:#efb5b8}.metric-red .metric-icon{background:#ffe5e7}.metric-cyan{border-color:#b1d7e3}.metric-cyan .metric-icon{background:#e0f6fb}.metric-teal{border-color:#abd8cf}.metric-teal .metric-icon{background:#e0f5f0}
+.dashboard-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.span-2{grid-column:span 2}.panel{padding:0;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #edf1f5}.panel-head h3{margin:0;font-size:14px}.mini-link{border:1px solid #9dc0e9;background:#fff;color:#1463b4;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer}.soft-label{font-size:10px;color:#8492a2}
+.compact-table table{min-width:560px}.compact-table th,.compact-table td{padding:9px 12px;font-size:11px}
+.top-items,.alert-list{padding:8px 14px}.top-item,.alert-item{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid #edf1f5;font-size:12px}.top-item:last-child,.alert-item:last-child{border-bottom:0}.top-item b,.alert-item b{font-size:12px}.top-item span,.alert-item span{color:#718096;text-align:right}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}.quick-grid button{min-height:80px;border:1px solid #cfe0ef;background:#fbfdff;border-radius:8px;font-weight:800;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}.quick-grid button span{font-size:25px}.quick-grid button small{font-size:9px;opacity:.55}
+.section-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.section-heading h2{margin:0;font-size:20px}.section-heading p{margin:4px 0 0;color:#78889a;font-size:12px}
+.form-card{padding:18px}.history-card{margin-top:14px;overflow:hidden}.history-card .table-wrap{padding:0 8px 8px}
+input,select{border-radius:7px;border-color:#cfd8e3;background:#fff}input:focus,select:focus{outline:2px solid rgba(23,105,224,.15);border-color:#69a0e7}
+.btn{border-radius:7px}.primary{background:#1769e0}.unit-badge{background:#e8f0ff;color:#245fb6}
+table th{background:#f8fafc;color:#455568;font-weight:800}
+.auth{padding:16px}.auth .card{border-radius:14px}
+@media(max-width:1100px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr 1fr}.span-2{grid-column:span 2}}
+@media(max-width:760px){
+  .app-shell{display:block}.sidebar{position:sticky;top:0;width:100%;height:auto;bottom:auto}.brand{height:58px;padding:8px 12px}.brand-mark{font-size:24px}.brand-title{font-size:16px}.profile-box,.sidebar-footer,.side-nav .coming{display:none}
+  .side-nav{display:grid;grid-template-columns:repeat(4,1fr);padding:7px;gap:5px;overflow:visible}.side-nav button{justify-content:center;padding:9px 4px;font-size:10px;gap:4px;flex-direction:column}.side-nav button span{width:auto}
+  .main-area{margin-left:0;width:100%}.topbar{height:62px;padding:0 12px}.page-title{font-size:17px}.page-subtitle{display:none}.sync-pill{display:none}.date-pill{font-size:10px;padding:4px 0;border:0}
+  .content-area{padding:10px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{min-height:94px;padding:10px;gap:8px}.metric-icon{width:38px;height:38px;font-size:18px}.metric .v{font-size:16px}.metric-note{display:none}
+  .dashboard-grid{grid-template-columns:1fr}.span-2{grid-column:auto}.quick-grid{grid-template-columns:repeat(3,1fr);padding:10px;gap:7px}.quick-grid button{min-height:72px}
+  form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.form-card{padding:12px}.section-heading{margin:4px 0 10px}
+}
+@media(max-width:430px){.metric-grid{grid-template-columns:1fr 1fr}.metric{display:block}.metric-icon{margin-bottom:7px}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
 </head>
 <body>
-<header>
+<header id="legacyHeader">
   <h1>Bhai Bhai Building Materials Trading LLC</h1>
   <p>2 User Login • Purchase • Sales • Barcode • KG/PCS/Unit Stock</p>
 </header>
@@ -53,72 +108,141 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
   </div>
 
   <div id="appView" class="hidden">
-    <div class="top">
-      <strong id="who"></strong>
-      <button class="btn gray" id="logoutBtn">Logout</button>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">🏠</div>
+          <div><div class="brand-title">BHAI BHAI</div><div class="brand-sub">BUILDING MATERIALS</div></div>
+        </div>
+
+        <div class="profile-box">
+          <div class="avatar">👤</div>
+          <div class="profile-copy"><strong id="who"></strong><span>Online</span></div>
+        </div>
+
+        <div class="nav side-nav">
+          <button class="active" data-tab="dashboard"><span>◉</span> Dashboard</button>
+          <button data-tab="sales"><span>🛒</span> POS / Sales</button>
+          <button data-tab="purchase"><span>📦</span> Purchase</button>
+          <button data-tab="stock"><span>▣</span> Inventory / Stock</button>
+          <button class="coming"><span>◇</span> Products <small>Soon</small></button>
+          <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
+          <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
+          <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
+          <button class="coming"><span>🏷️</span> Expense <small>Soon</small></button>
+          <button class="coming"><span>📊</span> Reports <small>Soon</small></button>
+          <button class="coming"><span>🖨️</span> Print Center <small>Soon</small></button>
+          <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
+          <button class="coming"><span>⚙️</span> Settings <small>Soon</small></button>
+          <button class="coming"><span>☁️</span> Backup & Sync <small>Soon</small></button>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="system-chip">🏠 <div><strong>Bhai Bhai System</strong><span>Cloud Sync Active</span></div></div>
+          <button class="logout-side" id="logoutBtn">↪ Logout</button>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <div class="topbar">
+          <div>
+            <div class="page-title" id="pageTitle">Dashboard</div>
+            <div class="page-subtitle">Overview of your business</div>
+          </div>
+          <div class="topbar-right">
+            <div class="sync-pill">☁️ <span>Supabase<br><b>Connected</b></span></div>
+            <div class="date-pill">📅 <span id="topDate"></span></div>
+          </div>
+        </div>
+
+        <div class="content-area">
+          <section id="dashboard" class="section active">
+            <div class="metric-grid">
+              <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
+              <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
+              <div class="card metric metric-orange"><div class="metric-icon">🔥</div><div><div class="l">TOTAL PROFIT</div><div id="mProfit" class="v">৳0.00</div><div class="metric-note">Sales minus stock cost</div></div></div>
+              <div class="card metric metric-purple"><div class="metric-icon">৳</div><div><div class="l">TOTAL SALES</div><div id="mSales" class="v">৳0.00</div><div class="metric-note">All-time sales</div></div></div>
+              <div class="card metric metric-gold"><div class="metric-icon">🪙</div><div><div class="l">TOTAL PURCHASE</div><div id="mPurchase" class="v">৳0.00</div><div class="metric-note">All-time purchase</div></div></div>
+              <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
+              <div class="card metric metric-cyan"><div class="metric-icon">▣</div><div><div class="l">CURRENT STOCK</div><div id="mStock" class="v">0</div><div class="metric-note">Across all units</div></div></div>
+              <div class="card metric metric-teal"><div class="metric-icon">💰</div><div><div class="l">STOCK VALUE</div><div id="mStockValue" class="v">৳0.00</div><div class="metric-note">At average purchase cost</div></div></div>
+            </div>
+
+            <div class="dashboard-grid">
+              <div class="card panel span-2">
+                <div class="panel-head"><h3>Recent Sales</h3><button class="mini-link" data-go="sales">View Sales</button></div>
+                <div class="table-wrap compact-table"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead><tbody id="dashRecentSales"></tbody></table></div>
+              </div>
+
+              <div class="card panel">
+                <div class="panel-head"><h3>Top Selling Items</h3><span class="soft-label">By quantity</span></div>
+                <div id="dashTopItems" class="top-items"></div>
+              </div>
+
+              <div class="card panel">
+                <div class="panel-head"><h3>Stock Alert</h3><button class="mini-link" data-go="stock">View Stock</button></div>
+                <div id="dashLowStock" class="alert-list"></div>
+              </div>
+
+              <div class="card panel span-2">
+                <div class="panel-head"><h3>Quick Actions</h3><span class="soft-label">Fast access</span></div>
+                <div class="quick-grid">
+                  <button data-go="sales"><span>🛒</span>New Sale (POS)</button>
+                  <button data-go="purchase"><span>📦</span>New Purchase</button>
+                  <button data-go="stock"><span>▣</span>View Stock</button>
+                  <button class="coming"><span>🏷️</span>Expense Entry<small>Soon</small></button>
+                  <button class="coming"><span>🖨️</span>Barcode Print<small>Soon</small></button>
+                  <button class="coming"><span>📊</span>Daily Report<small>Soon</small></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="purchase" class="section">
+            <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
+            <div class="card form-card">
+              <form id="purchaseForm" class="dataform">
+                <label>Item Name<input id="pItem" required></label>
+                <label>Barcode<div class="scan-row"><input id="pBarcode" inputmode="numeric" placeholder="Scan or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="pScanBtn">📷 Scan</button><button class="btn gray smallbtn" type="button" id="pGenBtn">Auto Barcode</button></div></label>
+                <label>Quantity<input id="pQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
+                <label>Unit<select id="pUnit" required><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option></select></label>
+                <label>Purchase Price / Unit<input id="pPrice" type="number" step="0.01" min="0" required></label>
+                <label>Selling Price / Unit<input id="pSellPrice" type="number" step="0.01" min="0" placeholder="Default sale rate"></label>
+                <label>Date<input id="pDate" type="date" required></label>
+                <label>Total<input id="pTotal" readonly></label>
+                <div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
+              </form>
+              <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div class="scan-tools"><span id="pScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="pZoom1">1×</button><button type="button" id="pZoom15">1.5×</button><button type="button" id="pZoom2">2×</button><button type="button" id="pTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="pPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="pReader" class="scanner-reader"></div></div>
+            </div>
+            <div class="card history-card"><div class="panel-head"><h3>Purchase History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
+          </section>
+
+          <section id="sales" class="section">
+            <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
+            <div class="card form-card">
+              <form id="saleForm" class="dataform">
+                <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
+                <label>Item Name<input id="sItem" readonly></label>
+                <label>Available Stock<input id="sAvailable" readonly></label>
+                <label>Unit<input id="sUnit" readonly></label>
+                <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
+                <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
+                <label>Date<input id="sDate" type="date" required></label>
+                <label>Total<input id="sTotal" readonly></label>
+                <div class="full"><button class="btn primary" type="submit">Save Sale</button></div>
+              </form>
+              <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
+            </div>
+            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+          </section>
+
+          <section id="stock" class="section">
+            <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
+            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+          </section>
+        </div>
+      </main>
     </div>
-
-    <div class="nav">
-      <button class="active" data-tab="dashboard">Dashboard</button>
-      <button data-tab="purchase">Purchase</button>
-      <button data-tab="sales">Sales</button>
-      <button data-tab="stock">Stock</button>
-    </div>
-
-    <section id="dashboard" class="section active">
-      <div class="grid">
-        <div class="card metric"><div class="l">Total Purchase</div><div id="mPurchase" class="v">৳0.00</div></div>
-        <div class="card metric"><div class="l">Total Sales</div><div id="mSales" class="v">৳0.00</div></div>
-        <div class="card metric"><div class="l">Current Stock</div><div id="mStock" class="v">0</div></div>
-        <div class="card metric"><div class="l">Stock Value</div><div id="mStockValue" class="v">৳0.00</div></div>
-        <div class="card metric"><div class="l">Today's Sales</div><div id="mTodaySales" class="v">৳0.00</div></div>
-        <div class="card metric"><div class="l">Today's Purchase</div><div id="mTodayPurchase" class="v">৳0.00</div></div>
-        <div class="card metric"><div class="l">Low Stock</div><div id="mLow" class="v">0</div></div>
-        <div class="card metric"><div class="l">Profit</div><div id="mProfit" class="v">৳0.00</div></div>
-      </div>
-    </section>
-
-    <section id="purchase" class="section">
-      <div class="card">
-        <h2>Add Purchase</h2>
-        <form id="purchaseForm" class="dataform">
-          <label>Item Name<input id="pItem" required></label>
-          <label>Barcode<div class="scan-row"><input id="pBarcode" inputmode="numeric" placeholder="Scan or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="pScanBtn">📷 Scan</button><button class="btn gray smallbtn" type="button" id="pGenBtn">Auto Barcode</button></div></label>
-          <label>Quantity<input id="pQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
-          <label>Unit<select id="pUnit" required><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option></select></label>
-          <label>Purchase Price / Unit<input id="pPrice" type="number" step="0.01" min="0" required></label>
-          <label>Selling Price / Unit<input id="pSellPrice" type="number" step="0.01" min="0" placeholder="Default sale rate"></label>
-          <label>Date<input id="pDate" type="date" required></label>
-          <label>Total<input id="pTotal" readonly></label>
-          <div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
-        </form>
-        <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div class="scan-tools"><span id="pScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="pZoom1">1×</button><button type="button" id="pZoom15">1.5×</button><button type="button" id="pZoom2">2×</button><button type="button" id="pTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="pPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="pReader" class="scanner-reader"></div></div>
-      </div>
-      <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
-    </section>
-
-    <section id="sales" class="section">
-      <div class="card">
-        <h2>Add Sale</h2>
-        <form id="saleForm" class="dataform">
-          <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
-          <label>Item Name<input id="sItem" readonly></label>
-          <label>Available Stock<input id="sAvailable" readonly></label>
-          <label>Unit<input id="sUnit" readonly></label>
-          <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
-          <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
-          <label>Date<input id="sDate" type="date" required></label>
-          <label>Total<input id="sTotal" readonly></label>
-          <div class="full"><button class="btn primary" type="submit">Save Sale</button></div>
-        </form>
-        <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
-      </div>
-      <div class="card" style="margin-top:14px"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
-    </section>
-
-    <section id="stock" class="section">
-      <div class="card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
-    </section>
   </div>
 </div>
 
@@ -332,9 +456,15 @@ function scanPhoto(file,isPurchase){
     else{scanStatus(isPurchase,'Could not read photo. Try closer, brighter, and keep the whole barcode visible.');alert('Barcode not detected from the photo. Try again with the full barcode clear and without glare.')}
   });
 }
-function showSetup(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
-function showLogin(){ $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden')}
-function openApp(){ $('authView').classList.add('hidden'); $('appView').classList.remove('hidden'); $('who').textContent='Logged in: '+currentUser.name; $('pDate').value=today(); $('sDate').value=today(); render()}
+function showSetup(){ $('legacyHeader').style.display='block'; $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.remove('hidden'); $('loginCard').classList.add('hidden')}
+function showLogin(){ $('legacyHeader').style.display='block'; $('authView').classList.remove('hidden'); $('appView').classList.add('hidden'); $('setupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden')}
+function openApp(){
+ $('legacyHeader').style.display='none';
+ $('authView').classList.add('hidden'); $('appView').classList.remove('hidden');
+ $('who').textContent=currentUser.name;
+ $('topDate').textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
+ $('pDate').value=today(); $('sDate').value=today(); render()
+}
 function prefillLocalUsers(){
  const old=users();if(old.length!==2)return;
  $('u1name').value=old[0].name||'';$('u1user').value=old[0].username||'';$('u1pass').value=old[0].password||'';
@@ -411,6 +541,17 @@ function render(){
  $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="7">No purchase yet.</td></tr>';
  $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="7">No sale yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
+
+ const recent=db.sales.slice().reverse().slice(0,6);
+ if($('dashRecentSales'))$('dashRecentSales').innerHTML=recent.length?recent.map(x=>`<tr><td>${x.date}</td><td><b>${x.item}</b></td><td>${fmtQty(x.qty)}</td><td>${x.unit||'PCS'}</td><td><b>${money(x.total)}</b></td></tr>`).join(''):'<tr><td colspan="5">No sale yet.</td></tr>';
+
+ const grouped={};
+ db.sales.forEach(x=>{const k=x.barcode||x.item;if(!grouped[k])grouped[k]={item:x.item,qty:0,total:0,unit:x.unit||'PCS'};grouped[k].qty+=+x.qty;grouped[k].total+=+x.total});
+ const top=Object.values(grouped).sort((a,b)=>b.qty-a.qty).slice(0,5);
+ if($('dashTopItems'))$('dashTopItems').innerHTML=top.length?top.map((x,i)=>`<div class="top-item"><b>${i+1}. ${x.item}</b><span>${fmtQty(x.qty)} ${x.unit}<br>${money(x.total)}</span></div>`).join(''):'<div class="top-item"><span>No sales yet.</span></div>';
+
+ const low=vals.filter(x=>x.current<=5).sort((a,b)=>a.current-b.current).slice(0,5);
+ if($('dashLowStock'))$('dashLowStock').innerHTML=low.length?low.map(x=>`<div class="alert-item"><b>${x.item}</b><span>${fmtQty(x.current)} ${x.unit||'PCS'} left</span></div>`).join(''):'<div class="alert-item"><span>No low stock items.</span></div>';
 }
 function calcP(){$('pTotal').value=((+$('pQty').value||0)*(+$('pPrice').value||0)).toFixed(2)}
 function calcS(){$('sTotal').value=((+$('sQty').value||0)*(+$('sPrice').value||0)).toFixed(2)}
@@ -441,7 +582,18 @@ $('saleForm').onsubmit=async function(e){
   if(saved.error)throw saved.error;await loadCloudData();this.reset();$('sDate').value=today();render();alert('Sale saved to cloud.');
  }catch(err){alert('Sale could not be saved: '+(err.message||err))}finally{btn.disabled=false}
 };
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=async function(){await stopScanner();document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));this.classList.add('active');$(this.dataset.tab).classList.add('active')});
+async function goTab(tab){
+ await stopScanner();
+ document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
+ document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+ const target=$(tab);if(target)target.classList.add('active');
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock'};
+ if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
+document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
