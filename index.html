@@ -257,7 +257,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                     <label class="pay-option"><input type="radio" name="paymentMethod" value="Rocket"><span>🚀 Rocket</span></label>
                   </div>
                 </label>
-                <div class="full"><button class="btn primary" type="submit">Next →</button></div>
+                <div class="full payment-help">Payment method select করলেই Print / Without Print option আসবে।</div>
               </form>
               <div id="saleFinishBox" class="sale-finish hidden">
                 <div class="finish-head"><div><strong>Sale Summary</strong><span>Choose how you want to complete this sale.</span></div><button type="button" class="btn gray smallbtn" id="saleBackBtn">← Back</button></div>
@@ -689,11 +689,29 @@ async function completeSale(printAfter){
    $('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false;
  }
 }
-$('saleForm').onsubmit=function(e){
- e.preventDefault();
- const sale=buildPendingSale();if(!sale)return;
- pendingSale=sale;showSaleFinish(sale);
-};
+$('saleForm').onsubmit=function(e){e.preventDefault();};
+document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>{
+ el.addEventListener('change',function(){
+   const sale=buildPendingSale();
+   if(!sale){this.checked=false;const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;return}
+   pendingSale=sale;showSaleFinish(sale);
+ });
+});
+
+document.querySelectorAll('.pay-option').forEach(label=>{
+ label.addEventListener('click',function(e){
+   const radio=this.querySelector('input[name="paymentMethod"]');
+   if(!radio)return;
+   setTimeout(()=>{
+     if($('saleForm').classList.contains('hidden'))return;
+     radio.checked=true;
+     const sale=buildPendingSale();
+     if(!sale)return;
+     pendingSale=sale;showSaleFinish(sale);
+   },0);
+ });
+});
+
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
