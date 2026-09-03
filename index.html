@@ -91,6 +91,14 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 .no-print-btn{background:#0f766e;color:#fff}
 .pay-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf3f8;font-size:10px;font-weight:800;white-space:nowrap}
 @media(max-width:760px){.payment-methods{grid-template-columns:repeat(2,1fr)}.payment-methods .pay-option:last-child{grid-column:span 2}.finish-summary{grid-template-columns:1fr}.finish-actions{grid-template-columns:1fr}}
+
+.credit-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 0}
+.credit-fields label{font-weight:800;font-size:12px}
+.credit-fields input{width:100%;margin-top:6px;padding:11px 12px;border:1px solid #cfd8e3;border-radius:8px;font-size:14px;background:#fff}
+.credit-customer{display:flex;flex-direction:column;gap:2px;font-size:11px;white-space:nowrap}
+.credit-customer b{font-size:11px}
+.payment-help{font-size:11px;color:#6b7a8c;text-align:center;padding-top:4px}
+@media(max-width:760px){.credit-fields{grid-template-columns:1fr}}
 </style>
 
 </head>
@@ -259,6 +267,19 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                 </label>
                 <div class="full payment-help">Payment method select করলেই Print / Without Print option আসবে।</div>
               </form>
+              <div id="creditCustomerBox" class="sale-finish hidden">
+                <div class="finish-head">
+                  <div><strong>Credit Customer</strong><span>Customer name বা mobile number দিন। অন্তত একটি লাগবে।</span></div>
+                  <button type="button" class="btn gray smallbtn" id="creditBackBtn">← Back</button>
+                </div>
+                <div class="credit-fields">
+                  <label>Customer Name<input id="creditName" type="text" placeholder="Customer name"></label>
+                  <label>Mobile Number<input id="creditPhone" type="tel" placeholder="01XXXXXXXXX"></label>
+                </div>
+                <div class="finish-actions">
+                  <button type="button" class="btn primary finish-btn" id="creditContinueBtn">Continue →</button>
+                </div>
+              </div>
               <div id="saleFinishBox" class="sale-finish hidden">
                 <div class="finish-head"><div><strong>Sale Summary</strong><span>Choose how you want to complete this sale.</span></div><button type="button" class="btn gray smallbtn" id="saleBackBtn">← Back</button></div>
                 <div class="finish-summary" id="saleFinishSummary"></div>
@@ -269,7 +290,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
               </div>
               <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
             </div>
-            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Customer</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
           </section>
 
           <section id="stock" class="section">
@@ -315,7 +336,7 @@ async function loadCloudData(){
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
-    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash'}))
+    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||''}))
   };
   for(const p of db.purchases){
     const meta={unit:p.unit||'PCS',item:p.item};
@@ -575,7 +596,7 @@ function render(){
  let cogs=0;db.sales.forEach(s=>{let x=m[s.barcode];if(x)cogs+=+s.qty*x.avg});
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
  $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="7">No purchase yet.</td></tr>';
- $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="8">No sale yet.</td></tr>';
+ $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="9">No sale yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
 
  const recent=db.sales.slice().reverse().slice(0,6);
@@ -628,6 +649,7 @@ function showSaleFinish(sale){
    <div><span>Quantity</span><b>${fmtQty(sale.qty)} ${sale.unit}</b></div>
    <div><span>Rate</span><b>${money(sale.price)}</b></div>
    <div><span>Payment</span><b>${sale.paymentMethod}</b></div>
+   ${sale.paymentMethod==='Credit'?`<div><span>Customer</span><b>${sale.creditName||'-'}</b></div><div><span>Mobile</span><b>${sale.creditPhone||'-'}</b></div>`:''}
    <div><span>Total</span><b>${money(sale.total)}</b></div>`;
  $('saleFinishBox').classList.remove('hidden');
  $('saleForm').classList.add('hidden');
@@ -637,6 +659,8 @@ function resetSaleForm(){
  $('sDate').value=today();
  const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
  $('saleFinishBox').classList.add('hidden');
+ $('creditCustomerBox').classList.add('hidden');
+ $('creditName').value='';$('creditPhone').value='';
  $('saleForm').classList.remove('hidden');
  pendingSale=null;
 }
@@ -656,6 +680,7 @@ function receiptHtml(sale){
  <div class="r"><span>Qty</span><b>${esc(fmtQty(sale.qty))} ${esc(sale.unit)}</b></div>
  <div class="r"><span>Rate</span><b>${esc(money(sale.price))}</b></div>
  <div class="r"><span>Payment</span><b>${esc(sale.paymentMethod)}</b></div>
+ ${sale.paymentMethod==='Credit'?`<div class="r"><span>Customer</span><b>${esc(sale.creditName||'-')}</b></div><div class="r"><span>Mobile</span><b>${esc(sale.creditPhone||'-')}</b></div>`:''}
  <div class="line"></div><div class="r total"><span>TOTAL</span><b>${esc(money(sale.total))}</b></div>
  <div class="line"></div><div class="foot">Thank you</div>
  </div></body></html>`;
@@ -673,7 +698,7 @@ async function completeSale(printAfter){
    saveMeta(sale.code,{unit:sale.unit,item:sale.item,sellPrice:sale.price});
    const saved=await cloud.from('bbbm_sales').insert({
      user_id:currentUser.id,item:sale.item,barcode:sale.code,qty:sale.qty,price:sale.price,total:sale.total,
-     unit:sale.unit,payment_method:sale.paymentMethod,sale_date:sale.date,by_name:currentUser.name
+     unit:sale.unit,payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,sale_date:sale.date,by_name:currentUser.name
    });
    if(saved.error)throw saved.error;
    if(printAfter&&printWin){
@@ -690,27 +715,40 @@ async function completeSale(printAfter){
  }
 }
 $('saleForm').onsubmit=function(e){e.preventDefault();};
-document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>{
- el.addEventListener('change',function(){
-   const sale=buildPendingSale();
-   if(!sale){this.checked=false;const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;return}
-   pendingSale=sale;showSaleFinish(sale);
- });
-});
-
+function handlePaymentChoice(radio){
+ if(!radio)return;
+ radio.checked=true;
+ const sale=buildPendingSale();
+ if(!sale)return;
+ if(radio.value==='Credit'){
+   pendingSale=sale;
+   $('saleForm').classList.add('hidden');
+   $('creditCustomerBox').classList.remove('hidden');
+   setTimeout(()=>$('creditName').focus(),50);
+   return;
+ }
+ pendingSale=sale;showSaleFinish(sale);
+}
 document.querySelectorAll('.pay-option').forEach(label=>{
  label.addEventListener('click',function(e){
-   const radio=this.querySelector('input[name="paymentMethod"]');
-   if(!radio)return;
-   setTimeout(()=>{
-     if($('saleForm').classList.contains('hidden'))return;
-     radio.checked=true;
-     const sale=buildPendingSale();
-     if(!sale)return;
-     pendingSale=sale;showSaleFinish(sale);
-   },0);
+   e.preventDefault();
+   if($('saleForm').classList.contains('hidden'))return;
+   handlePaymentChoice(this.querySelector('input[name="paymentMethod"]'));
  });
 });
+$('creditBackBtn').onclick=function(){
+ $('creditCustomerBox').classList.add('hidden');
+ $('saleForm').classList.remove('hidden');
+ pendingSale=null;
+};
+$('creditContinueBtn').onclick=function(){
+ const name=$('creditName').value.trim(),phone=$('creditPhone').value.trim();
+ if(!name&&!phone){alert('Customer name or mobile number দিন।');return}
+ if(!pendingSale)return;
+ pendingSale.creditName=name;pendingSale.creditPhone=phone;
+ $('creditCustomerBox').classList.add('hidden');
+ showSaleFinish(pendingSale);
+};
 
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
