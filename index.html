@@ -1051,30 +1051,56 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  const price=x?(metaFor(x.code).sellPrice||0):0;
  if(typeof JsBarcode!=='function'){alert('Barcode library load হয়নি। Internet connection check করে page refresh করুন।');return}
  try{
-   const svgStrings=[];
+   // Build labels directly in the current page, then use window.print().
+   // This avoids popup/iframe print blocking in Chrome.
+   let area=document.getElementById('barcodeDirectPrintArea');
+   if(area)area.remove();
+   area=document.createElement('div');
+   area.id='barcodeDirectPrintArea';
+   area.setAttribute('aria-hidden','true');
    for(let i=0;i<count;i++){
-     const wrap=document.createElement('div');
+     const label=document.createElement('div');
+     label.className='barcode-direct-label';
+     const name=document.createElement('div');
+     name.className='barcode-direct-name';
+     name.textContent=item;
      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-     wrap.appendChild(svg);
-     JsBarcode(svg,String(code),{format:'CODE128',displayValue:true,fontSize:10,height:38,margin:0});
-     svgStrings.push(svg.outerHTML);
+     label.appendChild(name);
+     label.appendChild(svg);
+     JsBarcode(svg,String(code),{format:'CODE128',displayValue:true,fontSize:11,height:42,margin:0});
+     if(showPrice&&price){
+       const pr=document.createElement('div');
+       pr.className='barcode-direct-price';
+       pr.textContent=money(price);
+       label.appendChild(pr);
+     }
+     area.appendChild(label);
    }
-   const safe=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-   const labels=svgStrings.map(svg=>`<div class="label"><div class="name">${safe(item)}</div>${svg}${showPrice&&price?`<div class="price">${safe(money(price))}</div>`:''}</div>`).join('');
-   let frame=document.getElementById('barcodePrintFrame');
-   if(frame)frame.remove();
-   frame=document.createElement('iframe');
-   frame.id='barcodePrintFrame';
-   frame.style.position='fixed';frame.style.right='0';frame.style.bottom='0';frame.style.width='1px';frame.style.height='1px';frame.style.border='0';frame.style.opacity='0.01';
-   document.body.appendChild(frame);
-   const doc=frame.contentWindow.document;
-   doc.open();
-   doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Barcode Labels</title><style>@page{margin:2mm}body{font-family:Arial;margin:0}.sheet{display:flex;flex-wrap:wrap;gap:2mm}.label{width:48mm;min-height:25mm;padding:2mm;text-align:center;break-inside:avoid;box-sizing:border-box}.name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{font-size:10px;font-weight:800}svg{max-width:100%;height:14mm}</style></head><body><div class="sheet">${labels}</div></body></html>`);
-   doc.close();
-   setTimeout(()=>{
-     try{frame.contentWindow.focus();frame.contentWindow.print()}
-     catch(err){alert('Print dialog open হয়নি। Chrome Settings থেকে Pop-ups/Printing allow করে আবার চেষ্টা করুন।')}
-   },300);
+   document.body.appendChild(area);
+
+   let st=document.getElementById('barcodeDirectPrintStyle');
+   if(!st){
+     st=document.createElement('style');
+     st.id='barcodeDirectPrintStyle';
+     st.textContent=`
+       #barcodeDirectPrintArea{display:none}
+       @media print{
+         @page{margin:2mm}
+         body *{visibility:hidden!important}
+         #barcodeDirectPrintArea,#barcodeDirectPrintArea *{visibility:visible!important}
+         #barcodeDirectPrintArea{display:flex!important;position:absolute;left:0;top:0;width:100%;flex-wrap:wrap;gap:2mm;font-family:Arial,sans-serif}
+         .barcode-direct-label{width:48mm;min-height:25mm;padding:2mm;text-align:center;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+         .barcode-direct-name{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+         .barcode-direct-price{font-size:11px;font-weight:800;margin-top:1mm}
+         .barcode-direct-label svg{width:100%;height:14mm}
+       }`;
+     document.head.appendChild(st);
+   }
+
+   const cleanup=()=>{setTimeout(()=>{const a=document.getElementById('barcodeDirectPrintArea');if(a)a.remove()},100)};
+   window.addEventListener('afterprint',cleanup,{once:true});
+   // Run print from this click event, no popup or hidden iframe involved.
+   window.print();
  }catch(err){
    console.error(err);
    alert('Barcode তৈরি/print করা যায়নি: '+(err.message||err));
