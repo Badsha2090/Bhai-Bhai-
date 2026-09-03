@@ -397,7 +397,8 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
   <div class="section-heading"><div><h2>🖨️ Barcode Print</h2><p>Stock item select করে barcode label print করুন.</p></div></div>
   <div class="card form-card">
     <form id="barcodeForm" class="form-grid">
-      <label class="full">Item / Barcode<input id="bSearch" list="barcodeItems" placeholder="Item name or barcode" required><datalist id="barcodeItems"></datalist></label>
+      <label class="full">Item Name / Existing Barcode<input id="bSearch" list="barcodeItems" placeholder="Type item name or select existing item" required><datalist id="barcodeItems"></datalist></label>
+      <label class="full">Barcode<div class="scan-row"><input id="bCode" inputmode="numeric" placeholder="Auto generate or use existing barcode"><button class="btn gray smallbtn" type="button" id="bGenBtn">Auto Generate</button></div></label>
       <label>Labels<input id="bCount" type="number" min="1" max="100" value="1" required></label>
       <label>Show Price<select id="bShowPrice"><option value="yes">Yes</option><option value="no">No</option></select></label>
       <div class="full"><button type="submit" class="btn primary">🖨️ Print Barcode</button></div>
@@ -1016,21 +1017,41 @@ $('creditContinueBtn').onclick=function(){
 function refreshBarcodeItems(){
  if(!$('barcodeItems'))return;
  const stock=calcStock();
- $('barcodeItems').innerHTML=stock.map(x=>`<option value="${String(x.code).replace(/\"/g,'&quot;')}">${x.item} · ${fmtQty(x.current)} ${x.unit}</option>`).join('');
+ $('barcodeItems').innerHTML=stock.map(x=>`<option value="${String(x.item).replace(/\"/g,'&quot;')}">${x.code} · ${fmtQty(x.current)} ${x.unit}</option>`).join('');
 }
+function fillBarcodePrintCode(){
+ if(!$('bSearch')||!$('bCode'))return;
+ const q=$('bSearch').value.trim();
+ if(!q)return;
+ const stock=calcStock();
+ const x=stock.find(z=>String(z.code)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase());
+ if(x)$('bCode').value=String(x.code);
+}
+if($('bSearch')){
+ $('bSearch').addEventListener('change',fillBarcodePrintCode);
+ $('bSearch').addEventListener('input',fillBarcodePrintCode);
+}
+if($('bGenBtn'))$('bGenBtn').onclick=function(){
+ const code=generateBarcode();
+ $('bCode').value=code;
+ $('bCode').focus();
+};
 if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  e.preventDefault();
  const q=$('bSearch').value.trim();
  const stock=calcStock();
  const x=stock.find(z=>String(z.code)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase())||stock.find(z=>z.item.toLowerCase().includes(q.toLowerCase()));
- if(!x){alert('Item / barcode পাওয়া যায়নি।');return}
+ const item=x?x.item:q;
+ let code=$('bCode').value.trim()||(x?String(x.code):'');
+ if(!item){alert('Item name দিন।');return}
+ if(!code){code=generateBarcode();$('bCode').value=code}
  const count=Math.max(1,Math.min(100,+$('bCount').value||1));
  const showPrice=$('bShowPrice').value==='yes';
- const price=(loadMeta(x.code).sellPrice||0);
+ const price=x?(loadMeta(x.code).sellPrice||0):0;
  const w=window.open('','_blank','width=700,height=650');
  if(!w){alert('Print window blocked. Browser popup allow করুন।');return}
- const labels=Array.from({length:count},(_,i)=>`<div class="label"><div class="name">${x.item}</div><svg id="bc${i}"></svg>${showPrice?`<div class="price">${money(price)}</div>`:''}</div>`).join('');
- w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Barcode Labels</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script><style>@page{margin:2mm}body{font-family:Arial;margin:0}.sheet{display:flex;flex-wrap:wrap;gap:2mm}.label{width:48mm;min-height:25mm;border:1px dashed #bbb;padding:2mm;text-align:center;break-inside:avoid}.name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{font-size:10px;font-weight:800}svg{max-width:100%;height:14mm}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>{for(let i=0;i<${count};i++){JsBarcode('#bc'+i,${JSON.stringify(String(x.code))},{format:'CODE128',displayValue:true,fontSize:10,height:38,margin:0});}setTimeout(()=>window.print(),250)};<\/script></body></html>`);
+ const labels=Array.from({length:count},(_,i)=>`<div class="label"><div class="name">${item}</div><svg id="bc${i}"></svg>${showPrice&&price?`<div class="price">${money(price)}</div>`:''}</div>`).join('');
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Barcode Labels</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script><style>@page{margin:2mm}body{font-family:Arial;margin:0}.sheet{display:flex;flex-wrap:wrap;gap:2mm}.label{width:48mm;min-height:25mm;border:1px dashed #bbb;padding:2mm;text-align:center;break-inside:avoid}.name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{font-size:10px;font-weight:800}svg{max-width:100%;height:14mm}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>{for(let i=0;i<${count};i++){JsBarcode('#bc'+i,${JSON.stringify(String(code))},{format:'CODE128',displayValue:true,fontSize:10,height:38,margin:0});}setTimeout(()=>window.print(),250)};<\/script></body></html>`);
  w.document.close();
 };
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
