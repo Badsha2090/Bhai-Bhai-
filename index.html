@@ -1048,7 +1048,7 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  if(!code){code=generateBarcode();$('bCode').value=code}
  const count=Math.max(1,Math.min(100,+$('bCount').value||1));
  const showPrice=$('bShowPrice').value==='yes';
- const price=x?(loadMeta(x.code).sellPrice||0):0;
+ const price=x?(metaFor(x.code).sellPrice||0):0;
  if(typeof JsBarcode!=='function'){alert('Barcode library load হয়নি। Internet connection check করে page refresh করুন।');return}
  try{
    const svgStrings=[];
