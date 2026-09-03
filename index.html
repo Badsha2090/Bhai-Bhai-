@@ -156,13 +156,11 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
           <button data-tab="expense"><span>💸</span> Expense</button>
           <button data-tab="credit"><span>💳</span> Credit Collection</button>
           <button data-tab="reports"><span>📊</span> Reports</button>
+          <button data-tab="barcode"><span>🖨️</span> Barcode Print</button>
           <button class="coming"><span>◇</span> Products <small>Soon</small></button>
           <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
           <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
-          <button class="coming"><span>🏷️</span> Expense <small>Soon</small></button>
-          <button class="coming"><span>📊</span> Reports <small>Soon</small></button>
-          <button class="coming"><span>🖨️</span> Print Center <small>Soon</small></button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
           <button class="coming"><span>⚙️</span> Settings <small>Soon</small></button>
           <button class="coming"><span>☁️</span> Backup & Sync <small>Soon</small></button>
@@ -221,9 +219,9 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                   <button data-go="sales"><span>🛒</span>New Sale (POS)</button>
                   <button data-go="purchase"><span>📦</span>New Purchase</button>
                   <button data-go="stock"><span>▣</span>View Stock</button>
-                  <button class="coming"><span>🏷️</span>Expense Entry<small>Soon</small></button>
-                  <button class="coming"><span>🖨️</span>Barcode Print<small>Soon</small></button>
-                  <button class="coming"><span>📊</span>Daily Report<small>Soon</small></button>
+                  <button data-go="expense"><span>🏷️</span>Expense Entry</button>
+                  <button data-go="barcode"><span>🖨️</span>Barcode Print</button>
+                  <button data-go="reports"><span>📊</span>Daily Report</button>
                 </div>
               </div>
             </div>
@@ -395,6 +393,17 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
  </div>
 </section>
+<section id="barcode" class="section">
+  <div class="section-heading"><div><h2>🖨️ Barcode Print</h2><p>Stock item select করে barcode label print করুন.</p></div></div>
+  <div class="card form-card">
+    <form id="barcodeForm" class="form-grid">
+      <label class="full">Item / Barcode<input id="bSearch" list="barcodeItems" placeholder="Item name or barcode" required><datalist id="barcodeItems"></datalist></label>
+      <label>Labels<input id="bCount" type="number" min="1" max="100" value="1" required></label>
+      <label>Show Price<select id="bShowPrice"><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <div class="full"><button type="submit" class="btn primary">🖨️ Print Barcode</button></div>
+    </form>
+  </div>
+</section>
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
@@ -408,6 +417,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 (function(){
 const USERS='bbbm_users_iphone_v1', DB='bbbm_db_iphone_v1', MIGRATED='bbbm_cloud_migrated_v1', META='bbbm_product_meta_v2';
@@ -959,7 +969,7 @@ async function completeSale(printAfter){
      printWin.focus();setTimeout(()=>printWin.print(),250);
    }
    await loadCloudData();resetSaleForm();render();
-   alert(printAfter?'Sale saved. Print window opened.':'Sale saved without print.');
+   alert(printAfter?'Sale saved. Print dialog opened — আপনার thermal printer select করে Print চাপুন।':'Sale saved without print.');
  }catch(err){
    if(printWin)printWin.close();
    alert('Sale could not be saved: '+(err.message||err));
@@ -1003,6 +1013,26 @@ $('creditContinueBtn').onclick=function(){
  showSaleFinish(pendingSale);
 };
 
+function refreshBarcodeItems(){
+ if(!$('barcodeItems'))return;
+ const stock=calcStock();
+ $('barcodeItems').innerHTML=stock.map(x=>`<option value="${String(x.code).replace(/\"/g,'&quot;')}">${x.item} · ${fmtQty(x.current)} ${x.unit}</option>`).join('');
+}
+if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
+ e.preventDefault();
+ const q=$('bSearch').value.trim();
+ const stock=calcStock();
+ const x=stock.find(z=>String(z.code)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase())||stock.find(z=>z.item.toLowerCase().includes(q.toLowerCase()));
+ if(!x){alert('Item / barcode পাওয়া যায়নি।');return}
+ const count=Math.max(1,Math.min(100,+$('bCount').value||1));
+ const showPrice=$('bShowPrice').value==='yes';
+ const price=(loadMeta(x.code).sellPrice||0);
+ const w=window.open('','_blank','width=700,height=650');
+ if(!w){alert('Print window blocked. Browser popup allow করুন।');return}
+ const labels=Array.from({length:count},(_,i)=>`<div class="label"><div class="name">${x.item}</div><svg id="bc${i}"></svg>${showPrice?`<div class="price">${money(price)}</div>`:''}</div>`).join('');
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Barcode Labels</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script><style>@page{margin:2mm}body{font-family:Arial;margin:0}.sheet{display:flex;flex-wrap:wrap;gap:2mm}.label{width:48mm;min-height:25mm;border:1px dashed #bbb;padding:2mm;text-align:center;break-inside:avoid}.name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{font-size:10px;font-weight:800}svg{max-width:100%;height:14mm}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>{for(let i=0;i<${count};i++){JsBarcode('#bc'+i,${JSON.stringify(String(x.code))},{format:'CODE128',displayValue:true,fontSize:10,height:38,margin:0});}setTimeout(()=>window.print(),250)};<\/script></body></html>`);
+ w.document.close();
+};
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
@@ -1011,7 +1041,8 @@ async function goTab(tab){
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',reports:'Reports'};
+ if(tab==='barcode')refreshBarcodeItems();
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',reports:'Reports',barcode:'Barcode Print'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
