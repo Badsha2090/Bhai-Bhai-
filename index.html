@@ -74,6 +74,25 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 @media(max-width:430px){.metric-grid{grid-template-columns:1fr 1fr}.metric{display:block}.metric-icon{margin-bottom:7px}.quick-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 
+
+<style>
+.payment-methods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:7px}
+.pay-option{margin:0!important}.pay-option input{display:none}
+.pay-option span{display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px;border:1px solid #cfd8e3;border-radius:8px;background:#fff;font-weight:800;font-size:12px;cursor:pointer;transition:.15s}
+.pay-option input:checked+span{border-color:#1769e0;background:#eaf3ff;color:#1259bd;box-shadow:0 0 0 2px rgba(23,105,224,.08)}
+.sale-finish{margin-top:16px;border:1px solid #cfe0ef;background:#f8fbff;border-radius:10px;padding:15px}
+.finish-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #dce8f3;padding-bottom:12px}
+.finish-head strong{display:block;font-size:17px}.finish-head span{display:block;color:#6b7a8c;font-size:11px;margin-top:3px}
+.finish-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;padding:14px 0;font-size:13px}
+.finish-summary div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed #d8e2ec;padding:7px 0}
+.finish-summary b{text-align:right}
+.finish-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.finish-btn{min-height:50px;font-size:14px;font-weight:900}
+.no-print-btn{background:#0f766e;color:#fff}
+.pay-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf3f8;font-size:10px;font-weight:800;white-space:nowrap}
+@media(max-width:760px){.payment-methods{grid-template-columns:repeat(2,1fr)}.payment-methods .pay-option:last-child{grid-column:span 2}.finish-summary{grid-template-columns:1fr}.finish-actions{grid-template-columns:1fr}}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -229,11 +248,28 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                 <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
                 <label>Date<input id="sDate" type="date" required></label>
                 <label>Total<input id="sTotal" readonly></label>
-                <div class="full"><button class="btn primary" type="submit">Save Sale</button></div>
+                <label class="full">Payment Method
+                  <div class="payment-methods">
+                    <label class="pay-option"><input type="radio" name="paymentMethod" value="Cash" checked><span>💵 Cash</span></label>
+                    <label class="pay-option"><input type="radio" name="paymentMethod" value="Credit"><span>📝 Credit</span></label>
+                    <label class="pay-option"><input type="radio" name="paymentMethod" value="Nagad"><span>🟠 Nagad</span></label>
+                    <label class="pay-option"><input type="radio" name="paymentMethod" value="bKash"><span>🟣 bKash</span></label>
+                    <label class="pay-option"><input type="radio" name="paymentMethod" value="Rocket"><span>🚀 Rocket</span></label>
+                  </div>
+                </label>
+                <div class="full"><button class="btn primary" type="submit">Next →</button></div>
               </form>
+              <div id="saleFinishBox" class="sale-finish hidden">
+                <div class="finish-head"><div><strong>Sale Summary</strong><span>Choose how you want to complete this sale.</span></div><button type="button" class="btn gray smallbtn" id="saleBackBtn">← Back</button></div>
+                <div class="finish-summary" id="saleFinishSummary"></div>
+                <div class="finish-actions">
+                  <button type="button" class="btn primary finish-btn" id="salePrintBtn">🖨️ Print</button>
+                  <button type="button" class="btn no-print-btn finish-btn" id="saleNoPrintBtn">✓ Without Print</button>
+                </div>
+              </div>
               <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
             </div>
-            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
           </section>
 
           <section id="stock" class="section">
@@ -279,7 +315,7 @@ async function loadCloudData(){
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
-    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS'}))
+    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash'}))
   };
   for(const p of db.purchases){
     const meta={unit:p.unit||'PCS',item:p.item};
@@ -505,7 +541,7 @@ $('createBtn').onclick=async function(){
   }
   const sc=await cloud.from('bbbm_sales').select('id',{count:'exact',head:true});if(sc.error)throw sc.error;
   if(sc.count===0&&old.sales&&old.sales.length){
-   const rows=old.sales.map(x=>({user_id:first.id,item:x.item,barcode:String(x.barcode||''),qty:+x.qty,price:+x.price,total:+x.total,unit:x.unit||'PCS',sale_date:x.date,by_name:x.by||a.name}));
+   const rows=old.sales.map(x=>({user_id:first.id,item:x.item,barcode:String(x.barcode||''),qty:+x.qty,price:+x.price,total:+x.total,unit:x.unit||'PCS',payment_method:x.paymentMethod||'Cash',sale_date:x.date,by_name:x.by||a.name}));
    const moved=await cloud.from('bbbm_sales').insert(rows);if(moved.error)throw moved.error;
   }
   safeSet(USERS,[a,b]);safeSet(MIGRATED,true);await cloud.auth.signOut();
@@ -539,7 +575,7 @@ function render(){
  let cogs=0;db.sales.forEach(s=>{let x=m[s.barcode];if(x)cogs+=+s.qty*x.avg});
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
  $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="7">No purchase yet.</td></tr>';
- $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="7">No sale yet.</td></tr>';
+ $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="8">No sale yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
 
  const recent=db.sales.slice().reverse().slice(0,6);
@@ -572,16 +608,95 @@ $('purchaseForm').onsubmit=async function(e){
   if(saved.error)throw saved.error;await loadCloudData();this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();alert('Purchase saved to cloud. Barcode: '+code+' • Unit: '+unit);
  }catch(err){alert('Purchase could not be saved: '+(err.message||err))}finally{btn.disabled=false}
 };
-$('saleForm').onsubmit=async function(e){
- e.preventDefault();let code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;
- if(!x){alert('Barcode not found.');return}if(q>x.current){alert('Not enough stock. Available: '+fmtQty(x.current)+' '+(x.unit||'PCS'));return}
- saveMeta(code,{unit:x.unit||unitFor(code),item:x.item,sellPrice:p});
- const btn=this.querySelector('[type=submit]');btn.disabled=true;
+let pendingSale=null;
+function selectedPaymentMethod(){
+ const el=document.querySelector('input[name="paymentMethod"]:checked');
+ return el?el.value:'Cash';
+}
+function buildPendingSale(){
+ const code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;
+ if(!x){alert('Barcode not found.');return null}
+ if(!q||q<=0){alert('Enter sale quantity.');return null}
+ if(q>x.current){alert('Not enough stock. Available: '+fmtQty(x.current)+' '+(x.unit||'PCS'));return null}
+ if(p<0||$('sPrice').value===''){alert('Enter sale price.');return null}
+ return {code,item:x.item,qty:q,price:p,total:q*p,unit:x.unit||'PCS',date:$('sDate').value,paymentMethod:selectedPaymentMethod(),available:x.current};
+}
+function showSaleFinish(sale){
+ $('saleFinishSummary').innerHTML=`
+   <div><span>Item</span><b>${sale.item}</b></div>
+   <div><span>Barcode</span><b>${sale.code}</b></div>
+   <div><span>Quantity</span><b>${fmtQty(sale.qty)} ${sale.unit}</b></div>
+   <div><span>Rate</span><b>${money(sale.price)}</b></div>
+   <div><span>Payment</span><b>${sale.paymentMethod}</b></div>
+   <div><span>Total</span><b>${money(sale.total)}</b></div>`;
+ $('saleFinishBox').classList.remove('hidden');
+ $('saleForm').classList.add('hidden');
+}
+function resetSaleForm(){
+ $('saleForm').reset();
+ $('sDate').value=today();
+ const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
+ $('saleFinishBox').classList.add('hidden');
+ $('saleForm').classList.remove('hidden');
+ pendingSale=null;
+}
+function receiptHtml(sale){
+ const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ return `<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title><style>
+ body{font-family:Arial,sans-serif;margin:0;padding:14px;color:#000}.receipt{max-width:320px;margin:auto}
+ h2{text-align:center;margin:0;font-size:18px}.sub{text-align:center;font-size:11px;margin:3px 0 12px}
+ .line{border-top:1px dashed #000;margin:9px 0}.r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0}
+ .total{font-size:16px;font-weight:800}.foot{text-align:center;font-size:10px;margin-top:14px}
+ @media print{@page{margin:4mm}body{padding:0}}
+ </style></head><body><div class="receipt">
+ <h2>BHAI BHAI BUILDING MATERIALS</h2><div class="sub">Sales Receipt</div><div class="line"></div>
+ <div class="r"><span>Date</span><b>${esc(sale.date)}</b></div>
+ <div class="r"><span>Item</span><b>${esc(sale.item)}</b></div>
+ <div class="r"><span>Barcode</span><b>${esc(sale.code)}</b></div>
+ <div class="r"><span>Qty</span><b>${esc(fmtQty(sale.qty))} ${esc(sale.unit)}</b></div>
+ <div class="r"><span>Rate</span><b>${esc(money(sale.price))}</b></div>
+ <div class="r"><span>Payment</span><b>${esc(sale.paymentMethod)}</b></div>
+ <div class="line"></div><div class="r total"><span>TOTAL</span><b>${esc(money(sale.total))}</b></div>
+ <div class="line"></div><div class="foot">Thank you</div>
+ </div></body></html>`;
+}
+async function completeSale(printAfter){
+ if(!pendingSale)return;
+ let printWin=null;
+ if(printAfter){
+   printWin=window.open('','_blank','width=420,height=650');
+   if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>');
+ }
+ const sale=pendingSale;
+ $('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
  try{
-  const saved=await cloud.from('bbbm_sales').insert({user_id:currentUser.id,item:x.item,barcode:code,qty:q,price:p,total:q*p,unit:x.unit||'PCS',sale_date:$('sDate').value,by_name:currentUser.name});
-  if(saved.error)throw saved.error;await loadCloudData();this.reset();$('sDate').value=today();render();alert('Sale saved to cloud.');
- }catch(err){alert('Sale could not be saved: '+(err.message||err))}finally{btn.disabled=false}
+   saveMeta(sale.code,{unit:sale.unit,item:sale.item,sellPrice:sale.price});
+   const saved=await cloud.from('bbbm_sales').insert({
+     user_id:currentUser.id,item:sale.item,barcode:sale.code,qty:sale.qty,price:sale.price,total:sale.total,
+     unit:sale.unit,payment_method:sale.paymentMethod,sale_date:sale.date,by_name:currentUser.name
+   });
+   if(saved.error)throw saved.error;
+   if(printAfter&&printWin){
+     printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();
+     printWin.focus();setTimeout(()=>printWin.print(),250);
+   }
+   await loadCloudData();resetSaleForm();render();
+   alert(printAfter?'Sale saved. Print window opened.':'Sale saved without print.');
+ }catch(err){
+   if(printWin)printWin.close();
+   alert('Sale could not be saved: '+(err.message||err));
+ }finally{
+   $('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false;
+ }
+}
+$('saleForm').onsubmit=function(e){
+ e.preventDefault();
+ const sale=buildPendingSale();if(!sale)return;
+ pendingSale=sale;showSaleFinish(sale);
 };
+$('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
+$('salePrintBtn').onclick=()=>completeSale(true);
+$('saleNoPrintBtn').onclick=()=>completeSale(false);
 async function goTab(tab){
  await stopScanner();
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
