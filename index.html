@@ -154,6 +154,8 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
           <button data-tab="stock"><span>▣</span> Inventory / Stock</button>
           <button data-tab="returns"><span>↩️</span> Sales Return</button>
           <button data-tab="expense"><span>💸</span> Expense</button>
+          <button data-tab="credit"><span>💳</span> Credit Collection</button>
+          <button data-tab="reports"><span>📊</span> Reports</button>
           <button class="coming"><span>◇</span> Products <small>Soon</small></button>
           <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
@@ -354,6 +356,45 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
     </div>
   </div>
 </section>
+
+<section id="credit" class="section">
+ <div class="section-heading"><div><h2>💳 Credit Collection</h2><p>Customer due payment receive and track করুন।</p></div></div>
+ <div class="card form-card">
+  <div class="panel-head"><h3>Find Credit Sale</h3></div>
+  <div class="return-search"><label>Bill No / Mobile<input id="cSearch" placeholder="BBBM-000001 or mobile"></label><button type="button" class="btn primary" id="cFindBtn">🔎 Find</button></div>
+  <div id="creditInfo" class="return-info hidden"></div>
+  <form id="creditForm" class="form-grid hidden">
+   <label>Customer<input id="cCustomer" readonly></label><label>Outstanding Due<input id="cDue" readonly></label>
+   <label>Collection Amount<input id="cAmount" type="number" min="0.01" step="0.01" required></label>
+   <label>Receive By<select id="cMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option></select></label>
+   <label>Date<input id="cDate" type="date" required></label><label>Note<input id="cNote" placeholder="Optional"></label>
+   <div class="full"><button class="btn primary" type="submit">Save Collection</button></div>
+  </form>
+ </div>
+ <div class="card history-card"><div class="panel-head"><h3>Credit Collection History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Customer</th><th>Amount</th><th>Method</th><th>By</th></tr></thead><tbody id="collectionRows"></tbody></table></div></div>
+</section>
+
+<section id="reports" class="section">
+ <div class="section-heading"><div><h2>📊 Daily / Monthly Reports</h2><p>Sales, purchase, expense, credit, return and cash summary.</p></div></div>
+ <div class="card form-card">
+  <div class="form-grid">
+   <label>Report Type<select id="reportType"><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label>
+   <label id="reportDateWrap">Date<input id="reportDate" type="date"></label>
+   <label id="reportMonthWrap" class="hidden">Month<input id="reportMonth" type="month"></label>
+  </div>
+ </div>
+ <div class="stats-grid">
+  <div class="stat-card"><div><span>Total Sale</span><strong id="repSale">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Total Purchase</span><strong id="repPurchase">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Total Expense</span><strong id="repExpense">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Credit Sale</span><strong id="repCredit">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Credit Collection</span><strong id="repCollection">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Outstanding Credit</span><strong id="repDue">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Sales Return</span><strong id="repReturn">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Cash In</span><strong id="repCashIn">৳0</strong></div></div>
+  <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
+ </div>
+</section>
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
@@ -390,18 +431,20 @@ async function usernameEmail(username){
   return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
 }
 async function loadCloudData(){
-  const [pr,sr,rr,er]=await Promise.all([
+  const [pr,sr,rr,er,cr]=await Promise.all([
     cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales_returns').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true})
+    cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true})
   ]);
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
     sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
-    expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''}))
+    expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
+    collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''}))
   };
   for(const p of db.purchases){
     const meta={unit:p.unit||'PCS',item:p.item};
@@ -666,8 +709,11 @@ function totalCashReturns(){
 function totalExpenses(){
  return (db.expenses||[]).reduce((a,x)=>a+(+x.amount||0),0);
 }
+function totalCashCollections(){
+ return (db.collections||[]).filter(x=>(x.paymentMethod||'Cash')==='Cash').reduce((a,x)=>a+(+x.amount||0),0);
+}
 function cashBalance(){
- return totalCashSales()-totalCashReturns()-totalExpenses();
+ return totalCashSales()+totalCashCollections()-totalCashReturns()-totalExpenses();
 }
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
@@ -676,6 +722,8 @@ function render(){
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
  $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="7">No purchase yet.</td></tr>';
  $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="9">No sale yet.</td></tr>';
+ const collections=db.collections||[];
+ if($('collectionRows'))$('collectionRows').innerHTML=collections.length?collections.slice().reverse().map(c=>`<tr><td>${c.date}</td><td>${c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-'}</td><td>${c.customerName||c.customerPhone||'-'}</td><td>${money(c.amount)}</td><td>${c.paymentMethod}</td><td>${c.by||''}</td></tr>`).join(''):'<tr><td colspan="6">No collection yet.</td></tr>';
  const expenses=db.expenses||[];
  const todayStr=today();
  const todayExp=expenses.filter(x=>x.date===todayStr).reduce((a,x)=>a+(+x.amount||0),0);
@@ -686,6 +734,7 @@ function render(){
  if($('dashTodayExpense'))$('dashTodayExpense').textContent=money(todayExp);
  if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
  if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
+ if(typeof renderReport==='function')renderReport();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
@@ -720,6 +769,56 @@ $('purchaseForm').onsubmit=async function(e){
   if(saved.error)throw saved.error;await loadCloudData();this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();alert('Purchase saved to cloud. Barcode: '+code+' • Unit: '+unit);
  }catch(err){alert('Purchase could not be saved: '+(err.message||err))}finally{btn.disabled=false}
 };
+
+
+let selectedCreditSale=null;
+function creditReturned(x){return (db.returns||[]).filter(r=>String(r.billNo)===String(x.billNo)&&r.barcode===x.barcode).reduce((a,r)=>a+(+r.refund||0),0)}
+function creditCollected(x){return (db.collections||[]).filter(c=>String(c.billNo)===String(x.billNo)).reduce((a,c)=>a+(+c.amount||0),0)}
+function creditDue(x){return Math.max(0,(+x.total||0)-creditReturned(x)-creditCollected(x))}
+$('cDate').value=today();
+$('cFindBtn').onclick=function(){
+ const q=$('cSearch').value.trim();if(!q){alert('Bill No or mobile number দিন।');return}
+ let x=null;const b=returnBill(q);
+ if(b!==null)x=db.sales.slice().reverse().find(z=>+z.billNo===b&&z.paymentMethod==='Credit');
+ else x=db.sales.slice().reverse().find(z=>z.paymentMethod==='Credit'&&(z.creditPhone||'').includes(q));
+ if(!x){alert('Credit sale পাওয়া যায়নি।');return}
+ const due=creditDue(x);if(due<=0){alert('এই bill-এর কোনো due নেই।');return}
+ selectedCreditSale=x;$('cCustomer').value=x.creditName||x.creditPhone||'-';$('cDue').value=money(due);$('cAmount').value='';
+ $('creditInfo').innerHTML=`<b>${x.creditName||'Customer'}</b> · ${x.creditPhone||''}<br>Bill: BBBM-${String(x.billNo).padStart(6,'0')} · Due: ${money(due)}`;
+ $('creditInfo').classList.remove('hidden');$('creditForm').classList.remove('hidden');
+};
+$('creditForm').onsubmit=async function(e){
+ e.preventDefault();const x=selectedCreditSale;if(!x)return;const due=creditDue(x),amount=+$('cAmount').value;
+ if(!amount||amount<=0||amount>due){alert('Collection amount ঠিক করুন। Maximum: '+money(due));return}
+ const r=await cloud.from('bbbm_credit_collections').insert({user_id:currentUser.id,sale_bill_no:x.billNo,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,amount,payment_method:$('cMethod').value,collection_date:$('cDate').value,note:$('cNote').value.trim()||null,by_name:currentUser.name});
+ if(r.error){alert(r.error.message);return}await loadCloudData();selectedCreditSale=null;this.reset();$('cDate').value=today();this.classList.add('hidden');$('creditInfo').classList.add('hidden');$('cSearch').value='';render();renderReport();alert('Credit collection saved.');
+};
+
+function reportMatch(date){
+ const type=$('reportType').value;
+ return type==='daily'?date===$('reportDate').value:date&&date.slice(0,7)===$('reportMonth').value;
+}
+function sumWhere(arr,field='total',filter=()=>true){return (arr||[]).filter(x=>reportMatch(x.date)&&filter(x)).reduce((a,x)=>a+(+x[field]||0),0)}
+function outstandingCreditAll(){
+ return (db.sales||[]).filter(x=>x.paymentMethod==='Credit').reduce((a,x)=>a+creditDue(x),0);
+}
+function renderReport(){
+ if(!$('reportType'))return;
+ const sale=sumWhere(db.sales),purchase=sumWhere(db.purchases),expense=sumWhere(db.expenses,'amount');
+ const credit=sumWhere(db.sales,'total',x=>x.paymentMethod==='Credit');
+ const collection=sumWhere(db.collections,'amount');
+ const ret=sumWhere(db.returns,'refund');
+ const cashSale=sumWhere(db.sales,'total',x=>x.paymentMethod==='Cash');
+ const cashCollection=sumWhere(db.collections,'amount',x=>x.paymentMethod==='Cash');
+ const cashReturn=sumWhere(db.returns,'refund',x=>x.paymentMethod==='Cash');
+ const cashIn=cashSale+cashCollection,netCash=cashIn-cashReturn-expense;
+ $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
+ $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
+ $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
+}
+$('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
+$('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
+$('reportDate').onchange=renderReport;$('reportMonth').onchange=renderReport;
 
 $('eDate').value=today();
 $('expenseForm').onsubmit=async function(e){
@@ -912,7 +1011,7 @@ async function goTab(tab){
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense'};
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',reports:'Reports'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
