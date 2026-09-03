@@ -1016,16 +1016,16 @@ $('creditContinueBtn').onclick=function(){
 
 function refreshBarcodeItems(){
  if(!$('barcodeItems'))return;
- const stock=calcStock();
- $('barcodeItems').innerHTML=stock.map(x=>`<option value="${String(x.item).replace(/\"/g,'&quot;')}">${x.code} · ${fmtQty(x.current)} ${x.unit}</option>`).join('');
+ const stock=Object.values(stockMap());
+ $('barcodeItems').innerHTML=stock.map(x=>`<option value="${String(x.item).replace(/\"/g,'&quot;')}">${x.barcode} · ${fmtQty(x.current)} ${x.unit}</option>`).join('');
 }
 function fillBarcodePrintCode(){
  if(!$('bSearch')||!$('bCode'))return;
  const q=$('bSearch').value.trim();
  if(!q)return;
- const stock=calcStock();
- const x=stock.find(z=>String(z.code)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase());
- if(x)$('bCode').value=String(x.code);
+ const stock=Object.values(stockMap());
+ const x=stock.find(z=>String(z.barcode)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase());
+ if(x)$('bCode').value=String(x.barcode);
 }
 if($('bSearch')){
  $('bSearch').addEventListener('change',fillBarcodePrintCode);
@@ -1040,15 +1040,15 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  e.preventDefault();
  const q=$('bSearch').value.trim();
  if(!q){alert('আগে Item Name / Barcode লিখুন বা list থেকে item select করুন।');$('bSearch').focus();return}
- const stock=calcStock();
+ const stock=Object.values(stockMap());
  const ql=q.toLowerCase();
- const x=stock.find(z=>String(z.code)===q)||stock.find(z=>String(z.item||'').toLowerCase()===ql)||stock.find(z=>String(z.item||'').toLowerCase().includes(ql));
+ const x=stock.find(z=>String(z.barcode)===q)||stock.find(z=>String(z.item||'').toLowerCase()===ql)||stock.find(z=>String(z.item||'').toLowerCase().includes(ql));
  const item=x?x.item:q;
- let code=$('bCode').value.trim()||(x?String(x.code):'');
+ let code=$('bCode').value.trim()||(x?String(x.barcode):'');
  if(!code){code=generateBarcode();$('bCode').value=code}
  const count=Math.max(1,Math.min(100,+$('bCount').value||1));
  const showPrice=$('bShowPrice').value==='yes';
- const price=x?(metaFor(x.code).sellPrice||0):0;
+ const price=x?(metaFor(x.barcode).sellPrice||0):0;
  if(typeof JsBarcode!=='function'){alert('Barcode library load হয়নি। Internet connection check করে page refresh করুন।');return}
  try{
    // Build labels directly in the current page, then use window.print().
