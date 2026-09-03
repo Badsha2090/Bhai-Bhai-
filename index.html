@@ -99,7 +99,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 .credit-customer b{font-size:11px}
 .payment-help{font-size:11px;color:#6b7a8c;text-align:center;padding-top:4px}
 @media(max-width:760px){.credit-fields{grid-template-columns:1fr}}
-</style>
+.return-search{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.return-search input{width:100%;margin-top:6px;padding:11px;border:1px solid #cfd8e3;border-radius:8px}.return-info{margin:12px 0;padding:12px;background:#eef6ff;border:1px solid #cfe2ff;border-radius:8px;font-size:12px}@media(max-width:760px){.return-search{grid-template-columns:1fr}}</style>
 
 </head>
 <body>
@@ -152,6 +152,8 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
           <button data-tab="sales"><span>🛒</span> POS / Sales</button>
           <button data-tab="purchase"><span>📦</span> Purchase</button>
           <button data-tab="stock"><span>▣</span> Inventory / Stock</button>
+          <button data-tab="returns"><span>↩️</span> Sales Return</button>
+          <button data-tab="expense"><span>💸</span> Expense</button>
           <button class="coming"><span>◇</span> Products <small>Soon</small></button>
           <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
@@ -293,7 +295,66 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
             <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Customer</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
           </section>
 
-          <section id="stock" class="section">
+          <section id="returns" class="section">
+ <div class="section-heading"><div><h2>↩️ Sales Return</h2><p>Bill No or Barcode দিয়ে sold item return করুন।</p></div></div>
+ <div class="card form-card">
+  <div class="panel-head"><h3>Find Sold Item</h3></div>
+  <div class="return-search"><label>Bill No / Barcode<input id="rSearch" placeholder="BBBM-000001 or Barcode"></label><button type="button" class="btn primary" id="rFindBtn">🔎 Find</button></div>
+  <div id="returnSaleInfo" class="return-info hidden"></div>
+  <form id="returnForm" class="form-grid hidden">
+   <label>Item<input id="rItem" readonly></label><label>Available to Return<input id="rSoldQty" readonly></label>
+   <label>Return Qty<input id="rQty" type="number" min="0.001" step="0.001" required></label><label>Unit<input id="rUnit" readonly></label>
+   <label>Sale Rate<input id="rRate" readonly></label><label>Refund Amount<input id="rRefund" readonly></label>
+   <label>Payment<input id="rPayment" readonly></label>
+   <label>Reason<select id="rReason"><option>Wrong Item</option><option>Damaged Item</option><option>Extra Quantity</option><option>Customer Changed Mind</option><option>Other</option></select></label>
+   <div class="full"><button type="submit" class="btn primary">Confirm Return</button></div>
+  </form>
+ </div>
+ <div class="card history-card"><div class="panel-head"><h3>Return History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Qty</th><th>Refund</th><th>Payment</th><th>Reason</th><th>By</th></tr></thead><tbody id="returnRows"></tbody></table></div></div>
+</section>
+
+<section id="expense" class="section">
+  <div class="section-heading"><div><h2>💸 Expense</h2><p>Shop expenses will reduce Cash Balance automatically.</p></div></div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">💵</div><div><span>Cash Balance</span><strong id="cashBalanceCard">৳0</strong></div></div>
+    <div class="stat-card"><div class="stat-icon">📉</div><div><span>Today's Expense</span><strong id="todayExpenseCard">৳0</strong></div></div>
+    <div class="stat-card"><div class="stat-icon">🧾</div><div><span>Total Expense</span><strong id="totalExpenseCard">৳0</strong></div></div>
+  </div>
+
+  <div class="card form-card">
+    <div class="panel-head"><h3>New Expense</h3></div>
+    <form id="expenseForm" class="form-grid">
+      <label>Category
+        <select id="eCategory" required>
+          <option value="Food">Food</option>
+          <option value="Tea">Tea</option>
+          <option value="Salary">Salary</option>
+          <option value="Transport">Transport</option>
+          <option value="Electricity">Electricity</option>
+          <option value="Rent">Rent</option>
+          <option value="Shop Expense">Shop Expense</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label>Amount<input id="eAmount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+      <label>Date<input id="eDate" type="date" required></label>
+      <label class="full">Note<input id="eNote" placeholder="Optional note"></label>
+      <div class="full"><button type="submit" class="btn primary">Save Expense</button></div>
+    </form>
+  </div>
+
+  <div class="card history-card">
+    <div class="panel-head"><h3>Expense History</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th>By</th></tr></thead>
+        <tbody id="expenseRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
@@ -329,14 +390,18 @@ async function usernameEmail(username){
   return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
 }
 async function loadCloudData(){
-  const [pr,sr]=await Promise.all([
+  const [pr,sr,rr,er]=await Promise.all([
     cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true})
+    cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_sales_returns').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true})
   ]);
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
-    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.bill_no||'',saleTime:x.sale_time||''}))
+    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.bill_no||'',saleTime:x.sale_time||''})),
+    returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
+    expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''}))
   };
   for(const p of db.purchases){
     const meta={unit:p.unit||'PCS',item:p.item};
@@ -588,7 +653,21 @@ $('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.sig
 function stockMap(){
  let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode)});
  db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0};m[s.barcode].sold+=+s.qty});
+ (db.returns||[]).forEach(r=>{if(m[r.barcode])m[r.barcode].sold-=+r.qty});
  Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+}
+
+function totalCashSales(){
+ return (db.sales||[]).filter(x=>(x.paymentMethod||'Cash')==='Cash').reduce((a,x)=>a+(+x.total||0),0);
+}
+function totalCashReturns(){
+ return (db.returns||[]).filter(x=>(x.paymentMethod||'Cash')==='Cash').reduce((a,x)=>a+(+x.refund||0),0);
+}
+function totalExpenses(){
+ return (db.expenses||[]).reduce((a,x)=>a+(+x.amount||0),0);
+}
+function cashBalance(){
+ return totalCashSales()-totalCashReturns()-totalExpenses();
 }
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
@@ -597,6 +676,18 @@ function render(){
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
  $('purchaseRows').innerHTML=db.purchases.length?db.purchases.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td></tr>`).join(''):'<tr><td colspan="7">No purchase yet.</td></tr>';
  $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="9">No sale yet.</td></tr>';
+ const expenses=db.expenses||[];
+ const todayStr=today();
+ const todayExp=expenses.filter(x=>x.date===todayStr).reduce((a,x)=>a+(+x.amount||0),0);
+ if($('cashBalanceCard'))$('cashBalanceCard').textContent=money(cashBalance());
+ if($('todayExpenseCard'))$('todayExpenseCard').textContent=money(todayExp);
+ if($('totalExpenseCard'))$('totalExpenseCard').textContent=money(totalExpenses());
+ if($('dashCashBalance'))$('dashCashBalance').textContent=money(cashBalance());
+ if($('dashTodayExpense'))$('dashTodayExpense').textContent=money(todayExp);
+ if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
+ if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
+ const returns=db.returns||[];
+ $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
 
  const recent=db.sales.slice().reverse().slice(0,6);
@@ -629,6 +720,52 @@ $('purchaseForm').onsubmit=async function(e){
   if(saved.error)throw saved.error;await loadCloudData();this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();alert('Purchase saved to cloud. Barcode: '+code+' • Unit: '+unit);
  }catch(err){alert('Purchase could not be saved: '+(err.message||err))}finally{btn.disabled=false}
 };
+
+$('eDate').value=today();
+$('expenseForm').onsubmit=async function(e){
+ e.preventDefault();
+ const amount=+$('eAmount').value;
+ if(!amount||amount<=0){alert('Expense amount দিন।');return}
+ const btn=this.querySelector('[type=submit]');btn.disabled=true;
+ try{
+  const r=await cloud.from('bbbm_expenses').insert({
+   user_id:currentUser.id,
+   category:$('eCategory').value,
+   amount:amount,
+   expense_date:$('eDate').value,
+   note:$('eNote').value.trim()||null,
+   by_name:currentUser.name
+  });
+  if(r.error)throw r.error;
+  await loadCloudData();
+  this.reset();$('eDate').value=today();
+  render();
+  alert('Expense saved. Cash Balance updated.');
+ }catch(err){alert('Expense could not be saved: '+(err.message||err))}
+ finally{btn.disabled=false}
+};
+
+let selectedReturnSale=null;
+function returnBill(v){v=String(v||'').trim().toUpperCase();if(v.startsWith('BBBM-'))v=v.slice(5);return /^\d+$/.test(v)?+v:null}
+function returnedQty(x){return (db.returns||[]).filter(r=>String(r.billNo)===String(x.billNo)&&r.barcode===x.barcode).reduce((a,r)=>a+(+r.qty||0),0)}
+$('rFindBtn').onclick=function(){
+ const q=$('rSearch').value.trim();if(!q){alert('Bill No or Barcode দিন।');return}
+ const b=returnBill(q);let x=b!==null?db.sales.slice().reverse().find(z=>+z.billNo===b):db.sales.slice().reverse().find(z=>z.barcode===q);
+ if(!x){alert('Sold item পাওয়া যায়নি।');return}
+ const left=(+x.qty||0)-returnedQty(x);if(left<=0){alert('এই item পুরো return হয়ে গেছে।');return}
+ selectedReturnSale=x;$('rItem').value=x.item;$('rSoldQty').value=fmtQty(left)+' '+x.unit;$('rQty').value='';$('rUnit').value=x.unit;$('rRate').value=x.price;$('rRefund').value='';$('rPayment').value=x.paymentMethod;
+ $('returnSaleInfo').innerHTML=`<b>${x.item}</b> · Bill: ${x.billNo?'BBBM-'+String(x.billNo).padStart(6,'0'):'-'} · Return available: ${fmtQty(left)} ${x.unit}`;
+ $('returnSaleInfo').classList.remove('hidden');$('returnForm').classList.remove('hidden');
+};
+$('rQty').oninput=function(){if(selectedReturnSale)$('rRefund').value=money((+this.value||0)*selectedReturnSale.price)};
+$('returnForm').onsubmit=async function(e){
+ e.preventDefault();const x=selectedReturnSale;if(!x)return;const left=(+x.qty||0)-returnedQty(x),q=+$('rQty').value;
+ if(!q||q<=0||q>left){alert('Return quantity ঠিক করুন। Maximum: '+fmtQty(left)+' '+x.unit);return}
+ const refund=q*x.price;if(!confirm(`Confirm Return?\n${x.item}\n${fmtQty(q)} ${x.unit}\nRefund: ${money(refund)}\nStock will increase automatically.`))return;
+ const r=await cloud.from('bbbm_sales_returns').insert({user_id:currentUser.id,sale_bill_no:x.billNo||null,item:x.item,barcode:x.barcode,qty:q,unit:x.unit,rate:x.price,refund_amount:refund,payment_method:x.paymentMethod,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,reason:$('rReason').value,return_date:today(),by_name:currentUser.name});
+ if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
+};
+
 let pendingSale=null;
 function selectedPaymentMethod(){
  const el=document.querySelector('input[name="paymentMethod"]:checked');
@@ -775,7 +912,7 @@ async function goTab(tab){
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock'};
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
