@@ -336,7 +336,7 @@ async function loadCloudData(){
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
-    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||''}))
+    sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.bill_no||'',saleTime:x.sale_time||''}))
   };
   for(const p of db.purchases){
     const meta={unit:p.unit||'PCS',item:p.item};
@@ -666,23 +666,38 @@ function resetSaleForm(){
 }
 function receiptHtml(sale){
  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
- return `<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title><style>
- body{font-family:Arial,sans-serif;margin:0;padding:14px;color:#000}.receipt{max-width:320px;margin:auto}
- h2{text-align:center;margin:0;font-size:18px}.sub{text-align:center;font-size:11px;margin:3px 0 12px}
- .line{border-top:1px dashed #000;margin:9px 0}.r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0}
- .total{font-size:16px;font-weight:800}.foot{text-align:center;font-size:10px;margin-top:14px}
- @media print{@page{margin:4mm}body{padding:0}}
+ const bill='BBBM-'+String(sale.billNo||0).padStart(6,'0');
+ const d=sale.date||'';
+ let t=sale.saleTime||new Date().toTimeString().slice(0,8);
+ const parts=t.split(':');let hh=+(parts[0]||0),mm=parts[1]||'00',ap=hh>=12?'PM':'AM';hh=hh%12||12;t=String(hh).padStart(2,'0')+':'+mm+' '+ap;
+ return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(bill)}</title><style>
+ @page{margin:2.5mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Sans Bengali",sans-serif;margin:0;padding:0;color:#000}
+ .receipt{width:100%;max-width:76mm;margin:auto;font-size:10px;line-height:1.18}
+ .bn{text-align:center;font-weight:900;font-size:15px;margin:0}.en{text-align:center;font-weight:900;font-size:12px;margin:1px 0}
+ .center{text-align:center;margin:1px 0}.small{font-size:8px}.tiny{font-size:7.5px}
+ .dash{border-top:1px dashed #000;margin:4px 0}.title{text-align:center;font-size:10px;font-weight:900;margin:2px 0}
+ .row{display:flex;justify-content:space-between;gap:5px}.bill{font-size:9px;margin:2px 0}.dt{font-size:8px;margin:2px 0}
+ table{width:100%;border-collapse:collapse;font-size:8.5px}th,td{padding:2px 1px;text-align:left;border-bottom:1px dotted #aaa}
+ th:nth-child(2),td:nth-child(2){text-align:center}th:nth-child(3),td:nth-child(3),th:nth-child(4),td:nth-child(4){text-align:right}
+ .total{font-size:12px;font-weight:900;text-align:right;margin:4px 0}.pay{font-size:9px;margin:2px 0}
+ .thanks{text-align:center;font-weight:800;font-size:9px;margin-top:5px}
+ @media print{body{padding:0}.receipt{max-width:none}}
  </style></head><body><div class="receipt">
- <h2>BHAI BHAI BUILDING MATERIALS</h2><div class="sub">Sales Receipt</div><div class="line"></div>
- <div class="r"><span>Date</span><b>${esc(sale.date)}</b></div>
- <div class="r"><span>Item</span><b>${esc(sale.item)}</b></div>
- <div class="r"><span>Barcode</span><b>${esc(sale.code)}</b></div>
- <div class="r"><span>Qty</span><b>${esc(fmtQty(sale.qty))} ${esc(sale.unit)}</b></div>
- <div class="r"><span>Rate</span><b>${esc(money(sale.price))}</b></div>
- <div class="r"><span>Payment</span><b>${esc(sale.paymentMethod)}</b></div>
- ${sale.paymentMethod==='Credit'?`<div class="r"><span>Customer</span><b>${esc(sale.creditName||'-')}</b></div><div class="r"><span>Mobile</span><b>${esc(sale.creditPhone||'-')}</b></div>`:''}
- <div class="line"></div><div class="r total"><span>TOTAL</span><b>${esc(money(sale.total))}</b></div>
- <div class="line"></div><div class="foot">Thank you</div>
+ <div class="bn">ভাই ভাই বিল্ডিং মেটেরিয়াল</div>
+ <div class="en">BHAI BHAI BUILDING MATERIALS</div>
+ <div class="center small">প্রোঃ মোঃ মনির হোসেন &nbsp; | &nbsp; ম্যানেজারঃ মিরান হোসেন</div>
+ <div class="center small">01338-226242 | 01303-334709</div>
+ <div class="center tiny">জামালপুর চৌরাস্তা, মির্জাপুর রোড, কালিয়াকৈর, গাজীপুর</div>
+ <div class="dash"></div><div class="title">SALES INVOICE</div><div class="dash"></div>
+ <div class="bill"><b>Bill No:</b> ${esc(bill)}</div>
+ <div class="row dt"><span><b>Date:</b> ${esc(d)}</span><span><b>Time:</b> ${esc(t)}</span></div>
+ <div class="dash"></div>
+ <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+ <tbody><tr><td>${esc(sale.item)}</td><td>${esc(fmtQty(sale.qty))} ${esc(sale.unit)}</td><td>${esc(money(sale.price))}</td><td>${esc(money(sale.total))}</td></tr></tbody></table>
+ <div class="total">TOTAL: ${esc(money(sale.total))}</div>
+ <div class="dash"></div><div class="pay"><b>Payment:</b> ${esc(sale.paymentMethod)}</div>
+ ${sale.paymentMethod==='Credit'?`<div class="pay"><b>Customer:</b> ${esc(sale.creditName||'-')} ${sale.creditPhone?' | '+esc(sale.creditPhone):''}</div><div class="pay"><b>Due:</b> ${esc(money(sale.total))}</div>`:''}
+ <div class="dash"></div><div class="thanks">ধন্যবাদ, আবার আসবেন</div>
  </div></body></html>`;
 }
 async function completeSale(printAfter){
@@ -698,9 +713,11 @@ async function completeSale(printAfter){
    saveMeta(sale.code,{unit:sale.unit,item:sale.item,sellPrice:sale.price});
    const saved=await cloud.from('bbbm_sales').insert({
      user_id:currentUser.id,item:sale.item,barcode:sale.code,qty:sale.qty,price:sale.price,total:sale.total,
-     unit:sale.unit,payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,sale_date:sale.date,by_name:currentUser.name
+     unit:sale.unit,payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,sale_date:sale.date,sale_time:new Date().toTimeString().slice(0,8),by_name:currentUser.name
    });
    if(saved.error)throw saved.error;
+   const newest=await cloud.from('bbbm_sales').select('bill_no,sale_time').eq('user_id',currentUser.id).eq('barcode',sale.code).eq('sale_date',sale.date).order('bill_no',{ascending:false}).limit(1);
+   if(!newest.error&&newest.data&&newest.data[0]){sale.billNo=newest.data[0].bill_no;sale.saleTime=newest.data[0].sale_time||'';}
    if(printAfter&&printWin){
      printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();
      printWin.focus();setTimeout(()=>printWin.print(),250);
