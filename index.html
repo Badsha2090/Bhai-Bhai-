@@ -313,35 +313,39 @@ section#sales label, section#pos label{
 </style>
 
 
-<style id="bbbm-rod-mm-css">
-.bbbm-rod-sizes{
+<style id="bbbm-rod-mm-direct-css">
+.bbbm-rod-mm-direct{
   display:none;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:6px;
-  margin:8px 0;
+  gap:7px;
+  margin:8px 0 10px;
   padding:8px;
   border:1px solid #dbe4ee;
-  border-radius:8px;
+  border-radius:9px;
   background:#f8fbff;
 }
-.bbbm-rod-sizes.open{display:grid}
-.bbbm-rod-size-btn{
+.bbbm-rod-mm-direct.open{display:grid}
+.bbbm-rod-mm-direct button{
   border:1px solid #cbd5e1;
   background:#fff;
   color:#0f172a;
-  border-radius:7px;
-  padding:8px 5px;
-  font-size:11px;
-  font-weight:800;
+  border-radius:8px;
+  min-height:39px;
+  padding:7px 5px;
+  font-size:12px;
+  font-weight:900;
   cursor:pointer;
 }
-.bbbm-rod-size-btn.active{
-  background:#1769e0;
-  color:#fff;
-  border-color:#1769e0;
+.bbbm-rod-mm-direct button:active{transform:scale(.98)}
+.bbbm-rod-mm-note{
+  display:none;
+  margin:-4px 0 8px;
+  font-size:11px;
+  color:#64748b;
 }
+.bbbm-rod-mm-note.show{display:block}
 @media(max-width:520px){
-  .bbbm-rod-sizes{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bbbm-rod-mm-direct{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 </style>
 
@@ -1877,118 +1881,140 @@ window.addEventListener('DOMContentLoaded', function(){
 </script>
 
 
-<script id="bbbm-rod-mm-js">
+<script id="bbbm-rod-mm-direct-js">
 (function(){
-  const rodSizes=['6','8','10','12','16','20','25','32'];
+  const MM=['6','8','10','12','16','20','25','32'];
 
-  function extractRodMM(name){
+  function el(id){ return document.getElementById(id); }
+
+  function rodMM(name){
     const s=String(name||'');
-    for(const mm of rodSizes){
-      const patterns=[
-        new RegExp('(^|[^0-9])'+mm+'\\s*mm([^0-9]|$)','i'),
-        new RegExp('(^|[^0-9])'+mm+'\\s*মিমি([^0-9]|$)','i'),
-        new RegExp('(^|[^0-9])'+mm+'\\s*মি\\.মি([^0-9]|$)','i')
-      ];
-      if(patterns.some(r=>r.test(s))) return mm;
+    for(const mm of MM){
+      const r=new RegExp('(^|[^0-9])'+mm+'\\s*(mm|মিমি|মি\\.মি)?([^0-9]|$)','i');
+      if(r.test(s)) return mm;
     }
     return '';
   }
 
-  function enhancePanel(panel){
-    if(!panel || panel.dataset.rodMmReady==='1') return;
-    panel.dataset.rodMmReady='1';
-
-    const catbox=panel.querySelector('.bbbm-nb-cats');
-    const items=panel.querySelector('.bbbm-nb-items');
-    const search=panel.querySelector('.bbbm-nb-search');
-    if(!catbox || !items || !search) return;
-
-    const sizeBox=document.createElement('div');
-    sizeBox.className='bbbm-rod-sizes';
-    let selectedMM='';
-
-    rodSizes.forEach(mm=>{
-      const b=document.createElement('button');
-      b.type='button';
-      b.className='bbbm-rod-size-btn';
-      b.textContent=mm+' mm';
-      b.addEventListener('click',function(e){
-        e.stopPropagation();
-        selectedMM=mm;
-        sizeBox.querySelectorAll('.bbbm-rod-size-btn').forEach(x=>x.classList.toggle('active',x===b));
-        filterVisibleItems();
-      });
-      sizeBox.appendChild(b);
-    });
-
-    catbox.insertAdjacentElement('afterend',sizeBox);
-
-    function activeCategory(){
-      const a=catbox.querySelector('.bbbm-nb-cat.active');
-      return a ? a.textContent.trim() : '';
-    }
-
-    function updateSizeVisibility(){
-      const isRod=activeCategory()==='রড';
-      sizeBox.classList.toggle('open',isRod);
-      if(!isRod){
-        selectedMM='';
-        sizeBox.querySelectorAll('.bbbm-rod-size-btn').forEach(x=>x.classList.remove('active'));
-      }
-      filterVisibleItems();
-    }
-
-    function filterVisibleItems(){
-      const isRod=activeCategory()==='রড';
-      items.querySelectorAll('.bbbm-nb-item').forEach(btn=>{
-        if(!isRod || !selectedMM){
-          btn.style.display='';
-          return;
-        }
-        const itemName=(btn.querySelector('b')?.textContent||btn.textContent||'').trim();
-        btn.style.display = extractRodMM(itemName)===selectedMM ? '' : 'none';
-      });
-
-      const visible=[...items.querySelectorAll('.bbbm-nb-item')].some(x=>x.style.display!=='none');
-      let empty=items.querySelector('.bbbm-rod-mm-empty');
-      if(isRod && selectedMM && !visible){
-        if(!empty){
-          empty=document.createElement('div');
-          empty.className='bbbm-nb-empty bbbm-rod-mm-empty';
-          items.appendChild(empty);
-        }
-        empty.textContent=selectedMM+' mm রড স্টকে পাওয়া যায়নি';
-      }else if(empty){
-        empty.remove();
-      }
-    }
-
-    catbox.querySelectorAll('.bbbm-nb-cat').forEach(btn=>{
-      btn.addEventListener('click',function(){
-        setTimeout(updateSizeVisibility,0);
-      });
-    });
-
-    search.addEventListener('input',function(){
-      setTimeout(filterVisibleItems,0);
-    });
-
-    const observer=new MutationObserver(function(){
-      filterVisibleItems();
-    });
-    observer.observe(items,{childList:true,subtree:true});
-
-    updateSizeVisibility();
+  function isRodName(name){
+    return /(^|[^a-z])rod([^a-z]|$)|rebar|steel\s*bar|রড/i.test(String(name||''));
   }
 
-  function initRodMM(){
-    document.querySelectorAll('.bbbm-nb-panel').forEach(enhancePanel);
+  function findRod(mm, saleOnly){
+    let map={};
+    try{ map=stockMap()||{}; }catch(e){ return null; }
+
+    const rows=Object.values(map).filter(x=>{
+      if(!x || !isRodName(x.item) || rodMM(x.item)!==mm) return false;
+      return saleOnly ? Number(x.current||0)>0 : true;
+    });
+
+    // Prefer an item that still has stock.
+    rows.sort((a,b)=>Number(b.current||0)-Number(a.current||0));
+    return rows[0]||null;
+  }
+
+  function usePurchaseMM(mm, panel){
+    const x=findRod(mm,false);
+
+    if(x){
+      el('pBarcode').value=String(x.barcode||'');
+      if(typeof fillPurchaseFromBarcode==='function') fillPurchaseFromBarcode();
+      // Ensure fields visibly change even if old price data is missing.
+      el('pItem').value=x.item||('রড '+mm+'mm');
+      el('pUnit').value=x.unit||'PCS';
+    }else{
+      // New size not previously purchased: prepare a new purchase.
+      el('pBarcode').value='';
+      el('pItem').value='রড '+mm+'mm';
+      el('pUnit').value='PCS';
+      el('pQty').value='1';
+      el('pPrice').value='';
+      el('pSellPrice').value='';
+      if(el('pTotal')) el('pTotal').value='0.00';
+    }
+
+    panel.classList.remove('open');
+    setTimeout(()=>{
+      if(el('pQty')) el('pQty').focus();
+    },30);
+  }
+
+  function useSaleMM(mm, panel){
+    const x=findRod(mm,true);
+    if(!x){
+      alert(mm+' mm রড বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ এই রড যোগ করুন।');
+      return;
+    }
+
+    el('sBarcode').value=String(x.barcode||'');
+    if(typeof fillSaleFromBarcode==='function') fillSaleFromBarcode();
+    el('sQty').value='1';
+    if(typeof calcS==='function') calcS();
+
+    panel.classList.remove('open');
+    setTimeout(()=>{
+      if(el('sQty')) el('sQty').focus();
+    },30);
+  }
+
+  function enhance(panel){
+    if(!panel || panel.dataset.mmDirect==='1') return;
+    const cats=panel.querySelector('.bbbm-nb-cats');
+    if(!cats) return;
+    panel.dataset.mmDirect='1';
+
+    const section=panel.closest('#sales,#purchase');
+    const mode=section && section.id==='purchase' ? 'purchase' : 'sale';
+
+    const box=document.createElement('div');
+    box.className='bbbm-rod-mm-direct';
+
+    const note=document.createElement('div');
+    note.className='bbbm-rod-mm-note';
+    note.textContent = mode==='purchase'
+      ? 'MM চাপলেই Purchase box-এ রডটি বসবে।'
+      : 'MM চাপলেই Sale box-এ স্টকে থাকা রডটি বসবে।';
+
+    MM.forEach(mm=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=mm+' mm';
+      b.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(mode==='purchase') usePurchaseMM(mm,panel);
+        else useSaleMM(mm,panel);
+      });
+      box.appendChild(b);
+    });
+
+    cats.insertAdjacentElement('afterend',note);
+    note.insertAdjacentElement('afterend',box);
+
+    function sync(){
+      const active=cats.querySelector('.bbbm-nb-cat.active');
+      const show=!!active && active.textContent.trim()==='রড';
+      box.classList.toggle('open',show);
+      note.classList.toggle('show',show);
+    }
+
+    cats.querySelectorAll('.bbbm-nb-cat').forEach(btn=>{
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+
+    // If Rod is already the default active category, show sizes immediately.
+    setTimeout(sync,0);
+  }
+
+  function init(){
+    document.querySelectorAll('.bbbm-nb-panel').forEach(enhance);
   }
 
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',()=>setTimeout(initRodMM,50));
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(init,80));
   }else{
-    setTimeout(initRodMM,50);
+    setTimeout(init,80);
   }
 })();
 </script>
