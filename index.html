@@ -349,6 +349,36 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="bbbm-cement-css">
+.bbbm-cement-brands{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0;padding:8px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fbff}
+.bbbm-cement-brands.open{display:grid}
+.bbbm-cement-brands button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:39px;padding:7px 5px;font-size:11px;font-weight:800;cursor:pointer}
+@media(max-width:520px){.bbbm-cement-brands{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
+
+<style id="bbbm-rod-company-css">
+.bbbm-rod-companies,.bbbm-rod-mm-company{
+  display:none;gap:7px;margin:8px 0;padding:8px;
+  border:1px solid #dbe4ee;border-radius:9px;background:#f8fbff
+}
+.bbbm-rod-companies{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bbbm-rod-mm-company{grid-template-columns:repeat(4,minmax(0,1fr));background:#fff}
+.bbbm-rod-companies.open,.bbbm-rod-mm-company.open{display:grid}
+.bbbm-rod-companies button,.bbbm-rod-mm-company button{
+  border:1px solid #cbd5e1;background:#fff;border-radius:8px;
+  min-height:39px;padding:7px 5px;font-size:11px;font-weight:900;cursor:pointer
+}
+.bbbm-rod-companies button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.bbbm-rod-title{display:none;font-size:11px;color:#64748b;margin:3px 0 5px;font-weight:700}
+.bbbm-rod-title.show{display:block}
+@media(max-width:520px){
+  .bbbm-rod-companies{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bbbm-rod-mm-company{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1798,6 +1828,7 @@ window.addEventListener('DOMContentLoaded', function(){
     ['রশি\/তার',/rope|wire|cable|রশি|দড়ি|তার/i],
     ['প্লাস্টিক',/plastic|polythene|প্লাস্টিক|পলিথিন/i],
     ['শিট\/জালি',/sheet|mesh|net|jali|শিট|জালি/i],
+    ['সিমেন্ট',/cement|সিমেন্ট/i],
     ['অন্যান্য',/.*/i]
   ];
   function byId(x){return document.getElementById(x)}
@@ -2016,6 +2047,193 @@ window.addEventListener('DOMContentLoaded', function(){
   }else{
     setTimeout(init,80);
   }
+})();
+</script>
+
+
+<script id="bbbm-cement-js">
+(function(){
+ const brands=['Seven Ring Special','Shah Special','Crown Cement','Bashundhara Cement','Premier Cement','Akij Cement','Aman Cement','Anwar Cement','Confidence Cement','Diamond Cement','Mir Cement','Metrocem Cement','Royal Cement','Bengal Cement','Deshbandhu Cement','Aramit Cement','S. Alam Cement','ScanCement','RubyCement','Holcim Cement','Meghna Cement','Olympic Cement','Nowapara Cement','Mongla Cement','Eastern Cement'];
+ const $=id=>document.getElementById(id);
+ function findBrand(name,sale){
+   let m={}; try{m=stockMap()||{}}catch(e){}
+   let a=Object.values(m).filter(x=>x&&String(x.item||'').toLowerCase().includes(name.toLowerCase()));
+   if(sale)a=a.filter(x=>Number(x.current||0)>0);
+   a.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
+   return a[0]||null;
+ }
+ function enhance(panel){
+   if(!panel||panel.dataset.cementReady==='1')return;
+   const cats=panel.querySelector('.bbbm-nb-cats'); if(!cats)return;
+   const cementBtn=[...cats.querySelectorAll('.bbbm-nb-cat')].find(b=>b.textContent.trim()==='সিমেন্ট');
+   if(!cementBtn)return;
+   panel.dataset.cementReady='1';
+   const mode=panel.closest('#purchase')?'purchase':'sale';
+   const box=document.createElement('div');box.className='bbbm-cement-brands';
+   brands.forEach(name=>{
+     const b=document.createElement('button');b.type='button';b.textContent=name;
+     b.addEventListener('click',e=>{
+       e.preventDefault();e.stopPropagation();
+       const x=findBrand(name,mode==='sale');
+       if(mode==='sale'){
+         if(!x){alert(name+' বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');return}
+         $('sBarcode').value=x.barcode||''; if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
+         $('sQty').value='1'; if(typeof calcS==='function')calcS();
+       }else{
+         if(x){
+           $('pBarcode').value=x.barcode||''; if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode();
+           $('pItem').value=x.item||name; $('pUnit').value=x.unit||'Bag';
+         }else{
+           $('pBarcode').value=''; $('pItem').value=name; $('pUnit').value='Bag'; $('pQty').value='1';
+           if($('pPrice'))$('pPrice').value=''; if($('pSellPrice'))$('pSellPrice').value='';
+           if($('pTotal'))$('pTotal').value='0.00';
+         }
+       }
+       panel.classList.remove('open');
+     });
+     box.appendChild(b);
+   });
+   cats.insertAdjacentElement('afterend',box);
+   function sync(){
+     const a=cats.querySelector('.bbbm-nb-cat.active');
+     box.classList.toggle('open',!!a&&a.textContent.trim()==='সিমেন্ট');
+   }
+   cats.querySelectorAll('.bbbm-nb-cat').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,0)));
+ }
+ function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,100));else setTimeout(init,100);
+})();
+</script>
+
+
+<script id="bbbm-rod-company-js">
+(function(){
+  /* User's 5 companies first; additional common brands after them */
+  const companies=['BSRM','BZS (বাংলা)','Anwar','AKS','KSML','KSRM','GPH Ispat','RSRM','Rahim Steel','Baizid Steel','SARM'];
+  const sizes=['6','8','10','12','16','20','25','32'];
+  const $=id=>document.getElementById(id);
+
+  function norm(s){return String(s||'').toLowerCase()}
+  function companyMatch(item,company){
+    const s=norm(item);
+    if(company==='BZS (বাংলা)') return /bzs|বাংলা/.test(s);
+    return s.includes(norm(company));
+  }
+  function mmMatch(item,mm){
+    return new RegExp('(^|[^0-9])'+mm+'\\s*(mm|মিমি|মি\\.মি)?([^0-9]|$)','i').test(String(item||''));
+  }
+  function findRod(company,mm,saleOnly){
+    let map={}; try{map=stockMap()||{}}catch(e){}
+    let rows=Object.values(map).filter(x=>x&&companyMatch(x.item,company)&&mmMatch(x.item,mm));
+    if(saleOnly) rows=rows.filter(x=>Number(x.current||0)>0);
+    rows.sort((a,b)=>Number(b.current||0)-Number(a.current||0));
+    return rows[0]||null;
+  }
+  function prepare(mode,company,mm,panel){
+    const x=findRod(company,mm,mode==='sale');
+    const itemName=company+' '+mm+'mm Rod';
+
+    if(mode==='sale'){
+      if(!x){
+        alert(company+' '+mm+'mm রড বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');
+        return;
+      }
+      $('sBarcode').value=x.barcode||'';
+      if(typeof fillSaleFromBarcode==='function') fillSaleFromBarcode();
+      $('sQty').value='1';
+      if(typeof calcS==='function') calcS();
+    }else{
+      if(x){
+        $('pBarcode').value=x.barcode||'';
+        if(typeof fillPurchaseFromBarcode==='function') fillPurchaseFromBarcode();
+        $('pItem').value=x.item||itemName;
+        $('pUnit').value=x.unit||'PCS';
+      }else{
+        $('pBarcode').value='';
+        $('pItem').value=itemName;
+        $('pUnit').value='PCS';
+        $('pQty').value='1';
+        if($('pPrice')) $('pPrice').value='';
+        if($('pSellPrice')) $('pSellPrice').value='';
+        if($('pTotal')) $('pTotal').value='0.00';
+      }
+    }
+    panel.classList.remove('open');
+  }
+
+  function enhance(panel){
+    if(!panel||panel.dataset.rodCompanyReady==='1') return;
+    const cats=panel.querySelector('.bbbm-nb-cats');
+    if(!cats) return;
+    panel.dataset.rodCompanyReady='1';
+
+    const mode=panel.closest('#purchase')?'purchase':'sale';
+    const title=document.createElement('div');
+    title.className='bbbm-rod-title';
+    title.textContent='রড কোম্পানি নির্বাচন করুন';
+
+    const companyBox=document.createElement('div');
+    companyBox.className='bbbm-rod-companies';
+
+    const mmTitle=document.createElement('div');
+    mmTitle.className='bbbm-rod-title';
+    mmTitle.textContent='রডের MM নির্বাচন করুন';
+
+    const mmBox=document.createElement('div');
+    mmBox.className='bbbm-rod-mm-company';
+
+    let selectedCompany='';
+
+    companies.forEach(company=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=company;
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        selectedCompany=company;
+        companyBox.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+        mmTitle.classList.add('show');
+        mmBox.classList.add('open');
+      });
+      companyBox.appendChild(b);
+    });
+
+    sizes.forEach(mm=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=mm+' mm';
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        if(!selectedCompany){alert('আগে রড কোম্পানি নির্বাচন করুন।');return}
+        prepare(mode,selectedCompany,mm,panel);
+      });
+      mmBox.appendChild(b);
+    });
+
+    cats.insertAdjacentElement('afterend',title);
+    title.insertAdjacentElement('afterend',companyBox);
+    companyBox.insertAdjacentElement('afterend',mmTitle);
+    mmTitle.insertAdjacentElement('afterend',mmBox);
+
+    function sync(){
+      const active=cats.querySelector('.bbbm-nb-cat.active');
+      const isRod=!!active && active.textContent.trim()==='রড';
+      title.classList.toggle('show',isRod);
+      companyBox.classList.toggle('open',isRod);
+      if(!isRod){
+        selectedCompany='';
+        companyBox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+        mmTitle.classList.remove('show');
+        mmBox.classList.remove('open');
+      }
+    }
+    cats.querySelectorAll('.bbbm-nb-cat').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,0)));
+    setTimeout(sync,0);
+  }
+
+  function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(init,120));
+  else setTimeout(init,120);
 })();
 </script>
 
