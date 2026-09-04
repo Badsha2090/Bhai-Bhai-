@@ -270,6 +270,57 @@ section#sales label, section#pos label{
 }
 #sidePadDisplay small{display:block;font-size:11px;color:#64748b;font-weight:600;text-align:left}
 </style>
+
+<style>
+/* v10: quick shortcut for items that do not have a barcode */
+.nonbarcode-shortcut{
+  position:absolute;
+  right:18px;
+  top:18px;
+  width:275px;
+  min-height:50px;
+  border:0;
+  border-radius:9px;
+  background:#1769e0;
+  color:#fff;
+  font-weight:900;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(23,105,224,.22);
+}
+.nonbarcode-shortcut:active{transform:translateY(1px)}
+.nonbarcode-box{
+  grid-column:1/-1;
+  border:1px solid #cfe0ef;
+  background:#f8fbff;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:4px;
+}
+.nonbarcode-box.hidden{display:none!important}
+.nonbarcode-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-top:9px;
+}
+.nonbarcode-item{
+  border:1px solid #bcd2ea;
+  background:#fff;
+  border-radius:8px;
+  min-height:42px;
+  padding:8px;
+  font-weight:800;
+  cursor:pointer;
+}
+.nonbarcode-item:hover{background:#eaf3ff;border-color:#1769e0}
+.nonbarcode-help{font-size:11px;color:#64748b;margin-top:7px}
+@media(max-width:900px){
+  .nonbarcode-shortcut{position:static;width:100%;margin-bottom:10px}
+  .nonbarcode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -419,10 +470,25 @@ section#sales label, section#pos label{
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
             <div class="card form-card">
               <form id="saleForm" class="dataform">
+                <button type="button" id="nonBarcodeShortcut" class="nonbarcode-shortcut">＋ Non-Barcode Item</button>
+                <div id="nonBarcodeBox" class="nonbarcode-box hidden">
+                  <strong>Barcode নাই — Item Select করুন</strong>
+                  <div class="nonbarcode-grid">
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Rod">Rod</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Rosi">Rosi</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Pipe">Pipe</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Plastic">Plastic</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Cement">Cement</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Sand">Sand</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Stone">Stone</button>
+                    <button type="button" class="nonbarcode-item" data-nonbarcode="Other">Other</button>
+                  </div>
+                  <div class="nonbarcode-help">Item চাপলে Item Name-এ যাবে। তারপর Unit, Quantity ও Sale Price দিয়ে Add Item to Bill চাপুন।</div>
+                </div>
                 <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
-                <label>Item Name<input id="sItem" readonly></label>
+                <label>Item Name<input id="sItem"></label>
                 <label>Available Stock<input id="sAvailable" readonly></label>
-                <label>Unit<input id="sUnit" readonly></label>
+                <label>Unit<input id="sUnit" list="saleUnitList"><datalist id="saleUnitList"><option value="PCS"><option value="KG"><option value="Gram"><option value="Bag"><option value="CFT"><option value="Feet"><option value="Meter"></datalist></label>
                 <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" value="1" required placeholder="e.g. 2.75"></label>
                 <label>Sale Price / Unit<input id="sPrice" type="number" inputmode="decimal" step="0.01" min="0" required autocomplete="off"></label>
                 <label>Date<input id="sDate" type="date" required></label>
@@ -1327,6 +1393,55 @@ function receiptHtml(sale){
 
 
 
+
+
+<script>
+/* v10: Non-barcode item shortcut */
+(function(){
+  const shortcut = document.getElementById('nonBarcodeShortcut');
+  const box = document.getElementById('nonBarcodeBox');
+  const barcode = document.getElementById('sBarcode');
+  const item = document.getElementById('sItem');
+  const available = document.getElementById('sAvailable');
+  const unit = document.getElementById('sUnit');
+  const qty = document.getElementById('sQty');
+  const price = document.getElementById('sPrice');
+
+  if(!shortcut || !box || !item) return;
+
+  shortcut.addEventListener('click', function(){
+    box.classList.toggle('hidden');
+  });
+
+  box.addEventListener('click', function(e){
+    const btn = e.target.closest('[data-nonbarcode]');
+    if(!btn) return;
+    const name = btn.getAttribute('data-nonbarcode') || '';
+    if(barcode){
+      barcode.required = false;
+      barcode.value = '';
+    }
+    item.readOnly = false;
+    item.value = name === 'Other' ? '' : name;
+    if(available) available.value = 'Manual / Non-barcode';
+    if(unit){
+      unit.readOnly = false;
+      if(!unit.value) unit.value = 'PCS';
+    }
+    if(qty) qty.value = '1';
+    if(price) price.value = '';
+    if(typeof calcS === 'function') calcS();
+    box.classList.add('hidden');
+    (name === 'Other' ? item : price)?.focus();
+  });
+
+  if(barcode){
+    barcode.addEventListener('input', function(){
+      if(String(barcode.value || '').trim()) barcode.required = true;
+    });
+  }
+})();
+</script>
 
 </body></html>`;
 }
