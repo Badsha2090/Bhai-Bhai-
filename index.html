@@ -312,6 +312,39 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="bbbm-rod-mm-css">
+.bbbm-rod-sizes{
+  display:none;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin:8px 0;
+  padding:8px;
+  border:1px solid #dbe4ee;
+  border-radius:8px;
+  background:#f8fbff;
+}
+.bbbm-rod-sizes.open{display:grid}
+.bbbm-rod-size-btn{
+  border:1px solid #cbd5e1;
+  background:#fff;
+  color:#0f172a;
+  border-radius:7px;
+  padding:8px 5px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.bbbm-rod-size-btn.active{
+  background:#1769e0;
+  color:#fff;
+  border-color:#1769e0;
+}
+@media(max-width:520px){
+  .bbbm-rod-sizes{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1840,6 +1873,123 @@ window.addEventListener('DOMContentLoaded', function(){
     makeSelector('sale'); makeSelector('purchase');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
+
+<script id="bbbm-rod-mm-js">
+(function(){
+  const rodSizes=['6','8','10','12','16','20','25','32'];
+
+  function extractRodMM(name){
+    const s=String(name||'');
+    for(const mm of rodSizes){
+      const patterns=[
+        new RegExp('(^|[^0-9])'+mm+'\\s*mm([^0-9]|$)','i'),
+        new RegExp('(^|[^0-9])'+mm+'\\s*মিমি([^0-9]|$)','i'),
+        new RegExp('(^|[^0-9])'+mm+'\\s*মি\\.মি([^0-9]|$)','i')
+      ];
+      if(patterns.some(r=>r.test(s))) return mm;
+    }
+    return '';
+  }
+
+  function enhancePanel(panel){
+    if(!panel || panel.dataset.rodMmReady==='1') return;
+    panel.dataset.rodMmReady='1';
+
+    const catbox=panel.querySelector('.bbbm-nb-cats');
+    const items=panel.querySelector('.bbbm-nb-items');
+    const search=panel.querySelector('.bbbm-nb-search');
+    if(!catbox || !items || !search) return;
+
+    const sizeBox=document.createElement('div');
+    sizeBox.className='bbbm-rod-sizes';
+    let selectedMM='';
+
+    rodSizes.forEach(mm=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='bbbm-rod-size-btn';
+      b.textContent=mm+' mm';
+      b.addEventListener('click',function(e){
+        e.stopPropagation();
+        selectedMM=mm;
+        sizeBox.querySelectorAll('.bbbm-rod-size-btn').forEach(x=>x.classList.toggle('active',x===b));
+        filterVisibleItems();
+      });
+      sizeBox.appendChild(b);
+    });
+
+    catbox.insertAdjacentElement('afterend',sizeBox);
+
+    function activeCategory(){
+      const a=catbox.querySelector('.bbbm-nb-cat.active');
+      return a ? a.textContent.trim() : '';
+    }
+
+    function updateSizeVisibility(){
+      const isRod=activeCategory()==='রড';
+      sizeBox.classList.toggle('open',isRod);
+      if(!isRod){
+        selectedMM='';
+        sizeBox.querySelectorAll('.bbbm-rod-size-btn').forEach(x=>x.classList.remove('active'));
+      }
+      filterVisibleItems();
+    }
+
+    function filterVisibleItems(){
+      const isRod=activeCategory()==='রড';
+      items.querySelectorAll('.bbbm-nb-item').forEach(btn=>{
+        if(!isRod || !selectedMM){
+          btn.style.display='';
+          return;
+        }
+        const itemName=(btn.querySelector('b')?.textContent||btn.textContent||'').trim();
+        btn.style.display = extractRodMM(itemName)===selectedMM ? '' : 'none';
+      });
+
+      const visible=[...items.querySelectorAll('.bbbm-nb-item')].some(x=>x.style.display!=='none');
+      let empty=items.querySelector('.bbbm-rod-mm-empty');
+      if(isRod && selectedMM && !visible){
+        if(!empty){
+          empty=document.createElement('div');
+          empty.className='bbbm-nb-empty bbbm-rod-mm-empty';
+          items.appendChild(empty);
+        }
+        empty.textContent=selectedMM+' mm রড স্টকে পাওয়া যায়নি';
+      }else if(empty){
+        empty.remove();
+      }
+    }
+
+    catbox.querySelectorAll('.bbbm-nb-cat').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        setTimeout(updateSizeVisibility,0);
+      });
+    });
+
+    search.addEventListener('input',function(){
+      setTimeout(filterVisibleItems,0);
+    });
+
+    const observer=new MutationObserver(function(){
+      filterVisibleItems();
+    });
+    observer.observe(items,{childList:true,subtree:true});
+
+    updateSizeVisibility();
+  }
+
+  function initRodMM(){
+    document.querySelectorAll('.bbbm-nb-panel').forEach(enhancePanel);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(initRodMM,50));
+  }else{
+    setTimeout(initRodMM,50);
+  }
 })();
 </script>
 
