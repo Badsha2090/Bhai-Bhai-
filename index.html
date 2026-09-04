@@ -101,6 +101,19 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 @media(max-width:760px){.credit-fields{grid-template-columns:1fr}}
 .return-search{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.return-search input{width:100%;margin-top:6px;padding:11px;border:1px solid #cfd8e3;border-radius:8px}.return-info{margin:12px 0;padding:12px;background:#eef6ff;border:1px solid #cfe2ff;border-radius:8px;font-size:12px}@media(max-width:760px){.return-search{grid-template-columns:1fr}}</style>
 
+<style>
+.sale-cart{margin-top:14px;border:1px solid #cfe0ef;border-radius:10px;overflow:hidden;background:#fff}
+.sale-cart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;background:#f8fbff;border-bottom:1px solid #dce8f3}
+.sale-cart-head strong{font-size:14px}.sale-cart-head span{font-size:12px;color:#6b7a8c}
+.sale-cart table{min-width:680px}.sale-cart td,.sale-cart th{font-size:12px}
+.cart-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:6px;padding:6px 9px;font-weight:800;cursor:pointer}
+.cart-edit{border:0;background:#e0f2fe;color:#075985;border-radius:6px;padding:6px 9px;font-weight:800;cursor:pointer;margin-right:4px}
+.cart-total{display:flex;justify-content:flex-end;gap:18px;align-items:center;padding:12px 14px;border-top:1px solid #edf1f5;font-size:14px}
+.cart-total b{font-size:18px}
+.add-cart-btn{background:#0f766e;color:#fff}
+.sale-step-note{font-size:11px;color:#64748b;margin-top:8px}
+@media(max-width:760px){.sale-cart table{min-width:620px}}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -258,6 +271,10 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                 <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
                 <label>Date<input id="sDate" type="date" required></label>
                 <label>Total<input id="sTotal" readonly></label>
+                <div class="full">
+                  <button type="button" class="btn add-cart-btn" id="addSaleItemBtn">＋ Add Item to Bill</button>
+                  <div class="sale-step-note">একটি item যোগ করুন, তারপর পরের barcode scan করে আবার Add Item চাপুন।</div>
+                </div>
                 <label class="full">Payment Method
                   <div class="payment-methods">
                     <label class="pay-option"><input type="radio" name="paymentMethod" value="Cash" checked><span>💵 Cash</span></label>
@@ -267,8 +284,19 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                     <label class="pay-option"><input type="radio" name="paymentMethod" value="Rocket"><span>🚀 Rocket</span></label>
                   </div>
                 </label>
-                <div class="full payment-help">Payment method select করলেই Print / Without Print option আসবে।</div>
+                <div class="full">
+                  <button type="button" class="btn primary" id="checkoutSaleBtn">Continue to Complete Sale →</button>
+                </div>
+                <div class="full payment-help">সব item Bill-এ যোগ করার পর Payment Method select করে Continue চাপুন।</div>
               </form>
+              <div id="saleCartBox" class="sale-cart">
+                <div class="sale-cart-head"><strong>🛒 Current Bill Items</strong><span id="saleCartCount">0 items</span></div>
+                <div class="table-wrap"><table>
+                  <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Total</th><th>Action</th></tr></thead>
+                  <tbody id="saleCartRows"><tr><td colspan="6">No item added yet.</td></tr></tbody>
+                </table></div>
+                <div class="cart-total"><span>Grand Total</span><b id="saleCartTotal">৳0.00</b></div>
+              </div>
               <div id="creditCustomerBox" class="sale-finish hidden">
                 <div class="finish-head">
                   <div><strong>Credit Customer</strong><span>Customer name বা mobile number দিন। অন্তত একটি লাগবে।</span></div>
@@ -639,7 +667,7 @@ function openApp(){
  $('authView').classList.add('hidden'); $('appView').classList.remove('hidden');
  $('who').textContent=currentUser.name;
  $('topDate').textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
- $('pDate').value=today(); $('sDate').value=today(); render()
+ $('pDate').value=today(); $('sDate').value=today(); renderSaleCart(); render()
 }
 function prefillLocalUsers(){
  const old=users();if(old.length!==2)return;
@@ -876,47 +904,96 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-let pendingSale=null;
+let pendingSale=null, saleCart=[], editingCartIndex=null;
 function selectedPaymentMethod(){
  const el=document.querySelector('input[name="paymentMethod"]:checked');
  return el?el.value:'Cash';
 }
-function buildPendingSale(){
+function cartQtyFor(code,excludeIndex=-1){
+ return saleCart.reduce((a,x,i)=>a+(i===excludeIndex||String(x.code)!==String(code)?0:(+x.qty||0)),0);
+}
+function buildCurrentSaleItem(excludeIndex=-1){
  const code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;
  if(!x){alert('Barcode not found.');return null}
  if(!q||q<=0){alert('Enter sale quantity.');return null}
- if(q>x.current){alert('Not enough stock. Available: '+fmtQty(x.current)+' '+(x.unit||'PCS'));return null}
+ const already=cartQtyFor(code,excludeIndex);
+ if(q+already>x.current){alert('Not enough stock. Available for this bill: '+fmtQty(Math.max(0,x.current-already))+' '+(x.unit||'PCS'));return null}
  if(p<0||$('sPrice').value===''){alert('Enter sale price.');return null}
- return {code,item:x.item,qty:q,price:p,total:q*p,unit:x.unit||'PCS',date:$('sDate').value,paymentMethod:selectedPaymentMethod(),available:x.current};
+ return {code,item:x.item,qty:q,price:p,total:q*p,unit:x.unit||'PCS',available:x.current};
+}
+function clearSaleItemFields(){
+ $('sBarcode').value='';$('sItem').value='';$('sAvailable').value='';$('sUnit').value='';
+ $('sQty').value='';$('sPrice').value='';$('sTotal').value='';
+ editingCartIndex=null;
+ $('addSaleItemBtn').textContent='＋ Add Item to Bill';
+ setTimeout(()=>$('sBarcode').focus(),50);
+}
+function cartGrandTotal(){return saleCart.reduce((a,x)=>a+(+x.total||0),0)}
+function renderSaleCart(){
+ $('saleCartCount').textContent=saleCart.length+' item'+(saleCart.length===1?'':'s');
+ $('saleCartTotal').textContent=money(cartGrandTotal());
+ $('saleCartRows').innerHTML=saleCart.length?saleCart.map((x,i)=>`<tr>
+   <td><b>${x.item}</b><div class="muted">${x.code}</div></td>
+   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}</td><td><b>${money(x.total)}</b></td>
+   <td><button type="button" class="cart-edit" data-cart-edit="${i}">Edit</button><button type="button" class="cart-remove" data-cart-remove="${i}">Remove</button></td>
+ </tr>`).join(''):'<tr><td colspan="6">No item added yet.</td></tr>';
+ document.querySelectorAll('[data-cart-remove]').forEach(b=>b.onclick=()=>{saleCart.splice(+b.dataset.cartRemove,1);renderSaleCart()});
+ document.querySelectorAll('[data-cart-edit]').forEach(b=>b.onclick=()=>{
+   const i=+b.dataset.cartEdit,x=saleCart[i];if(!x)return;
+   editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;calcS();
+   $('addSaleItemBtn').textContent='✓ Update Item';window.scrollTo({top:$('sales').offsetTop||0,behavior:'smooth'});
+ });
+}
+function addCurrentItemToCart(){
+ const item=buildCurrentSaleItem(editingCartIndex==null?-1:editingCartIndex);if(!item)return false;
+ if(editingCartIndex!=null){saleCart[editingCartIndex]=item}else{
+   const same=saleCart.findIndex(x=>String(x.code)===String(item.code)&&Number(x.price)===Number(item.price));
+   if(same>=0){
+     const mergedQty=(+saleCart[same].qty||0)+item.qty, stock=stockMap()[item.code];
+     if(stock&&mergedQty>stock.current){alert('Not enough stock. Available: '+fmtQty(stock.current)+' '+stock.unit);return false}
+     saleCart[same].qty=mergedQty;saleCart[same].total=mergedQty*saleCart[same].price;
+   }else saleCart.push(item);
+ }
+ renderSaleCart();clearSaleItemFields();return true;
+}
+function buildPendingSale(){
+ if(!saleCart.length){
+   if($('sBarcode').value.trim()||$('sQty').value||$('sPrice').value){
+     if(!addCurrentItemToCart())return null;
+   }
+ }
+ if(!saleCart.length){alert('Add at least one item to the bill.');return null}
+ // Recheck live stock for every barcode before checkout.
+ const need={};
+ saleCart.forEach(x=>need[x.code]=(need[x.code]||0)+(+x.qty||0));
+ for(const code of Object.keys(need)){const st=stockMap()[code];if(!st||need[code]>st.current){alert('Not enough stock for '+(st?st.item:code)+'. Available: '+fmtQty(st?st.current:0));return null}}
+ return {items:saleCart.map(x=>({...x})),total:cartGrandTotal(),date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
 }
 function showSaleFinish(sale){
+ const lines=sale.items.map((x,i)=>`<div><span>${i+1}. ${x.item}</span><b>${fmtQty(x.qty)} ${x.unit} × ${money(x.price)} = ${money(x.total)}</b></div>`).join('');
  $('saleFinishSummary').innerHTML=`
-   <div><span>Item</span><b>${sale.item}</b></div>
-   <div><span>Barcode</span><b>${sale.code}</b></div>
-   <div><span>Quantity</span><b>${fmtQty(sale.qty)} ${sale.unit}</b></div>
-   <div><span>Rate</span><b>${money(sale.price)}</b></div>
+   ${lines}
+   <div><span>Items</span><b>${sale.items.length}</b></div>
    <div><span>Payment</span><b>${sale.paymentMethod}</b></div>
    ${sale.paymentMethod==='Credit'?`<div><span>Customer</span><b>${sale.creditName||'-'}</b></div><div><span>Mobile</span><b>${sale.creditPhone||'-'}</b></div>`:''}
-   <div><span>Total</span><b>${money(sale.total)}</b></div>`;
+   <div><span>Grand Total</span><b>${money(sale.total)}</b></div>`;
  $('saleFinishBox').classList.remove('hidden');
- $('saleForm').classList.add('hidden');
+ $('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');
 }
 function resetSaleForm(){
- $('saleForm').reset();
+ $('saleForm').reset();saleCart=[];editingCartIndex=null;renderSaleCart();
  $('sDate').value=today();
  const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
- $('saleFinishBox').classList.add('hidden');
- $('creditCustomerBox').classList.add('hidden');
- $('creditName').value='';$('creditPhone').value='';
- $('saleForm').classList.remove('hidden');
- pendingSale=null;
+ $('saleFinishBox').classList.add('hidden');$('creditCustomerBox').classList.add('hidden');$('saleCartBox').classList.remove('hidden');
+ $('creditName').value='';$('creditPhone').value='';$('saleForm').classList.remove('hidden');pendingSale=null;clearSaleItemFields();
 }
 function receiptHtml(sale){
  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
- const bill='BBBM-'+String(sale.billNo||0).padStart(6,'0');
+ const bill=sale.displayBill||('BBBM-'+String(sale.billNo||0).padStart(6,'0'));
  const d=sale.date||'';
  let t=sale.saleTime||new Date().toTimeString().slice(0,8);
  const parts=t.split(':');let hh=+(parts[0]||0),mm=parts[1]||'00',ap=hh>=12?'PM':'AM';hh=hh%12||12;t=String(hh).padStart(2,'0')+':'+mm+' '+ap;
+ const rows=sale.items.map(x=>`<tr><td>${esc(x.item)}</td><td>${esc(fmtQty(x.qty))} ${esc(x.unit)}</td><td>${esc(money(x.price))}</td><td>${esc(money(x.total))}</td></tr>`).join('');
  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(bill)}</title><style>
  @page{margin:2.5mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Sans Bengali",sans-serif;margin:0;padding:0;color:#000}
  .receipt{width:100%;max-width:76mm;margin:auto;font-size:10px;line-height:1.18}
@@ -927,91 +1004,65 @@ function receiptHtml(sale){
  table{width:100%;border-collapse:collapse;font-size:8.5px}th,td{padding:2px 1px;text-align:left;border-bottom:1px dotted #aaa}
  th:nth-child(2),td:nth-child(2){text-align:center}th:nth-child(3),td:nth-child(3),th:nth-child(4),td:nth-child(4){text-align:right}
  .total{font-size:12px;font-weight:900;text-align:right;margin:4px 0}.pay{font-size:9px;margin:2px 0}
- .thanks{text-align:center;font-weight:800;font-size:9px;margin-top:5px}
- @media print{body{padding:0}.receipt{max-width:none}}
+ .thanks{text-align:center;font-weight:800;font-size:9px;margin-top:5px}@media print{body{padding:0}.receipt{max-width:none}}
  </style></head><body><div class="receipt">
- <div class="bn">ভাই ভাই বিল্ডিং মেটেরিয়াল</div>
- <div class="en">BHAI BHAI BUILDING MATERIALS</div>
+ <div class="bn">ভাই ভাই বিল্ডিং মেটেরিয়াল</div><div class="en">BHAI BHAI BUILDING MATERIALS</div>
  <div class="center small">প্রোঃ মোঃ মনির হোসেন &nbsp; | &nbsp; ম্যানেজারঃ মিরান হোসেন</div>
- <div class="center small">01338-226242 | 01303-334709</div>
- <div class="center tiny">জামালপুর চৌরাস্তা, মির্জাপুর রোড, কালিয়াকৈর, গাজীপুর</div>
+ <div class="center small">01338-226242 | 01303-334709</div><div class="center tiny">জামালপুর চৌরাস্তা, মির্জাপুর রোড, কালিয়াকৈর, গাজীপুর</div>
  <div class="dash"></div><div class="title">SALES INVOICE</div><div class="dash"></div>
- <div class="bill"><b>Bill No:</b> ${esc(bill)}</div>
- <div class="row dt"><span><b>Date:</b> ${esc(d)}</span><span><b>Time:</b> ${esc(t)}</span></div>
- <div class="dash"></div>
- <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
- <tbody><tr><td>${esc(sale.item)}</td><td>${esc(fmtQty(sale.qty))} ${esc(sale.unit)}</td><td>${esc(money(sale.price))}</td><td>${esc(money(sale.total))}</td></tr></tbody></table>
- <div class="total">TOTAL: ${esc(money(sale.total))}</div>
- <div class="dash"></div><div class="pay"><b>Payment:</b> ${esc(sale.paymentMethod)}</div>
+ <div class="bill"><b>Bill No:</b> ${esc(bill)}</div><div class="row dt"><span><b>Date:</b> ${esc(d)}</span><span><b>Time:</b> ${esc(t)}</span></div><div class="dash"></div>
+ <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+ <div class="total">TOTAL: ${esc(money(sale.total))}</div><div class="dash"></div><div class="pay"><b>Payment:</b> ${esc(sale.paymentMethod)}</div>
  ${sale.paymentMethod==='Credit'?`<div class="pay"><b>Customer:</b> ${esc(sale.creditName||'-')} ${sale.creditPhone?' | '+esc(sale.creditPhone):''}</div><div class="pay"><b>Due:</b> ${esc(money(sale.total))}</div>`:''}
- <div class="dash"></div><div class="thanks">ধন্যবাদ, আবার আসবেন</div>
- </div></body></html>`;
+ <div class="dash"></div><div class="thanks">ধন্যবাদ, আবার আসবেন</div></div></body></html>`;
 }
 async function completeSale(printAfter){
  if(!pendingSale)return;
- let printWin=null;
- if(printAfter){
-   printWin=window.open('','_blank','width=420,height=650');
-   if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>');
- }
- const sale=pendingSale;
- $('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
+ let printWin=null;if(printAfter){printWin=window.open('','_blank','width=420,height=650');if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>')}
+ const sale=pendingSale;$('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
  try{
-   saveMeta(sale.code,{unit:sale.unit,item:sale.item,sellPrice:sale.price});
-   const saved=await cloud.from('bbbm_sales').insert({
-     user_id:currentUser.id,item:sale.item,barcode:sale.code,qty:sale.qty,price:sale.price,total:sale.total,
-     unit:sale.unit,payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,sale_date:sale.date,sale_time:new Date().toTimeString().slice(0,8),by_name:currentUser.name
-   });
+   // Same timestamp keeps all rows visibly tied to the same checkout.
+   const saleTime=new Date().toTimeString().slice(0,8);
+   const rows=sale.items.map(x=>({
+     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
+     payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
+     sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name
+   }));
+   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
+   const saved=await cloud.from('bbbm_sales').insert(rows).select('bill_no,sale_time,barcode');
    if(saved.error)throw saved.error;
-   const newest=await cloud.from('bbbm_sales').select('bill_no,sale_time').eq('user_id',currentUser.id).eq('barcode',sale.code).eq('sale_date',sale.date).order('bill_no',{ascending:false}).limit(1);
-   if(!newest.error&&newest.data&&newest.data[0]){sale.billNo=newest.data[0].bill_no;sale.saleTime=newest.data[0].sale_time||'';}
-   if(printAfter&&printWin){
-     printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();
-     printWin.focus();setTimeout(()=>printWin.print(),250);
-   }
+   const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
+   sale.billNo=inserted[0]&&inserted[0].bill_no||0;
+   if(inserted.length>1){
+     const nums=inserted.map(x=>+x.bill_no).filter(Boolean).sort((a,b)=>a-b);
+     sale.displayBill=nums.length?('BBBM-'+String(nums[0]).padStart(6,'0')+(nums.length>1?'–'+String(nums[nums.length-1]).padStart(6,'0'):'')):'BBBM-MULTI';
+   }else sale.displayBill='BBBM-'+String(sale.billNo||0).padStart(6,'0');
+   if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}
    await loadCloudData();resetSaleForm();render();
-   alert(printAfter?'Sale saved. Print dialog opened — আপনার thermal printer select করে Print চাপুন।':'Sale saved without print.');
- }catch(err){
-   if(printWin)printWin.close();
-   alert('Sale could not be saved: '+(err.message||err));
- }finally{
-   $('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false;
- }
+   alert(printAfter?'Multi-item sale saved. Print dialog opened.':'Multi-item sale saved without print.');
+ }catch(err){if(printWin)printWin.close();alert('Sale could not be saved: '+(err.message||err))}
+ finally{$('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false}
 }
-$('saleForm').onsubmit=function(e){e.preventDefault();};
-function handlePaymentChoice(radio){
- if(!radio)return;
- radio.checked=true;
- const sale=buildPendingSale();
- if(!sale)return;
- if(radio.value==='Credit'){
-   pendingSale=sale;
-   $('saleForm').classList.add('hidden');
-   $('creditCustomerBox').classList.remove('hidden');
-   setTimeout(()=>$('creditName').focus(),50);
-   return;
+$('saleForm').onsubmit=function(e){e.preventDefault()};
+$('addSaleItemBtn').onclick=addCurrentItemToCart;
+$('checkoutSaleBtn').onclick=function(){
+ const sale=buildPendingSale();if(!sale)return;
+ if(sale.paymentMethod==='Credit'){
+   pendingSale=sale;$('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');$('creditCustomerBox').classList.remove('hidden');
+   setTimeout(()=>$('creditName').focus(),50);return;
  }
  pendingSale=sale;showSaleFinish(sale);
-}
+};
 document.querySelectorAll('.pay-option').forEach(label=>{
- label.addEventListener('click',function(e){
-   e.preventDefault();
-   if($('saleForm').classList.contains('hidden'))return;
-   handlePaymentChoice(this.querySelector('input[name="paymentMethod"]'));
- });
+ label.addEventListener('click',function(){const r=this.querySelector('input[name="paymentMethod"]');if(r)r.checked=true})
 });
 $('creditBackBtn').onclick=function(){
- $('creditCustomerBox').classList.add('hidden');
- $('saleForm').classList.remove('hidden');
- pendingSale=null;
+ $('creditCustomerBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null;
 };
 $('creditContinueBtn').onclick=function(){
  const name=$('creditName').value.trim(),phone=$('creditPhone').value.trim();
- if(!name&&!phone){alert('Customer name or mobile number দিন।');return}
- if(!pendingSale)return;
- pendingSale.creditName=name;pendingSale.creditPhone=phone;
- $('creditCustomerBox').classList.add('hidden');
- showSaleFinish(pendingSale);
+ if(!name&&!phone){alert('Customer name or mobile number দিন।');return}if(!pendingSale)return;
+ pendingSale.creditName=name;pendingSale.creditPhone=phone;$('creditCustomerBox').classList.add('hidden');showSaleFinish(pendingSale);
 };
 
 function refreshBarcodeItems(){
@@ -1106,7 +1157,7 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
    alert('Barcode তৈরি/print করা যায়নি: '+(err.message||err));
  }
 };
-$('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');pendingSale=null};
+$('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
 async function goTab(tab){
