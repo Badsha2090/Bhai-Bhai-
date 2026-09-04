@@ -176,7 +176,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
           <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
           <button class="coming"><span>⚙️</span> Settings <small>Soon</small></button>
-          <button class="coming"><span>☁️</span> Backup & Sync <small>Soon</small></button>
+          <button data-tab="backup"><span>☁️</span> Backup & Sync</button>
         </div>
 
         <div class="sidebar-footer">
@@ -433,6 +433,30 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
     </form>
   </div>
 </section>
+
+<section id="backup" class="section">
+  <div class="section-heading"><div><h2>☁️ Backup & Sync</h2><p>Automatic local backup + cloud data safety.</p></div></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div><span>Auto Backup</span><strong id="backupStatus">ON</strong></div></div>
+    <div class="stat-card"><div><span>Last Backup</span><strong id="lastBackupText">Not yet</strong></div></div>
+    <div class="stat-card"><div><span>Saved Copies</span><strong id="backupCountText">0</strong></div></div>
+  </div>
+  <div class="card form-card">
+    <div class="panel-head"><h3>Automatic Backup</h3></div>
+    <p class="muted">এই POS browser-এ data change/load হওয়ার পর automatic snapshot রাখা হবে। সর্বশেষ 14টি copy রাখা হবে। Cloud data Supabase-এও থাকবে।</p>
+    <div class="row">
+      <button type="button" class="btn primary" id="backupNowBtn">💾 Backup Now</button>
+      <button type="button" class="btn gray" id="downloadBackupBtn">⬇ Download Backup File</button>
+      <label class="btn gray" style="cursor:pointer;margin:0">⬆ Restore Backup<input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"></label>
+    </div>
+    <div id="backupMsg" class="msg"></div>
+  </div>
+  <div class="card history-card">
+    <div class="panel-head"><h3>Backup History</h3></div>
+    <div class="table-wrap"><table><thead><tr><th>Date & Time</th><th>Purchases</th><th>Sales</th><th>Returns</th><th>Expenses</th><th>Collections</th></tr></thead><tbody id="backupRows"></tbody></table></div>
+  </div>
+</section>
+
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
@@ -1177,6 +1201,74 @@ document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&curr
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
 })();
+
+// ===== Bhai Bhai automatic backup =====
+const BACKUP_KEY='bbbm_auto_backups_v1', BACKUP_MAX=14;
+function backupCopies(){return safeGet(BACKUP_KEY,[])}
+function makeBackupSnapshot(){
+  return {
+    version:3,
+    app:'Bhai Bhai Building Materials',
+    createdAt:new Date().toISOString(),
+    db:JSON.parse(JSON.stringify(db||{})),
+    productMeta:JSON.parse(JSON.stringify(productMeta||{}))
+  };
+}
+function saveAutoBackup(reason='Auto'){
+  try{
+    const snap=makeBackupSnapshot(), list=backupCopies();
+    const signature=JSON.stringify(snap.db);
+    const last=list[0];
+    if(reason==='Auto' && last && last.signature===signature){renderBackupPanel();return false}
+    list.unshift({createdAt:snap.createdAt,reason,signature,snapshot:snap});
+    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
+    safeSet(BACKUP_KEY,list);renderBackupPanel();return true;
+  }catch(e){console.warn('Backup failed',e);return false}
+}
+function renderBackupPanel(){
+  const list=backupCopies(),last=list[0];
+  if($('lastBackupText'))$('lastBackupText').textContent=last?new Date(last.createdAt).toLocaleString():'Not yet';
+  if($('backupCountText'))$('backupCountText').textContent=String(list.length);
+  if($('backupRows'))$('backupRows').innerHTML=list.length?list.map(b=>{
+    const d=(b.snapshot&&b.snapshot.db)||{}, count=k=>(d[k]||[]).length;
+    return `<tr><td>${new Date(b.createdAt).toLocaleString()}</td><td>${count('purchases')}</td><td>${count('sales')}</td><td>${count('returns')}</td><td>${count('expenses')}</td><td>${count('collections')}</td></tr>`;
+  }).join(''):'<tr><td colspan="6">No backup yet.</td></tr>';
+}
+function downloadBackup(){
+  const snap=makeBackupSnapshot();
+  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  const a=document.createElement('a'),url=URL.createObjectURL(blob);
+  a.href=url;a.download='Bhai_Bhai_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  saveAutoBackup('Manual Download');
+  if($('backupMsg'))$('backupMsg').textContent='Backup file downloaded successfully.';
+}
+async function restoreBackupFile(file){
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!data||!data.db||!Array.isArray(data.db.purchases)||!Array.isArray(data.db.sales))throw new Error('Invalid Bhai Bhai backup file.');
+    if(!confirm('Restore this backup? Current local snapshot will be saved first.'))return;
+    saveAutoBackup('Before Restore');
+    db=data.db;productMeta=data.productMeta||{};
+    safeSet(DB,db);safeSet(META,productMeta);
+    render();
+    saveAutoBackup('Restored');
+    if($('backupMsg'))$('backupMsg').textContent='Backup restored locally. Cloud records are not deleted or overwritten.';
+    alert('Backup restored successfully.');
+  }catch(e){alert('Restore failed: '+(e.message||e))}
+}
+if($('backupNowBtn'))$('backupNowBtn').onclick=()=>{saveAutoBackup('Manual');$('backupMsg').textContent='Backup saved on this POS.'};
+if($('downloadBackupBtn'))$('downloadBackupBtn').onclick=downloadBackup;
+if($('restoreBackupFile'))$('restoreBackupFile').onchange=e=>{restoreBackupFile(e.target.files&&e.target.files[0]);e.target.value=''};
+renderBackupPanel();
+
+// Keep a snapshot automatically when cloud data is refreshed, and periodically while POS stays open.
+const _loadCloudDataForBackup=loadCloudData;
+loadCloudData=async function(){await _loadCloudDataForBackup();saveAutoBackup('Auto')};
+setInterval(()=>saveAutoBackup('Auto'),30*60*1000);
+window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
+
 </script>
 </body>
 </html>
