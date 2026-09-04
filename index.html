@@ -263,6 +263,13 @@ section#sales label, section#pos label{
   }
 }
 </style>
+<style>
+#sales input.pad-active,#pos input.pad-active{
+  outline:3px solid #1769e0 !important;
+  outline-offset:1px !important;
+}
+#sidePadDisplay small{display:block;font-size:11px;color:#64748b;font-weight:600;text-align:left}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -441,6 +448,103 @@ section#sales label, section#pos label{
   </div>
   <div class="pad-note">Barcode, Sale Quantity, Sale Price বা অন্য number field-এ touch করে এখান থেকে number দিন।</div>
 </div>
+<script>
+(function(){
+  const pad = document.getElementById('sideNumberPad');
+  const display = document.getElementById('sidePadDisplay');
+  if (!pad || !display) return;
+
+  const fieldIds = ['sBarcode','sQty','sPrice'];
+  let active = document.getElementById('sQty') || null;
+  let raw = active ? String(active.value || '') : '';
+
+  function labelFor(el){
+    if(!el) return 'Select a field';
+    if(el.id==='sBarcode') return 'Barcode';
+    if(el.id==='sQty') return 'Sale Quantity';
+    if(el.id==='sPrice') return 'Sale Price';
+    return 'Number';
+  }
+
+  function refreshDisplay(){
+    display.innerHTML = active
+      ? '<small>'+labelFor(active)+'</small>' + (raw || '0')
+      : 'Select a field';
+  }
+
+  function selectField(el){
+    if(!el || !fieldIds.includes(el.id)) return;
+    fieldIds.forEach(id=>{
+      const x=document.getElementById(id);
+      if(x) x.classList.remove('pad-active');
+    });
+    active = el;
+    active.classList.add('pad-active');
+    raw = String(active.value || '');
+    refreshDisplay();
+  }
+
+  function writeValue(){
+    if(!active) return;
+    active.value = raw;
+    active.dispatchEvent(new Event('input', {bubbles:true}));
+    if(active.id==='sQty' || active.id==='sPrice'){
+      if(typeof calcS === 'function') calcS();
+    }
+  }
+
+  fieldIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('click', ()=>selectField(el));
+    el.addEventListener('focus', ()=>selectField(el));
+    el.addEventListener('pointerdown', ()=>selectField(el));
+    el.addEventListener('touchstart', ()=>selectField(el), {passive:true});
+  });
+
+  pad.addEventListener('click', function(e){
+    const btn=e.target.closest('[data-sidekey]');
+    if(!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if(!active){
+      const first=document.getElementById('sQty');
+      if(first) selectField(first);
+    }
+    if(!active) return;
+
+    const k=btn.getAttribute('data-sidekey');
+
+    if(k==='clear'){
+      raw='';
+    }else if(k==='back'){
+      raw=raw.slice(0,-1);
+    }else if(k==='ok'){
+      writeValue();
+      active.dispatchEvent(new Event('change',{bubbles:true}));
+      if(active.id==='sBarcode' && typeof fillSaleFromBarcode==='function'){
+        fillSaleFromBarcode();
+      }
+      refreshDisplay();
+      return;
+    }else if(k==='.'){
+      if(active.id!=='sBarcode' && !raw.includes('.')){
+        raw=(raw||'0')+'.';
+      }
+    }else if(/^\d$/.test(k)){
+      if(raw==='0') raw=k;
+      else raw+=k;
+    }
+
+    writeValue();
+    refreshDisplay();
+  });
+
+  if(active) selectField(active);
+})();
+</script>
+
 <div class="full">
                   <button type="button" class="btn add-cart-btn" id="addSaleItemBtn">＋ Add Item to Bill</button>
                   <div class="sale-step-note">একটি item যোগ করুন, তারপর পরের barcode scan করে আবার Add Item চাপুন।</div>
@@ -1547,6 +1651,7 @@ window.addEventListener('DOMContentLoaded', function(){
 
 // ===== Permanent right-side numeric keypad =====
 window.addEventListener('DOMContentLoaded', function(){
+  return; // v10 uses direct keypad initializer below
   const pad=document.getElementById('sideNumberPad');
   const display=document.getElementById('sidePadDisplay');
   if(!pad||!display)return;
