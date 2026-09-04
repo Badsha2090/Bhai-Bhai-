@@ -140,6 +140,19 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
   #sBarcode{max-width:180px !important;}
 }
 </style>
+<style>
+/* Stronger touch-keypad placement for POS screen */
+.touch-keypad{
+  right:24px !important;
+  bottom:72px !important;
+  width:340px !important;
+  z-index:2147483647 !important;
+}
+.touch-keypad-grid button{
+  min-height:62px !important;
+  font-size:24px !important;
+}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -1310,7 +1323,7 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
 
 
 // ===== Touch numeric keypad for Sale Price =====
-(function(){
+window.addEventListener('DOMContentLoaded', function(){
   const input=$('sPrice'), box=$('touchNumberKeypad'), display=$('keypadDisplay');
   if(!input||!box||!display)return;
   let raw='';
@@ -1327,6 +1340,7 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
   function closeKeypad(){box.classList.add('hidden')}
   input.addEventListener('focus',openKeypad);
   input.addEventListener('click',openKeypad);
+  input.addEventListener('pointerdown',openKeypad);
   document.querySelectorAll('#touchNumberKeypad [data-key]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const k=btn.dataset.key;
@@ -1341,12 +1355,11 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
       sync();
     });
   });
-  $('keypadClose').onclick=closeKeypad;
-})();
-
-
+  const closeBtn=$('keypadClose');
+  if(closeBtn) closeBtn.onclick=closeKeypad;
+});
 // ===== Touch numeric keypad for Barcode =====
-(function(){
+window.addEventListener('DOMContentLoaded', function(){
   const input=$('sBarcode');
   if(!input)return;
   input.setAttribute('inputmode','numeric');
@@ -1381,6 +1394,7 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
   }
   input.addEventListener('focus',open);
   input.addEventListener('click',open);
+  input.addEventListener('pointerdown',open);
   box.querySelectorAll('[data-bkey]').forEach(btn=>btn.addEventListener('click',()=>{
     const k=btn.dataset.bkey;
     if(k==='clear')raw='';
@@ -1394,7 +1408,7 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
     sync();
   }));
   $('barcodeKeypadClose').onclick=close;
-})();
+});;
 
 </script>
 </body>
