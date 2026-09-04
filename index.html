@@ -127,6 +127,19 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
 .touch-keypad-grid .key-clear{background:#fee2e2;color:#991b1b}
 @media(max-width:760px){.touch-keypad{left:10px;right:10px;bottom:10px;width:auto}}
 </style>
+<style>
+/* Compact Sale Barcode field */
+#sBarcode{
+  max-width:220px !important;
+  width:100% !important;
+  min-height:40px !important;
+  padding:8px 10px !important;
+  font-size:15px !important;
+}
+@media(max-width:760px){
+  #sBarcode{max-width:180px !important;}
+}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -276,7 +289,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
             <div class="card form-card">
               <form id="saleForm" class="dataform">
-                <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
+                <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
                 <label>Item Name<input id="sItem" readonly></label>
                 <label>Available Stock<input id="sAvailable" readonly></label>
                 <label>Unit<input id="sUnit" readonly></label>
@@ -1329,6 +1342,58 @@ window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
     });
   });
   $('keypadClose').onclick=closeKeypad;
+})();
+
+
+// ===== Touch numeric keypad for Barcode =====
+(function(){
+  const input=$('sBarcode');
+  if(!input)return;
+  input.setAttribute('inputmode','numeric');
+
+  const box=document.createElement('div');
+  box.id='barcodeNumberKeypad';
+  box.className='touch-keypad hidden';
+  box.innerHTML=`
+    <div class="touch-keypad-head"><strong>Barcode</strong><button type="button" id="barcodeKeypadClose">✕</button></div>
+    <div id="barcodeKeypadDisplay" class="touch-keypad-display">0</div>
+    <div class="touch-keypad-grid">
+      <button type="button" data-bkey="7">7</button><button type="button" data-bkey="8">8</button><button type="button" data-bkey="9">9</button>
+      <button type="button" data-bkey="4">4</button><button type="button" data-bkey="5">5</button><button type="button" data-bkey="6">6</button>
+      <button type="button" data-bkey="1">1</button><button type="button" data-bkey="2">2</button><button type="button" data-bkey="3">3</button>
+      <button type="button" class="key-clear" data-bkey="clear">C</button><button type="button" data-bkey="0">0</button><button type="button" data-bkey="back">⌫</button>
+      <button type="button" class="key-ok" data-bkey="ok" style="grid-column:span 3">OK</button>
+    </div>`;
+  document.body.appendChild(box);
+
+  const display=$('barcodeKeypadDisplay');
+  let raw='';
+  function open(){
+    raw=String(input.value||'');
+    display.textContent=raw||'0';
+    box.classList.remove('hidden');
+  }
+  function close(){box.classList.add('hidden')}
+  function sync(){
+    input.value=raw;
+    display.textContent=raw||'0';
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  input.addEventListener('focus',open);
+  input.addEventListener('click',open);
+  box.querySelectorAll('[data-bkey]').forEach(btn=>btn.addEventListener('click',()=>{
+    const k=btn.dataset.bkey;
+    if(k==='clear')raw='';
+    else if(k==='back')raw=raw.slice(0,-1);
+    else if(k==='ok'){
+      sync(); close();
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+      if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
+      return;
+    } else raw+=k;
+    sync();
+  }));
+  $('barcodeKeypadClose').onclick=close;
 })();
 
 </script>
