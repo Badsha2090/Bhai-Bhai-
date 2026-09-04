@@ -240,6 +240,29 @@ section#sales label, section#pos label{
   #sideNumberPad{width:255px;right:10px;}
 }
 </style>
+<style>
+/* v9: keypad is embedded in the marked empty right side of POS/Sales */
+#sideNumberPad{
+  position:absolute !important;
+  right:18px !important;
+  top:78px !important;
+  width:275px !important;
+  bottom:auto !important;
+  z-index:20 !important;
+  display:block !important;
+}
+#sales .form-card,#pos .form-card,section#sales .form-card,section#pos .form-card{
+  position:relative !important;
+  padding-right:315px !important;
+  min-height:430px !important;
+}
+@media(max-width:900px){
+  #sideNumberPad{position:static !important;width:100% !important;margin-top:14px !important;}
+  #sales .form-card,#pos .form-card,section#sales .form-card,section#pos .form-card{
+    padding-right:16px !important;
+  }
+}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -397,7 +420,28 @@ section#sales label, section#pos label{
                 <label>Sale Price / Unit<input id="sPrice" type="number" inputmode="decimal" step="0.01" min="0" required autocomplete="off"></label>
                 <label>Date<input id="sDate" type="date" required></label>
                 <label>Total<input id="sTotal" readonly></label>
-                <div class="full">
+                <div id="sideNumberPad">
+  <div class="pad-title">🔢 Number Keyboard</div>
+  <div id="sidePadDisplay" class="pad-target">Select a field</div>
+  <div class="pad-grid">
+    <button type="button" data-sidekey="7">7</button>
+    <button type="button" data-sidekey="8">8</button>
+    <button type="button" data-sidekey="9">9</button>
+    <button type="button" data-sidekey="4">4</button>
+    <button type="button" data-sidekey="5">5</button>
+    <button type="button" data-sidekey="6">6</button>
+    <button type="button" data-sidekey="1">1</button>
+    <button type="button" data-sidekey="2">2</button>
+    <button type="button" data-sidekey="3">3</button>
+    <button type="button" class="pad-clear" data-sidekey="clear">C</button>
+    <button type="button" data-sidekey="0">0</button>
+    <button type="button" data-sidekey=".">.</button>
+    <button type="button" data-sidekey="back">⌫</button>
+    <button type="button" class="pad-ok" data-sidekey="ok" style="grid-column:span 2">OK</button>
+  </div>
+  <div class="pad-note">Barcode, Sale Quantity, Sale Price বা অন্য number field-এ touch করে এখান থেকে number দিন।</div>
+</div>
+<div class="full">
                   <button type="button" class="btn add-cart-btn" id="addSaleItemBtn">＋ Add Item to Bill</button>
                   <div class="sale-step-note">একটি item যোগ করুন, তারপর পরের barcode scan করে আবার Add Item চাপুন।</div>
                 </div>
@@ -1178,27 +1222,7 @@ function receiptHtml(sale){
 </div>
 
 
-<div id="sideNumberPad">
-  <div class="pad-title">🔢 Number Keyboard</div>
-  <div id="sidePadDisplay" class="pad-target">Select a field</div>
-  <div class="pad-grid">
-    <button type="button" data-sidekey="7">7</button>
-    <button type="button" data-sidekey="8">8</button>
-    <button type="button" data-sidekey="9">9</button>
-    <button type="button" data-sidekey="4">4</button>
-    <button type="button" data-sidekey="5">5</button>
-    <button type="button" data-sidekey="6">6</button>
-    <button type="button" data-sidekey="1">1</button>
-    <button type="button" data-sidekey="2">2</button>
-    <button type="button" data-sidekey="3">3</button>
-    <button type="button" class="pad-clear" data-sidekey="clear">C</button>
-    <button type="button" data-sidekey="0">0</button>
-    <button type="button" data-sidekey=".">.</button>
-    <button type="button" data-sidekey="back">⌫</button>
-    <button type="button" class="pad-ok" data-sidekey="ok" style="grid-column:span 2">OK</button>
-  </div>
-  <div class="pad-note">Barcode, Sale Quantity, Sale Price বা অন্য number field-এ touch করে এখান থেকে number দিন।</div>
-</div>
+
 
 </body></html>`;
 }
