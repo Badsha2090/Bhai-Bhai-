@@ -270,6 +270,24 @@ section#sales label, section#pos label{
 }
 #sidePadDisplay small{display:block;font-size:11px;color:#64748b;font-weight:600;text-align:left}
 </style>
+
+<style>
+/* বাংলা Quick Item shortcut - safe addition */
+.bq-wrap{grid-column:1/-1;margin-bottom:4px}
+.bq-btn{width:100%;min-height:46px;border:0;border-radius:8px;background:#1769e0;color:white;font-weight:900;font-size:15px;cursor:pointer}
+.bq-panel{margin-top:9px;padding:11px;border:1px solid #cfe0ef;border-radius:9px;background:#f8fbff}
+.bq-panel.hidden{display:none!important}
+.bq-search{width:100%!important;max-width:none!important;margin:0!important}
+.bq-cats{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.bq-cat{border:1px solid #c9d9ea;background:white;border-radius:20px;padding:7px 12px;font-weight:800;cursor:pointer}
+.bq-cat.active{background:#1769e0;color:white;border-color:#1769e0}
+.bq-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}
+.bq-item{min-height:48px;border:1px solid #bfd5ec;border-radius:8px;background:white;padding:7px 8px;font-size:12px;font-weight:800;cursor:pointer;text-align:left}
+.bq-item small{display:block;margin-top:3px;color:#64748b;font-size:10px}
+.bq-empty{grid-column:1/-1;padding:9px;color:#64748b;font-size:12px}
+@media(max-width:760px){.bq-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -400,6 +418,13 @@ section#sales label, section#pos label{
             <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
             <div class="card form-card">
               <form id="purchaseForm" class="dataform">
+<div class="bq-wrap">
+  <button type="button" id="bpBtn" class="bq-btn">＋ বারকোড ছাড়া পণ্য — ক্রয়</button>
+  <div id="bpPanel" class="bq-panel hidden">
+    <input id="bpSearch" class="bq-search" type="text" placeholder="ক্রয়ের জন্য পণ্যের নাম লিখে খুঁজুন">
+    <div id="bpList" class="bq-list"></div>
+  </div>
+</div>
                 <label>Item Name<input id="pItem" required></label>
                 <label>Barcode<div class="scan-row"><input id="pBarcode" inputmode="numeric" placeholder="Scan or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="pScanBtn">📷 Scan</button><button class="btn gray smallbtn" type="button" id="pGenBtn">Auto Barcode</button></div></label>
                 <label>Quantity<input id="pQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
@@ -419,6 +444,23 @@ section#sales label, section#pos label{
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
             <div class="card form-card">
               <form id="saleForm" class="dataform">
+<div class="bq-wrap">
+  <button type="button" id="bqBtn" class="bq-btn">＋ বারকোড ছাড়া পণ্য — বিক্রয়</button>
+  <div id="bqPanel" class="bq-panel hidden">
+    <input id="bqSearch" class="bq-search" type="text" placeholder="পণ্যের নাম লিখে খুঁজুন">
+    <div class="bq-cats" id="bqCats">
+      <button type="button" class="bq-cat active" data-cat="সব">সব</button>
+      <button type="button" class="bq-cat" data-cat="রড">রড</button>
+      <button type="button" class="bq-cat" data-cat="পাইপ">পাইপ</button>
+      <button type="button" class="bq-cat" data-cat="তার/রশি">তার/রশি</button>
+      <button type="button" class="bq-cat" data-cat="প্লাস্টিক">প্লাস্টিক</button>
+      <button type="button" class="bq-cat" data-cat="বালু-পাথর">বালু-পাথর</button>
+      <button type="button" class="bq-cat" data-cat="শিট/জালি">শিট/জালি</button>
+      <button type="button" class="bq-cat" data-cat="অন্যান্য">অন্যান্য</button>
+    </div>
+    <div id="bqList" class="bq-list"></div>
+  </div>
+</div>
                 <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
                 <label>Item Name<input id="sItem" readonly></label>
                 <label>Available Stock<input id="sAvailable" readonly></label>
@@ -1201,6 +1243,86 @@ $('returnForm').onsubmit=async function(e){
  const r=await cloud.from('bbbm_sales_returns').insert({user_id:currentUser.id,sale_bill_no:x.billNo||null,item:x.item,barcode:x.barcode,qty:q,unit:x.unit,rate:x.price,refund_amount:refund,payment_method:x.paymentMethod,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,reason:$('rReason').value,return_date:today(),by_name:currentUser.name});
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
+
+
+/* বাংলা non-barcode quick selector. Existing internal barcode is retained for stock/cloud logic. */
+(function(){
+ const btn=$('bqBtn'),panel=$('bqPanel'),search=$('bqSearch'),list=$('bqList'),cats=$('bqCats');
+ if(!btn||!panel||!search||!list||!cats)return;
+ let activeCat='সব';
+
+ const groups={
+  'রড':/rod|rebar|রড/i,
+  'পাইপ':/pipe|pvc|upvc|gi pipe|ms pipe|hose|পাইপ/i,
+  'তার/রশি':/wire|rosi|rope|cable|chain|binding|তার|রশি|দড়ি|কেবল|চেইন/i,
+  'প্লাস্টিক':/plastic|polythene|tarpaulin|rubber|প্লাস্টিক|পলিথিন|ত্রিপল|রাবার/i,
+  'বালু-পাথর':/sand|stone|chips|brick|cement|বালু|পাথর|চিপস|ইট|সিমেন্ট/i,
+  'শিট/জালি':/sheet|mesh|net|glass|plywood|শিট|জালি|নেট|গ্লাস|প্লাই/i
+ };
+ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function catOf(name){
+   for(const [k,r] of Object.entries(groups))if(r.test(String(name||'')))return k;
+   return 'অন্যান্য';
+ }
+ function rows(){
+   return Object.values(stockMap()).filter(x=>(+x.current||0)>0);
+ }
+ function renderBQ(){
+   const q=String(search.value||'').trim().toLowerCase();
+   const data=rows().filter(x=>{
+     const okCat=activeCat==='সব'||catOf(x.item)===activeCat;
+     return okCat&&(!q||String(x.item||'').toLowerCase().includes(q));
+   }).sort((a,b)=>String(a.item||'').localeCompare(String(b.item||'')));
+   list.innerHTML=data.length?data.map(x=>`
+     <button type="button" class="bq-item" data-bq-code="${esc(x.barcode)}">
+       ${esc(x.item)}
+       <small>মজুত: ${fmtQty(x.current)} ${esc(x.unit||'PCS')}</small>
+     </button>`).join(''):'<div class="bq-empty">এই বিভাগে মজুত থাকা কোনো পণ্য পাওয়া যায়নি।</div>';
+ }
+ btn.onclick=()=>{panel.classList.toggle('hidden');if(!panel.classList.contains('hidden')){search.value='';renderBQ();setTimeout(()=>search.focus(),30)}};
+ search.oninput=renderBQ;
+ cats.onclick=e=>{
+   const b=e.target.closest('[data-cat]');if(!b)return;
+   activeCat=b.dataset.cat;
+   cats.querySelectorAll('.bq-cat').forEach(x=>x.classList.toggle('active',x===b));
+   renderBQ();
+ };
+ list.onclick=e=>{
+   const b=e.target.closest('[data-bq-code]');if(!b)return;
+   $('sBarcode').value=b.dataset.bqCode;
+   fillSaleFromBarcode();
+   $('sQty').value='1';calcS();
+   panel.classList.add('hidden');
+   setTimeout(()=>$('sQty').focus(),30);
+ };
+})();
+
+
+/* বাংলা Purchase quick selector: existing item/internal barcode is used safely. */
+(function(){
+ const btn=$('bpBtn'),panel=$('bpPanel'),search=$('bpSearch'),list=$('bpList');
+ if(!btn||!panel||!search||!list)return;
+ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function renderBP(){
+   const q=String(search.value||'').trim().toLowerCase();
+   const data=Object.values(stockMap()).filter(x=>!q||String(x.item||'').toLowerCase().includes(q))
+     .sort((a,b)=>String(a.item||'').localeCompare(String(b.item||'')));
+   list.innerHTML=data.length?data.map(x=>`
+     <button type="button" class="bq-item" data-bp-code="${esc(x.barcode)}">
+       ${esc(x.item)}
+       <small>বর্তমান মজুত: ${fmtQty(x.current)} ${esc(x.unit||'PCS')}</small>
+     </button>`).join(''):'<div class="bq-empty">পণ্য পাওয়া যায়নি। নতুন পণ্য হলে নিচের Purchase form-এ নাম লিখে system barcode তৈরি করুন।</div>';
+ }
+ btn.onclick=()=>{panel.classList.toggle('hidden');if(!panel.classList.contains('hidden')){search.value='';renderBP();setTimeout(()=>search.focus(),30)}};
+ search.oninput=renderBP;
+ list.onclick=e=>{
+   const b=e.target.closest('[data-bp-code]');if(!b)return;
+   $('pBarcode').value=b.dataset.bpCode;
+   fillPurchaseFromBarcode();
+   panel.classList.add('hidden');
+   setTimeout(()=>$('pQty').focus(),30);
+ };
+})();
 
 let pendingSale=null, saleCart=[], editingCartIndex=null;
 function selectedPaymentMethod(){
