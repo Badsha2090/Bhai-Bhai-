@@ -267,7 +267,7 @@ table th{background:#f8fafc;color:#455568;font-weight:800}
                 <label>Item Name<input id="sItem" readonly></label>
                 <label>Available Stock<input id="sAvailable" readonly></label>
                 <label>Unit<input id="sUnit" readonly></label>
-                <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
+                <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" value="1" required placeholder="e.g. 2.75"></label>
                 <label>Sale Price / Unit<input id="sPrice" type="number" step="0.01" min="0" required></label>
                 <label>Date<input id="sDate" type="date" required></label>
                 <label>Total<input id="sTotal" readonly></label>
@@ -667,7 +667,7 @@ function openApp(){
  $('authView').classList.add('hidden'); $('appView').classList.remove('hidden');
  $('who').textContent=currentUser.name;
  $('topDate').textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
- $('pDate').value=today(); $('sDate').value=today(); renderSaleCart(); render()
+ $('pDate').value=today(); $('sDate').value=today();$('sQty').value='1'; renderSaleCart(); render()
 }
 function prefillLocalUsers(){
  const old=users();if(old.length!==2)return;
@@ -923,7 +923,7 @@ function buildCurrentSaleItem(excludeIndex=-1){
 }
 function clearSaleItemFields(){
  $('sBarcode').value='';$('sItem').value='';$('sAvailable').value='';$('sUnit').value='';
- $('sQty').value='';$('sPrice').value='';$('sTotal').value='';
+ $('sQty').value='1';$('sPrice').value='';$('sTotal').value='';
  editingCartIndex=null;
  $('addSaleItemBtn').textContent='＋ Add Item to Bill';
  setTimeout(()=>$('sBarcode').focus(),50);
