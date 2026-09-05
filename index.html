@@ -405,6 +405,31 @@ section#sales label, section#pos label{
 @media(max-width:900px){#purchaseSidePad{position:static!important;width:100%!important;margin-top:14px!important}#purchase .form-card{padding-right:16px!important}}
 </style>
 
+
+<style id="credit-customer-keyboard-css">
+#creditCustomerBox .credit-fields{margin-bottom:10px}
+.credit-kb{border:1px solid #cfe0ef;background:#fff;border-radius:10px;padding:10px;margin:4px 0 12px}
+.credit-kb-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.credit-kb-head strong{font-size:13px}
+.credit-kb-head button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 9px;font-weight:800;cursor:pointer}
+.credit-kb-head button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.credit-kb-display{min-height:42px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;padding:7px 9px;font-size:17px;font-weight:800;margin-bottom:8px;overflow:hidden}
+.credit-kb-display small{display:block;font-size:10px;color:#64748b;font-weight:600}
+.credit-text-keys{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.credit-num-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.credit-text-keys.hidden,.credit-num-keys.hidden{display:none!important}
+.credit-text-keys button,.credit-num-keys button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;min-height:38px;font-size:13px;font-weight:800;cursor:pointer}
+.credit-num-keys button{min-height:46px;font-size:19px}
+.credit-text-keys .space{grid-column:span 4}.credit-text-keys .wide{grid-column:span 2}
+.credit-num-keys .ckb-clear{background:#fee2e2;color:#991b1b}
+.credit-num-keys .ckb-ok{background:#1769e0;color:#fff;border-color:#1769e0}
+#creditName.ckb-active,#creditPhone.ckb-active{outline:3px solid #1769e0!important;outline-offset:1px!important}
+.credit-kb-note{margin-top:7px;font-size:10px;color:#64748b}
+@media(max-width:760px){
+ .credit-text-keys{grid-template-columns:repeat(7,1fr)}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -735,6 +760,25 @@ section#sales label, section#pos label{
                 <div class="credit-fields">
                   <label>Customer Name<input id="creditName" type="text" placeholder="Customer name"></label>
                   <label>Mobile Number<input id="creditPhone" type="tel" placeholder="01XXXXXXXXX"></label>
+                </div>
+                <div id="creditCustomerKeyboard" class="credit-kb">
+                  <div class="credit-kb-head">
+                    <strong>⌨️ Customer Keyboard</strong>
+                    <div>
+                      <button type="button" class="ckb-mode active" data-ckbmode="text">ABC</button>
+                      <button type="button" class="ckb-mode" data-ckbmode="num">123</button>
+                    </div>
+                  </div>
+                  <div id="creditKbDisplay" class="credit-kb-display"><small>Customer Name</small></div>
+                  <div id="creditTextKeys" class="credit-text-keys"></div>
+                  <div id="creditNumKeys" class="credit-num-keys hidden">
+                    <button type="button" data-ckey="7">7</button><button type="button" data-ckey="8">8</button><button type="button" data-ckey="9">9</button>
+                    <button type="button" data-ckey="4">4</button><button type="button" data-ckey="5">5</button><button type="button" data-ckey="6">6</button>
+                    <button type="button" data-ckey="1">1</button><button type="button" data-ckey="2">2</button><button type="button" data-ckey="3">3</button>
+                    <button type="button" class="ckb-clear" data-ckey="clear">C</button><button type="button" data-ckey="0">0</button><button type="button" data-ckey="back">⌫</button>
+                    <button type="button" class="ckb-ok" data-ckey="ok" style="grid-column:span 3">OK</button>
+                  </div>
+                  <div class="credit-kb-note">Customer Name চাপলে ABC, Mobile Number চাপলে 123 keyboard চালু হবে।</div>
                 </div>
                 <div class="finish-actions">
                   <button type="button" class="btn primary finish-btn" id="creditContinueBtn">Continue →</button>
@@ -2305,6 +2349,82 @@ window.addEventListener('DOMContentLoaded', function(){
  num.addEventListener('click',e=>{const b=e.target.closest('[data-pkey]');if(!b||!active)return;e.preventDefault();const k=b.dataset.pkey;if(k==='clear')raw='';else if(k==='back')raw=raw.slice(0,-1);else if(k==='ok'){write();active.dispatchEvent(new Event('change',{bubbles:true}));if(active.id==='pBarcode'){try{if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode()}catch(e){}}refresh();return}else if(k==='.'){if(active.id!=='pBarcode'&&!raw.includes('.'))raw=(raw||'0')+'.'}else if(/^\d$/.test(k)){raw=raw==='0'?k:raw+k}write();refresh()});
  text.addEventListener('click',e=>{const b=e.target.closest('[data-tkey]');if(!b||!active)return;e.preventDefault();const k=b.dataset.tkey;if(k==='clear')raw='';else if(k==='back')raw=raw.slice(0,-1);else if(k==='ok'){write();active.dispatchEvent(new Event('change',{bubbles:true}));refresh();return}else raw+=k;write();refresh()});
  if(active)select(active);
+})();
+</script>
+
+
+<script id="credit-customer-keyboard-js">
+(function(){
+  const nameInput=document.getElementById('creditName');
+  const phoneInput=document.getElementById('creditPhone');
+  const kb=document.getElementById('creditCustomerKeyboard');
+  const display=document.getElementById('creditKbDisplay');
+  const textBox=document.getElementById('creditTextKeys');
+  const numBox=document.getElementById('creditNumKeys');
+  if(!nameInput||!phoneInput||!kb||!display||!textBox||!numBox)return;
+
+  let active=nameInput;
+  let raw=String(active.value||'');
+
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function fieldLabel(){return active===phoneInput?'Mobile Number':'Customer Name'}
+  function refresh(){display.innerHTML='<small>'+fieldLabel()+'</small>'+esc(raw||'')}
+  function setMode(m){
+    textBox.classList.toggle('hidden',m!=='text');
+    numBox.classList.toggle('hidden',m!=='num');
+    kb.querySelectorAll('[data-ckbmode]').forEach(b=>b.classList.toggle('active',b.dataset.ckbmode===m));
+  }
+  function select(el){
+    active=el;
+    nameInput.classList.remove('ckb-active'); phoneInput.classList.remove('ckb-active');
+    active.classList.add('ckb-active');
+    raw=String(active.value||'');
+    setMode(active===phoneInput?'num':'text');
+    refresh();
+  }
+  function write(){
+    active.value=raw;
+    active.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+
+  'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').forEach(ch=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=ch; b.dataset.ctkey=ch; textBox.appendChild(b);
+  });
+  [['Space',' ','space'],['⌫','back',''],['Clear','clear','wide'],['OK','ok','wide']].forEach(a=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=a[0]; b.dataset.ctkey=a[1]; if(a[2])b.className=a[2]; textBox.appendChild(b);
+  });
+
+  [nameInput,phoneInput].forEach(el=>{
+    ['click','focus','pointerdown'].forEach(ev=>el.addEventListener(ev,()=>select(el)));
+  });
+
+  kb.querySelectorAll('[data-ckbmode]').forEach(b=>b.addEventListener('click',()=>{
+    setMode(b.dataset.ckbmode);
+  }));
+
+  textBox.addEventListener('click',e=>{
+    const b=e.target.closest('[data-ctkey]'); if(!b)return;
+    e.preventDefault();
+    const k=b.dataset.ctkey;
+    if(k==='clear') raw='';
+    else if(k==='back') raw=raw.slice(0,-1);
+    else if(k==='ok'){write(); active.dispatchEvent(new Event('change',{bubbles:true})); refresh(); return;}
+    else raw+=k;
+    write(); refresh();
+  });
+
+  numBox.addEventListener('click',e=>{
+    const b=e.target.closest('[data-ckey]'); if(!b)return;
+    e.preventDefault();
+    const k=b.dataset.ckey;
+    if(k==='clear') raw='';
+    else if(k==='back') raw=raw.slice(0,-1);
+    else if(k==='ok'){write(); active.dispatchEvent(new Event('change',{bubbles:true})); refresh(); return;}
+    else if(/^\d$/.test(k)) raw+=k;
+    write(); refresh();
+  });
+
+  select(nameInput);
 })();
 </script>
 
