@@ -1721,20 +1721,22 @@ async function usernameEmail(username){
   return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
 }
 async function loadCloudData(){
-  const [pr,sr,rr,er,cr]=await Promise.all([
+  const [pr,sr,rr,er,cr,prr]=await Promise.all([
     cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales_returns').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true})
+    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_purchase_returns').select('*').order('created_at',{ascending:true})
   ]);
-  if(pr.error)throw pr.error;if(sr.error)throw sr.error;
+  if(pr.error)throw pr.error;if(sr.error)throw sr.error;if(prr.error)throw prr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
     sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
-    collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''}))
+    collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''})),
+    purchaseReturns:(prr.data||[]).map(x=>({id:x.id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.return_date,by:x.by_name||'',unit:x.unit||'PCS'}))
   };
   // Keep any manually edited Selling Rate. Cloud purchase history must not
   // overwrite the current rate every time data reloads.
@@ -1995,9 +1997,10 @@ $('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.sig
 
 function stockMap(){
  let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode);m[p.barcode].purchaseBatches.push({qty:+p.qty||0,unit:p.unit||m[p.barcode].unit||unitFor(p.barcode),date:p.date||''})});
+ (db.purchaseReturns||[]).forEach(r=>{if(m[r.barcode]){m[r.barcode].purchased-=+r.qty||0;m[r.barcode].cost-=+r.total||0}});
  db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[s.barcode].sold+=+s.qty});
  (db.returns||[]).forEach(r=>{if(m[r.barcode])m[r.barcode].sold-=+r.qty});
- Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+ Object.values(m).forEach(x=>{x.purchased=Math.max(0,x.purchased);x.cost=Math.max(0,x.cost);x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
 }
 
 
@@ -2821,7 +2824,7 @@ function askSecureCode(title){
   return true;
 }
 function purchaseReturnRows(){
-  return (db.purchases||[]).filter(x=>(+x.qty||0)<0);
+  return (db.purchaseReturns||[]);
 }
 function renderPurchaseReturnHistory(){
   if(!$('prHistoryRows'))return;
@@ -2886,16 +2889,15 @@ if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
 
   const btn=this.querySelector('[type=submit]');btn.disabled=true;
   try{
-    const saved=await cloud.from('bbbm_purchases').insert({
+    const saved=await cloud.from('bbbm_purchase_returns').insert({
       user_id:currentUser.id,
       item:x.item,
       barcode:code,
-      qty:-q,
+      qty:q,
       price:rate,
-      total:-(q*rate),
+      total:q*rate,
       unit:x.unit||'PCS',
-      selling_price:null,
-      purchase_date:$('prDate').value||today(),
+      return_date:$('prDate').value||today(),
       by_name:currentUser.name
     });
     if(saved.error)throw saved.error;
@@ -3019,7 +3021,7 @@ async function clearDemoDataForLiveStart(){
     if(typeof saveAutoBackup==='function')saveAutoBackup('Before Demo Reset');
 
     // Delete cloud transaction rows. Keep product metadata/settings.
-    const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_sales','bbbm_purchases','bbbm_expenses'];
+    const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_purchase_returns','bbbm_sales','bbbm_purchases','bbbm_expenses'];
     for(const table of tables){
       const {error}=await supabase.from(table).delete().not('id','is',null);
       if(error)throw new Error(table+': '+error.message);
@@ -3030,6 +3032,7 @@ async function clearDemoDataForLiveStart(){
     db.returns=[];
     db.expenses=[];
     db.collections=[];
+    db.purchaseReturns=[];
     safeSet(DB,db);
 
     // Reset Accounts opening cash only; keep all other settings.
