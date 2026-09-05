@@ -912,6 +912,15 @@ body.bbbm-dark-mode .demo-keep-box{background:#052e2b;border-color:#065f46;color
 @media(max-width:650px){.demo-live-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 
+
+<style id="purchase-return-lock-css">
+.pr-lock-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;font-weight:900}
+.purchase-return-card{border:1px solid #fecaca!important}
+.purchase-return-card .btn.danger{background:linear-gradient(135deg,#dc2626,#b91c1c)!important;color:#fff!important;border:0!important;font-weight:900!important}
+.purchase-return-history{margin-top:14px}
+body.bbbm-dark-mode .purchase-return-card{border-color:#7f1d1d!important}
+body.bbbm-dark-mode .pr-lock-badge{background:#431407;border-color:#7c2d12;color:#fdba74}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -962,6 +971,7 @@ body.bbbm-dark-mode .demo-keep-box{background:#052e2b;border-color:#065f46;color
           <button class="active" data-tab="dashboard"><span>◉</span> Dashboard</button>
           <button data-tab="sales"><span>🛒</span> POS / Sales</button>
           <button data-tab="purchase"><span>📦</span> Purchase</button>
+          <button data-tab="purchasereturn"><span>↩️</span> Purchase Return</button>
           <button data-tab="stock"><span>▣</span> Inventory / Stock</button>
           <button data-tab="returns"><span>↩️</span> Sales Return</button>
           <button data-tab="expense"><span>💸</span> Expense</button>
@@ -1107,7 +1117,62 @@ body.bbbm-dark-mode .demo-keep-box{background:#052e2b;border-color:#065f46;color
             <div class="card history-card"><div class="panel-head"><h3>Purchase History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
           </section>
 
-          <section id="sales" class="section">
+          
+          <section id="purchasereturn" class="section">
+            <div class="section-heading">
+              <div>
+                <h2>↩️ Purchase Return</h2>
+                <p>Supplier-কে ফেরত দেওয়া item stock থেকে remove করুন।</p>
+              </div>
+              <div class="pr-lock-badge">🔐 PIN Protected</div>
+            </div>
+
+            <div class="card form-card purchase-return-card">
+              <form id="purchaseReturnForm" class="dataform">
+                <label>Barcode
+                  <input id="prBarcode" inputmode="numeric" placeholder="Barcode লিখুন / scan করুন" required>
+                </label>
+                <label>Item Name
+                  <input id="prItem" readonly>
+                </label>
+                <label>Current Stock
+                  <input id="prStock" readonly>
+                </label>
+                <label>Return Quantity
+                  <input id="prQty" type="number" min="0.001" step="0.001" required>
+                </label>
+                <label>Unit
+                  <input id="prUnit" readonly>
+                </label>
+                <label>Purchase Rate / Unit
+                  <input id="prRate" type="number" min="0" step="0.01" required>
+                </label>
+                <label>Return Total
+                  <input id="prTotal" readonly>
+                </label>
+                <label>Date
+                  <input id="prDate" type="date" required>
+                </label>
+                <div class="form-actions">
+                  <button type="submit" class="btn danger">↩️ Return to Supplier & Remove Stock</button>
+                  <button type="button" class="btn gray" id="prClearBtn">Clear</button>
+                </div>
+              </form>
+              <div id="prMsg" class="msg"></div>
+            </div>
+
+            <div class="card panel purchase-return-history">
+              <div class="panel-head"><h3>Purchase Return History</h3><span class="soft-label" id="prHistoryCount">0 returns</span></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Rate</th><th>Total</th><th>By</th></tr></thead>
+                  <tbody id="prHistoryRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+<section id="sales" class="section">
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
             
 <div class="card form-card">
@@ -2743,7 +2808,110 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
+
+// ===== PIN-Protected Settings + Purchase Return =====
+const SECURE_ACCESS_CODE='3698';
+function askSecureCode(title){
+  const v=prompt('🔐 '+title+'\nAccess Code লিখুন:');
+  if(v===null)return false;
+  if(String(v).trim()!==SECURE_ACCESS_CODE){
+    alert('❌ Wrong Access Code.');
+    return false;
+  }
+  return true;
+}
+function purchaseReturnRows(){
+  return (db.purchases||[]).filter(x=>(+x.qty||0)<0);
+}
+function renderPurchaseReturnHistory(){
+  if(!$('prHistoryRows'))return;
+  const rows=purchaseReturnRows().slice().reverse();
+  $('prHistoryCount').textContent=rows.length+' returns';
+  $('prHistoryRows').innerHTML=rows.length?rows.map(x=>`
+    <tr>
+      <td>${x.date||''}</td>
+      <td><b>${x.item||''}</b></td>
+      <td>${x.barcode||''}</td>
+      <td>${fmtQty(Math.abs(+x.qty||0))} ${x.unit||'PCS'}</td>
+      <td>${money(Math.abs(+x.price||0))}</td>
+      <td><b>${money(Math.abs(+x.total||0))}</b></td>
+      <td>${x.by||''}</td>
+    </tr>`).join(''):'<tr><td colspan="7">No purchase return yet.</td></tr>';
+}
+function fillPurchaseReturnFromBarcode(){
+  const code=String($('prBarcode').value||'').trim();
+  const x=stockMap()[code];
+  if(!x || (+x.current||0)<=0){
+    $('prItem').value='';
+    $('prStock').value='';
+    $('prUnit').value='';
+    $('prRate').value='';
+    $('prTotal').value='';
+    if(code && $('prMsg'))$('prMsg').textContent='Item পাওয়া যায়নি অথবা stock নেই।';
+    return;
+  }
+  $('prItem').value=x.item||'';
+  $('prStock').value=fmtQty(x.current)+' '+(x.unit||'PCS');
+  $('prUnit').value=x.unit||'PCS';
+  const lastPositive=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'')===code && (+p.qty||0)>0);
+  $('prRate').value=lastPositive?Number(lastPositive.price||0):Number(x.avg||0);
+  if($('prMsg'))$('prMsg').textContent='';
+  calcPurchaseReturnTotal();
+}
+function calcPurchaseReturnTotal(){
+  if(!$('prTotal'))return;
+  $('prTotal').value=((+$('prQty').value||0)*(+$('prRate').value||0)).toFixed(2);
+}
+function clearPurchaseReturnForm(){
+  if($('purchaseReturnForm'))$('purchaseReturnForm').reset();
+  if($('prDate'))$('prDate').value=today();
+  if($('prMsg'))$('prMsg').textContent='';
+}
+if($('prDate'))$('prDate').value=today();
+if($('prBarcode'))$('prBarcode').oninput=fillPurchaseReturnFromBarcode;
+if($('prQty'))$('prQty').oninput=calcPurchaseReturnTotal;
+if($('prRate'))$('prRate').oninput=calcPurchaseReturnTotal;
+if($('prClearBtn'))$('prClearBtn').onclick=clearPurchaseReturnForm;
+if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
+  e.preventDefault();
+  if(!askSecureCode('Purchase Return'))return;
+  const code=String($('prBarcode').value||'').trim();
+  const x=stockMap()[code];
+  const q=+$('prQty').value||0;
+  const rate=+$('prRate').value||0;
+  if(!x || (+x.current||0)<=0){alert('Item পাওয়া যায়নি অথবা stock নেই।');return}
+  if(q<=0){alert('Return quantity দিন।');return}
+  if(q>(+x.current||0)){alert('Return quantity current stock-এর চেয়ে বেশি হতে পারবে না।');return}
+  if(!confirm(`${x.item}\n${fmtQty(q)} ${x.unit||'PCS'} supplier-কে return করবেন?\nStock থেকে quantity কমে যাবে।`))return;
+
+  const btn=this.querySelector('[type=submit]');btn.disabled=true;
+  try{
+    const saved=await cloud.from('bbbm_purchases').insert({
+      user_id:currentUser.id,
+      item:x.item,
+      barcode:code,
+      qty:-q,
+      price:rate,
+      total:-(q*rate),
+      unit:x.unit||'PCS',
+      selling_price:null,
+      purchase_date:$('prDate').value||today(),
+      by_name:currentUser.name
+    });
+    if(saved.error)throw saved.error;
+    await loadCloudData();
+    render();
+    renderPurchaseReturnHistory();
+    clearPurchaseReturnForm();
+    alert('✅ Purchase Return saved. Stock updated successfully.');
+  }catch(err){
+    alert('Purchase Return save করা যায়নি: '+(err.message||err));
+  }finally{btn.disabled=false}
+};
+
 async function goTab(tab){
+ if(tab==='settings' && !askSecureCode('Settings'))return;
+ if(tab==='purchasereturn' && !askSecureCode('Purchase Return'))return;
  await stopScanner();
  if(tab!=='creditcustomers'){
    const d=$('creditCustomerDetailView'),l=$('creditCustomerListView');
@@ -2755,7 +2923,8 @@ async function goTab(tab){
  if(tab==='barcode')refreshBarcodeItems();
  if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
       if(tab==='accounts')renderAccounts();
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
+      if(tab==='purchasereturn')renderPurchaseReturnHistory();
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',purchasereturn:'Purchase Return',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
