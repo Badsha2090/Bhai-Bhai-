@@ -3103,7 +3103,8 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  const search=document.getElementById('inventorySearch');
  if(search){
    search.setAttribute('inputmode','none');
-   search.addEventListener('focus',()=>show(search,'text'));
+   // Do not auto-open keyboard just by entering Inventory or focusing search.
+   // Open only when the user taps/clicks inside the search box.
    search.addEventListener('click',()=>show(search,'text'));
  }
 
@@ -3128,6 +3129,10 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  handle.addEventListener('pointercancel',endDrag);
  close.onclick=hide;
 
+ document.addEventListener('click',function(e){
+   const nav=e.target.closest&&e.target.closest('[data-tab="inventory"]');
+   if(nav){hide();rateBox.style.display='none';}
+ });
  document.addEventListener('keydown',e=>{
    if(e.key==='Escape'){hide();rateBox.style.display='none'}
  });
