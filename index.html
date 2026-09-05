@@ -598,6 +598,17 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="inventory-purchaseqty-css">
+.stock-bought-qty{
+ display:block;margin-top:3px;color:#0f766e;font-size:10px;font-weight:800;white-space:nowrap
+}
+.stock-batch-qty{
+ display:block;margin-top:2px;color:#64748b;font-size:9px;font-weight:700;line-height:1.35;
+ max-width:240px;white-space:normal
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1458,12 +1469,27 @@ $('setupCloudBtn').onclick=function(){prefillLocalUsers();$('setupMsg').textCont
 $('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.signOut();currentUser=null;showLogin()};
 
 function stockMap(){
- let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode)});
- db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0};m[s.barcode].sold+=+s.qty});
+ let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode);m[p.barcode].purchaseBatches.push({qty:+p.qty||0,unit:p.unit||m[p.barcode].unit||unitFor(p.barcode),date:p.date||''})});
+ db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[s.barcode].sold+=+s.qty});
  (db.returns||[]).forEach(r=>{if(m[r.barcode])m[r.barcode].sold-=+r.qty});
  Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
 }
 
+
+window.addEventListener('bbbm-save-selling-rate',function(e){
+ try{
+   const d=e.detail||{},code=String(d.code||'').trim(),rate=Number(d.rate);
+   if(!code||isNaN(rate)||rate<0)return;
+   saveMeta(code,{sellPrice:rate});
+   render();
+   const saleCode=$('sBarcode');
+   if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+   alert('Selling Rate updated: '+money(rate));
+ }catch(err){
+   console.error(err);
+   alert('Selling Rate update failed.');
+ }
+});
 function editStockSellingRate(code,item){
  code=String(code||'').trim(); if(!code)return;
  const old=metaFor(code).sellPrice;
@@ -1639,7 +1665,7 @@ function render(){
 <td>${fmtQty(x.sold)} ${x.unit||'PCS'}</td>
 <td><b>${fmtQty(x.current)} ${x.unit||'PCS'}</b></td>
 <td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?money(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button></div></td>
-<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small></td>
+<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-bought-qty">Bought: ${fmtQty(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtQty(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
 </tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
 document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
 if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInventorySearch();
@@ -2882,7 +2908,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 <td>${fmtFn(x.sold)} ${x.unit||'PCS'}</td>
 <td><b>${fmtFn(x.current)} ${x.unit||'PCS'}</b></td>
 <td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?moneyFn(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${itemSafe}">✏️ Edit</button></div></td>
-<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small></td>
+<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-bought-qty">Bought: ${fmtFn(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtFn(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
 </tr>`;
  }
 
@@ -3015,6 +3041,41 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  rateInput.addEventListener('click',()=>show(rateInput,'numeric'));
 
  // Search keyboard opens on tap/focus.
+
+ // Selling Rate Edit: delegated handler so the floating numeric keyboard
+ // always opens even after Inventory rows are re-rendered by search/render().
+ document.addEventListener('click',function(e){
+   const btn=e.target.closest && e.target.closest('.stock-rate-edit');
+   if(!btn)return;
+   e.preventDefault();
+   e.stopPropagation();
+   const code=String(btn.dataset.rateCode||'').trim();
+   const item=btn.dataset.rateItem||code;
+   if(!code || !window.__bbbmOpenRateEditor)return;
+
+   let oldRate='';
+   try{
+     const meta=JSON.parse(localStorage.getItem('bbbm_product_meta_v2')||'{}');
+     const rec=(meta&&meta[code])||{};
+     if(rec.sellPrice!=null&&rec.sellPrice!=='')oldRate=String(rec.sellPrice);
+   }catch(_){}
+
+   window.__bbbmOpenRateEditor({
+     code:code,item:item,oldRate:oldRate,
+     onSave:function(entered){
+       const clean=String(entered||'').trim();
+       if(clean===''||isNaN(Number(clean))||Number(clean)<0){
+         alert('Please enter a valid selling rate.');
+         return false;
+       }
+       window.dispatchEvent(new CustomEvent('bbbm-save-selling-rate',{
+         detail:{code:code,rate:Number(clean)}
+       }));
+       return true;
+     }
+   });
+ },true);
+
  const search=document.getElementById('inventorySearch');
  if(search){
    search.setAttribute('inputmode','none');
