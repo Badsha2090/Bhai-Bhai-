@@ -844,6 +844,74 @@ body.bbbm-dark-mode #accounts .form-card{background:#172033!important;color:#f8f
 }
 </style>
 
+
+<style id="demo-reset-css">
+.demo-reset-card{
+  position:relative;overflow:hidden;
+  border:1px solid #dbeafe!important;
+  background:linear-gradient(145deg,#ffffff 0%,#f8fbff 55%,#eff6ff 100%)!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.08)!important;
+}
+.demo-reset-card:before{
+  content:"";position:absolute;width:170px;height:170px;border-radius:50%;
+  right:-70px;top:-75px;background:rgba(59,130,246,.10);pointer-events:none
+}
+.demo-live-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;position:relative}
+.demo-live-icon{
+  width:58px;height:58px;border-radius:17px;display:flex;align-items:center;justify-content:center;
+  font-size:29px;background:linear-gradient(135deg,#2563eb,#7c3aed);box-shadow:0 8px 18px rgba(37,99,235,.24)
+}
+.demo-live-kicker{font-size:11px;font-weight:900;letter-spacing:1.8px;color:#2563eb;margin-bottom:2px}
+.demo-live-head h3{font-size:21px!important;margin:0!important;color:#0f172a!important}
+.demo-live-date{font-size:13px;font-weight:800;color:#475569;margin-top:3px}
+.demo-live-note{
+  padding:11px 13px;border-radius:12px;background:#fff;border:1px solid #e2e8f0;
+  color:#475569;font-size:13px;line-height:1.55;margin-bottom:12px
+}
+.demo-live-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.demo-live-grid div{
+  padding:10px 7px;border-radius:11px;background:#fff;border:1px solid #e2e8f0;
+  font-size:12px;font-weight:800;color:#334155;text-align:center
+}
+.demo-live-grid span{display:block;font-size:20px;margin-bottom:3px}
+.demo-keep-box{
+  display:flex;flex-direction:column;gap:4px;padding:11px 13px;border-radius:12px;
+  background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;margin:12px 0
+}
+.demo-keep-box b{font-size:13px}.demo-keep-box span{font-size:12px;font-weight:700}
+
+.demo-pin-box{
+  padding:12px 13px;border-radius:13px;background:#f8fafc;border:1px solid #cbd5e1;margin:12px 0
+}
+.demo-pin-title{font-size:13px;font-weight:900;color:#0f172a}
+.demo-pin-sub{font-size:11px;line-height:1.45;color:#64748b;margin:4px 0 9px}
+.demo-pin-change-btn{
+  width:100%;padding:10px!important;border-radius:10px!important;background:#0f172a!important;
+  color:#fff!important;border:0!important;font-weight:850!important
+}
+body.bbbm-dark-mode .demo-pin-box{background:#0b1220;border-color:#334155}
+body.bbbm-dark-mode .demo-pin-title{color:#f8fafc}
+body.bbbm-dark-mode .demo-pin-sub{color:#94a3b8}
+body.bbbm-dark-mode .demo-pin-change-btn{background:#334155!important}
+
+.demo-reset-card .demo-live-btn{
+  width:100%;padding:13px!important;border-radius:12px!important;border:0!important;
+  background:linear-gradient(135deg,#dc2626,#b91c1c)!important;color:#fff!important;
+  font-weight:900!important;font-size:14px!important;box-shadow:0 8px 18px rgba(220,38,38,.22)
+}
+.demo-warning{text-align:center;font-size:11px;font-weight:800;color:#b45309;margin-top:9px}
+body.bbbm-dark-mode .demo-reset-card{
+  border-color:#334155!important;background:linear-gradient(145deg,#111827,#0f172a)!important
+}
+body.bbbm-dark-mode .demo-live-head h3{color:#f8fafc!important}
+body.bbbm-dark-mode .demo-live-date,body.bbbm-dark-mode .demo-live-note{color:#cbd5e1}
+body.bbbm-dark-mode .demo-live-note,body.bbbm-dark-mode .demo-live-grid div{
+  background:#111827;border-color:#334155;color:#e2e8f0
+}
+body.bbbm-dark-mode .demo-keep-box{background:#052e2b;border-color:#065f46;color:#a7f3d0}
+@media(max-width:650px){.demo-live-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1411,6 +1479,49 @@ body.bbbm-dark-mode #accounts .form-card{background:#172033!important;color:#f8f
 <div class="card settings-card"><h3>💾 Backup & Restore</h3><label class="check"><input id="setAutoBackup" type="checkbox"> Automatic backup preference</label><div class="set-actions"><button type="button" class="btn primary" id="settingsBackupNow">Backup Now</button><button type="button" class="btn gray" id="settingsOpenBackup">Backup & Sync</button></div><p class="set-note">Last backup: <b id="settingsLastBackup">—</b></p></div>
 <div class="card settings-card"><h3>🖨️ Printer Settings</h3><label>Bill Printer<input id="setBillPrinter"></label><label>Barcode Printer<input id="setBarcodePrinter"></label><label>Receipt Copies<input id="setReceiptCopies" type="number" min="1" max="5"></label><label class="check"><input id="setAutoPrint" type="checkbox"> Auto print after sale</label><button type="button" class="btn primary set-save" data-save="printer">Save</button></div>
 <div class="card settings-card"><h3>🛠️ System Settings</h3><label>Currency<select id="setCurrency"><option value="৳">৳ BDT</option><option value="AED">AED</option></select></label><label>Date Format<select id="setDateFormat"><option>DD-MM-YYYY</option><option>YYYY-MM-DD</option></select></label><label class="check"><input id="setConfirmDelete" type="checkbox"> Confirm before delete</label><label class="check"><input id="setConfirmReturn" type="checkbox"> Confirm before return</label><button type="button" class="btn primary set-save" data-save="system">Save</button></div>
+
+<div class="card settings-card demo-reset-card">
+  <div class="demo-live-head">
+    <div class="demo-live-icon">🚀</div>
+    <div>
+      <div class="demo-live-kicker">GO LIVE</div>
+      <h3>Start Live Business</h3>
+      <div class="demo-live-date">📅 16 September 2026</div>
+    </div>
+  </div>
+
+  <div class="demo-live-note">
+    এখনকার Test/Demo হিসাব পরিষ্কার করে দোকানের আসল হিসাব শুরু করার জন্য এই অপশন ব্যবহার করুন।
+  </div>
+
+  <div class="demo-live-grid">
+    <div><span>🧾</span> Demo Sales</div>
+    <div><span>📦</span> Demo Purchase</div>
+    <div><span>↩️</span> Returns</div>
+    <div><span>💸</span> Expenses</div>
+    <div><span>💳</span> Credit Collection</div>
+    <div><span>💵</span> Opening Cash</div>
+  </div>
+
+  <div class="demo-keep-box">
+    <b>🔒 এগুলো নিরাপদ থাকবে</b>
+    <span>Products • Barcodes • Selling Rates • Settings</span>
+  </div>
+
+
+  <div class="demo-pin-box">
+    <div class="demo-pin-title">🔐 Admin PIN Protection</div>
+    <div class="demo-pin-sub">Demo data clear করতে 4-digit Admin PIN লাগবে। PIN আপনি এখান থেকেই পরিবর্তন করতে পারবেন।</div>
+    <button type="button" class="btn demo-pin-change-btn" id="changeDemoPinBtn">🔑 Change Admin PIN</button>
+    <div id="demoPinMsg" class="msg"></div>
+  </div>
+
+  <button type="button" class="btn danger demo-live-btn" id="clearDemoDataBtn">
+    🧹 Clear Demo Data &amp; Prepare for Live
+  </button>
+  <div class="demo-warning">⚠️ শুধু ১৬ সেপ্টেম্বর আসল হিসাব শুরু করার আগে ব্যবহার করবেন</div>
+  <div id="clearDemoDataMsg" class="msg"></div>
+</div>
 <div class="card settings-card"><h3>ℹ️ About / System Info</h3><div class="set-info"><span>System</span><b>Bhai Bhai Building Materials POS</b></div><div class="set-info"><span>Version</span><b>2026.09</b></div><div class="set-info"><span>Cloud</span><b>Supabase</b></div><div class="set-info"><span>Current User</span><b id="settingsCurrentUser">—</b></div><div class="set-info"><span>Last Backup</span><b id="settingsAboutBackup">—</b></div></div>
 </div></section>
 <section id="barcode" class="section">
@@ -2675,6 +2786,100 @@ document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&curr
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
 
+
+
+// ===== Demo Data Reset =====
+
+const DEMO_RESET_PIN_KEY='bbbm_demo_reset_admin_pin_v1';
+function demoResetPin(){
+  try{return String(localStorage.getItem(DEMO_RESET_PIN_KEY)||'').trim()}catch(e){return ''}
+}
+function validFourDigitPin(v){return /^\d{4}$/.test(String(v||'').trim())}
+function ensureDemoResetPin(){
+  let current=demoResetPin();
+  if(current)return true;
+  const first=prompt('প্রথমবারের জন্য 4-digit Admin PIN সেট করুন:');
+  if(first===null)return false;
+  if(!validFourDigitPin(first)){alert('PIN অবশ্যই 4 digit হতে হবে।');return false}
+  const again=prompt('একই 4-digit PIN আবার লিখুন:');
+  if(String(first).trim()!==String(again||'').trim()){alert('PIN মিলেনি। আবার চেষ্টা করুন।');return false}
+  try{localStorage.setItem(DEMO_RESET_PIN_KEY,String(first).trim())}catch(e){}
+  if($('demoPinMsg'))$('demoPinMsg').textContent='✅ Admin PIN set successfully.';
+  return true;
+}
+function verifyDemoResetPin(){
+  if(!ensureDemoResetPin())return false;
+  const entered=prompt('🔐 Admin PIN লিখুন:');
+  if(entered===null)return false;
+  if(String(entered).trim()!==demoResetPin()){
+    alert('❌ Wrong Admin PIN.');
+    if($('demoPinMsg'))$('demoPinMsg').textContent='❌ Wrong PIN. Demo data was not changed.';
+    return false;
+  }
+  return true;
+}
+function changeDemoResetPin(){
+  const old=demoResetPin();
+  if(old){
+    const entered=prompt('বর্তমান Admin PIN লিখুন:');
+    if(entered===null)return;
+    if(String(entered).trim()!==old){alert('❌ Current PIN is wrong.');return}
+  }
+  const next=prompt('নতুন 4-digit Admin PIN লিখুন:');
+  if(next===null)return;
+  if(!validFourDigitPin(next)){alert('PIN অবশ্যই 4 digit হতে হবে।');return}
+  const again=prompt('নতুন PIN আবার লিখুন:');
+  if(String(next).trim()!==String(again||'').trim()){alert('PIN মিলেনি।');return}
+  try{localStorage.setItem(DEMO_RESET_PIN_KEY,String(next).trim())}catch(e){}
+  if($('demoPinMsg'))$('demoPinMsg').textContent='✅ Admin PIN changed successfully.';
+  alert('Admin PIN changed successfully.');
+}
+if($('changeDemoPinBtn'))$('changeDemoPinBtn').onclick=changeDemoResetPin;
+
+async function clearDemoDataForLiveStart(){
+  if(!verifyDemoResetPin())return;
+  const phrase=prompt('Demo data মুছতে CLEAR DEMO লিখুন।\n\nএতে Sale, Purchase, Return, Expense, Credit Collection ও Accounts Opening Cash মুছে যাবে। Product settings/barcode/selling rate/Settings থাকবে।');
+  if(String(phrase||'').trim().toUpperCase()!=='CLEAR DEMO'){
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='Cancelled. Nothing was deleted.';
+    return;
+  }
+  if(!confirm('Final confirmation: সব Demo transaction data permanently delete করবেন?'))return;
+
+  try{
+    // Save a downloadable/local snapshot before deleting demo data.
+    if(typeof saveAutoBackup==='function')saveAutoBackup('Before Demo Reset');
+
+    // Delete cloud transaction rows. Keep product metadata/settings.
+    const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_sales','bbbm_purchases','bbbm_expenses'];
+    for(const table of tables){
+      const {error}=await supabase.from(table).delete().not('id','is',null);
+      if(error)throw new Error(table+': '+error.message);
+    }
+
+    db.purchases=[];
+    db.sales=[];
+    db.returns=[];
+    db.expenses=[];
+    db.collections=[];
+    safeSet(DB,db);
+
+    // Reset Accounts opening cash only; keep all other settings.
+    try{localStorage.removeItem('bbbm_accounts_opening_cash_v1')}catch(e){}
+
+    render();
+    if(typeof renderAccounts==='function')renderAccounts();
+    if(typeof renderBackupPanel==='function')renderBackupPanel();
+
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Demo transaction data cleared. System is ready for live use.';
+    alert('Demo data cleared successfully. Product settings, barcodes, selling rates and Settings were kept.');
+  }catch(e){
+    console.error('Demo reset failed',e);
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Demo reset failed: '+(e.message||e);
+    alert('Demo reset failed. Nothing else will be changed until the error is fixed.');
+    try{await loadCloudData();render()}catch(_){}
+  }
+}
+if($('clearDemoDataBtn'))$('clearDemoDataBtn').onclick=clearDemoDataForLiveStart;
 
 // ===== Accounts =====
 const ACC_OPENING_KEY='bbbm_accounts_opening_cash_v1';
