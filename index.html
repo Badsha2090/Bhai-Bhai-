@@ -537,6 +537,23 @@ section#sales label, section#pos label{
 @media(max-width:760px){.stock-rate-cell{flex-direction:column;align-items:flex-start}.stock-rate-edit{padding:4px 7px}}
 </style>
 
+
+<style id="inventory-search-css">
+.inventory-search-card{padding:12px 14px;margin-bottom:12px}
+.inventory-search-wrap{display:flex;align-items:center;gap:8px}
+.inventory-search-icon{font-size:18px;flex:0 0 auto}
+#inventorySearch{flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;font-size:14px;font-weight:700;background:#fff;color:#102033}
+#inventorySearch:focus{outline:2px solid rgba(59,130,246,.18);border-color:#60a5fa}
+.inventory-search-clear{padding:10px 12px;white-space:nowrap}
+.inventory-search-count{font-size:10px;color:#64748b;font-weight:700;margin-top:7px}
+.inventory-no-result{text-align:center!important;color:#64748b!important;padding:18px!important}
+@media(max-width:760px){
+ .inventory-search-wrap{gap:6px}
+ #inventorySearch{font-size:13px;padding:10px}
+ .inventory-search-clear{padding:9px 10px}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1091,6 +1108,14 @@ section#sales label, section#pos label{
 
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
+            <div class="card inventory-search-card">
+              <div class="inventory-search-wrap">
+                <span class="inventory-search-icon">🔎</span>
+                <input id="inventorySearch" type="text" inputmode="search" autocomplete="off" placeholder="Item name বা Barcode লিখে search করুন">
+                <button type="button" id="inventorySearchClear" class="btn gray inventory-search-clear">Clear</button>
+              </div>
+              <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
+            </div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
@@ -1546,7 +1571,7 @@ function render(){
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
- $('stockRows').innerHTML=vals.length?vals.map(x=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
+ window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map(x=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
 <td>${x.item}</td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
@@ -1557,6 +1582,7 @@ function render(){
 <td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small></td>
 </tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
 document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
+if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInventorySearch();
 
  const recent=db.sales.slice().reverse().slice(0,6);
  if($('dashRecentSales'))$('dashRecentSales').innerHTML=recent.length?recent.map(x=>`<tr><td>${x.date}</td><td><b>${x.item}</b></td><td>${fmtQty(x.qty)}</td><td>${x.unit||'PCS'}</td><td><b>${money(x.total)}</b></td></tr>`).join(''):'<tr><td colspan="5">No sale yet.</td></tr>';
@@ -2775,5 +2801,64 @@ if($('settingsBackupNow'))$('settingsBackupNow').onclick=()=>{try{if(typeof make
 if($('setUserSave'))$('setUserSave').onclick=()=>{let n=v('setUserDisplayName').trim(),p=v('setNewPassword'),q=v('setConfirmPassword');if(p!==q){msg('Password does not match');return}if(n&&$('who'))$('who').textContent=n;sv('setNewPassword','');sv('setConfirmPassword','');msg(p?'Display name saved. Login password remains protected by existing account authentication.':'Display name saved');fill()};
 fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]').forEach(b=>b.addEventListener('click',()=>setTimeout(fill,0)));
 })();
-</script></body>
+</script>
+<script id="inventory-search-js">
+(function(){
+ const qEl=document.getElementById('inventorySearch');
+ const clearBtn=document.getElementById('inventorySearchClear');
+ const countEl=document.getElementById('inventorySearchCount');
+
+ function esc(v){return String(v==null?'':v).toLowerCase().trim()}
+ function rowHtml(x){
+   const sr=(typeof metaFor==='function'?metaFor(x.barcode):{}).sellPrice;
+   const moneyFn=(typeof money==='function'?money:n=>'৳'+Number(n||0).toLocaleString());
+   const fmtFn=(typeof fmtQty==='function'?fmtQty:n=>Number(n||0).toLocaleString());
+   const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+   return `<tr>
+<td>${x.item}</td>
+<td>${x.barcode}</td>
+<td><span class="unit-badge">${x.unit||'PCS'}</span></td>
+<td>${fmtFn(x.purchased)} ${x.unit||'PCS'}</td>
+<td>${fmtFn(x.sold)} ${x.unit||'PCS'}</td>
+<td><b>${fmtFn(x.current)} ${x.unit||'PCS'}</b></td>
+<td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?moneyFn(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${itemSafe}">✏️ Edit</button></div></td>
+<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small></td>
+</tr>`;
+ }
+
+ function apply(){
+   const body=document.getElementById('stockRows');
+   if(!body)return;
+   const vals=Array.isArray(window.__bbbmStockVals)?window.__bbbmStockVals:[];
+   const q=esc(qEl?qEl.value:'');
+   const filtered=!q?vals:vals.filter(x=>{
+     const item=esc(x.item), code=esc(x.barcode);
+     return item.includes(q)||code.includes(q);
+   });
+   body.innerHTML=filtered.length?filtered.map(rowHtml).join(''):'<tr><td colspan="8" class="inventory-no-result">কোনো item পাওয়া যায়নি</td></tr>';
+   body.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>{
+     if(typeof editStockSellingRate==='function')editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem);
+   });
+   if(countEl){
+     countEl.textContent=q ? `${filtered.length} টি item পাওয়া গেছে` : `সব ${vals.length} টি item দেখানো হচ্ছে`;
+   }
+ }
+ window.__bbbmApplyInventorySearch=apply;
+ if(qEl){
+   qEl.addEventListener('input',apply);
+   qEl.addEventListener('search',apply);
+ }
+ if(clearBtn)clearBtn.addEventListener('click',()=>{
+   if(qEl){qEl.value='';qEl.focus()}
+   apply();
+ });
+ document.querySelectorAll('.nav button[data-tab="stock"]').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{
+   if(qEl)qEl.focus();
+   apply();
+ },0)));
+ setTimeout(apply,0);
+})();
+</script>
+
+</body>
 </html>
