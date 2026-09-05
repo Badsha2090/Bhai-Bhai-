@@ -673,6 +673,14 @@ section#sales label, section#pos label{
 .dash-bill-history-metric{cursor:pointer;text-align:left}
 </style>
 
+<style id="dashboard-5sec-hide-css">
+.dashboard-privacy-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+.dashboard-privacy-bar #dashPrivacyHint{font-size:11px;color:#64748b;font-weight:700}
+.dash-show-values-btn{font-weight:900}
+.dashboard-values-hidden .metric .v{font-size:0!important}
+.dashboard-values-hidden .metric .v::after{content:"••••••";font-size:22px;letter-spacing:2px;line-height:1.15}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -762,7 +770,11 @@ section#sales label, section#pos label{
 
         <div class="content-area">
           <section id="dashboard" class="section active">
-            <div class="metric-grid">
+            <div class="dashboard-privacy-bar">
+  <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
+  <span id="dashPrivacyHint">Dashboard values hidden</span>
+</div>
+<div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
               <div class="card metric metric-orange"><div class="metric-icon">🔥</div><div><div class="l">TOTAL PROFIT</div><div id="mProfit" class="v">৳0.00</div><div class="metric-note">Sales minus stock cost</div></div></div>
@@ -3428,6 +3440,41 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 </script>
 
 
+
+<script id="dashboard-5sec-hide-js">
+(function(){
+ const dashboard=document.getElementById('dashboard');
+ const btn=document.getElementById('dashShowValuesBtn');
+ const hint=document.getElementById('dashPrivacyHint');
+ if(!dashboard||!btn)return;
+ let timer=null,tick=null,left=0;
+ function hideValues(){
+   if(timer){clearTimeout(timer);timer=null}
+   if(tick){clearInterval(tick);tick=null}
+   dashboard.classList.add('dashboard-values-hidden');
+   btn.textContent='👁 Show Values (5s)';
+   if(hint)hint.textContent='Dashboard values hidden';
+ }
+ function showValues(){
+   if(timer)clearTimeout(timer);
+   if(tick)clearInterval(tick);
+   dashboard.classList.remove('dashboard-values-hidden');
+   left=5;
+   btn.textContent='🙈 Hide Now';
+   if(hint)hint.textContent='Auto hide in 5s';
+   tick=setInterval(function(){left--;if(left>0&&hint)hint.textContent='Auto hide in '+left+'s'},1000);
+   timer=setTimeout(hideValues,5000);
+ }
+ btn.addEventListener('click',function(){
+   dashboard.classList.contains('dashboard-values-hidden')?showValues():hideValues();
+ });
+ hideValues();
+ document.addEventListener('click',function(e){
+   const nav=e.target.closest&&e.target.closest('[data-tab="dashboard"]');
+   if(nav)setTimeout(hideValues,0);
+ });
+})();
+</script>
 
 </body>
 </html>
