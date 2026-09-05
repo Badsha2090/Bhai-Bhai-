@@ -820,6 +820,16 @@ body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
 body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#334155!important;color:#e2e8f0!important}
 @media(max-width:760px){#dashboard .dashboard-quick-actions .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}#dashboard .dashboard-quick-actions .quick-grid button{height:76px!important;min-height:76px!important;padding:6px 4px!important;font-size:10px!important;border-radius:13px!important}#dashboard .dashboard-quick-actions .quick-grid button span{font-size:21px!important}}
 </style>
+
+<style id="backup-now-fix-css">
+#backupMsg{
+  margin-top:10px!important;
+  min-height:18px!important;
+  font-weight:800!important;
+}
+#backupRows small{font-size:9px}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -2598,75 +2608,157 @@ document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This featur
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
-})();
 
-// ===== Bhai Bhai automatic backup =====
+// ===== Bhai Bhai working backup (inside main app scope) =====
 const BACKUP_KEY='bbbm_auto_backups_v1', BACKUP_MAX=14;
-function backupCopies(){return safeGet(BACKUP_KEY,[])}
+
+function backupCopies(){
+  try{return safeGet(BACKUP_KEY,[])||[]}catch(e){return []}
+}
 function makeBackupSnapshot(){
   return {
-    version:3,
+    version:4,
     app:'Bhai Bhai Building Materials',
     createdAt:new Date().toISOString(),
     db:JSON.parse(JSON.stringify(db||{})),
     productMeta:JSON.parse(JSON.stringify(productMeta||{}))
   };
 }
-function saveAutoBackup(reason='Auto'){
-  try{
-    const snap=makeBackupSnapshot(), list=backupCopies();
-    const signature=JSON.stringify(snap.db);
-    const last=list[0];
-    if(reason==='Auto' && last && last.signature===signature){renderBackupPanel();return false}
-    list.unshift({createdAt:snap.createdAt,reason,signature,snapshot:snap});
-    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
-    safeSet(BACKUP_KEY,list);renderBackupPanel();return true;
-  }catch(e){console.warn('Backup failed',e);return false}
-}
 function renderBackupPanel(){
   const list=backupCopies(),last=list[0];
   if($('lastBackupText'))$('lastBackupText').textContent=last?new Date(last.createdAt).toLocaleString():'Not yet';
   if($('backupCountText'))$('backupCountText').textContent=String(list.length);
+  if($('backupStatus'))$('backupStatus').textContent='ON';
   if($('backupRows'))$('backupRows').innerHTML=list.length?list.map(b=>{
     const d=(b.snapshot&&b.snapshot.db)||{}, count=k=>(d[k]||[]).length;
-    return `<tr><td>${new Date(b.createdAt).toLocaleString()}</td><td>${count('purchases')}</td><td>${count('sales')}</td><td>${count('returns')}</td><td>${count('expenses')}</td><td>${count('collections')}</td></tr>`;
+    return `<tr>
+      <td>${new Date(b.createdAt).toLocaleString()}<small style="display:block;color:#64748b">${b.reason||''}</small></td>
+      <td>${count('purchases')}</td><td>${count('sales')}</td><td>${count('returns')}</td>
+      <td>${count('expenses')}</td><td>${count('collections')}</td>
+    </tr>`;
   }).join(''):'<tr><td colspan="6">No backup yet.</td></tr>';
+
+  // Also update Settings backup status if present.
+  if($('settingsLastBackup'))$('settingsLastBackup').textContent=last?new Date(last.createdAt).toLocaleString():'—';
+}
+function saveAutoBackup(reason='Auto'){
+  try{
+    const snap=makeBackupSnapshot(),list=backupCopies();
+    const signature=JSON.stringify({db:snap.db,productMeta:snap.productMeta});
+    const last=list[0];
+    if(reason==='Auto'&&last&&last.signature===signature){
+      renderBackupPanel();return false;
+    }
+    list.unshift({createdAt:snap.createdAt,reason,signature,snapshot:snap});
+    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
+    safeSet(BACKUP_KEY,list);
+    renderBackupPanel();
+    return true;
+  }catch(e){
+    console.error('Backup failed',e);
+    if($('backupMsg'))$('backupMsg').textContent='Backup failed: '+(e.message||e);
+    return false;
+  }
 }
 function downloadBackup(){
-  const snap=makeBackupSnapshot();
-  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
-  const a=document.createElement('a'),url=URL.createObjectURL(blob);
-  a.href=url;a.download='Bhai_Bhai_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  saveAutoBackup('Manual Download');
-  if($('backupMsg'))$('backupMsg').textContent='Backup file downloaded successfully.';
+  try{
+    const snap=makeBackupSnapshot();
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    const url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    saveAutoBackup('Manual Download');
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup saved and file downloaded.';
+  }catch(e){
+    if($('backupMsg'))$('backupMsg').textContent='Backup download failed: '+(e.message||e);
+  }
 }
 async function restoreBackupFile(file){
   if(!file)return;
   try{
     const data=JSON.parse(await file.text());
-    if(!data||!data.db||!Array.isArray(data.db.purchases)||!Array.isArray(data.db.sales))throw new Error('Invalid Bhai Bhai backup file.');
+    if(!data||!data.db||!Array.isArray(data.db.purchases)||!Array.isArray(data.db.sales))
+      throw new Error('Invalid Bhai Bhai backup file.');
     if(!confirm('Restore this backup? Current local snapshot will be saved first.'))return;
     saveAutoBackup('Before Restore');
-    db=data.db;productMeta=data.productMeta||{};
-    safeSet(DB,db);safeSet(META,productMeta);
+    db=data.db;
+    productMeta=data.productMeta||{};
+    safeSet(DB,db);
+    safeSet(META,productMeta);
     render();
     saveAutoBackup('Restored');
-    if($('backupMsg'))$('backupMsg').textContent='Backup restored locally. Cloud records are not deleted or overwritten.';
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup restored locally. Cloud records were not deleted.';
     alert('Backup restored successfully.');
-  }catch(e){alert('Restore failed: '+(e.message||e))}
+  }catch(e){
+    alert('Restore failed: '+(e.message||e));
+  }
 }
-if($('backupNowBtn'))$('backupNowBtn').onclick=()=>{saveAutoBackup('Manual');$('backupMsg').textContent='Backup saved on this POS.'};
+function manualBackupNow(){
+  const ok=saveAutoBackup('Manual');
+  if($('backupMsg'))$('backupMsg').textContent=ok?'✅ Backup saved successfully on this POS.':'Backup already saved / no change.';
+  renderBackupPanel();
+  if(ok)alert('Backup saved successfully.');
+}
+if($('backupNowBtn'))$('backupNowBtn').onclick=manualBackupNow;
 if($('downloadBackupBtn'))$('downloadBackupBtn').onclick=downloadBackup;
-if($('restoreBackupFile'))$('restoreBackupFile').onchange=e=>{restoreBackupFile(e.target.files&&e.target.files[0]);e.target.value=''};
+if($('restoreBackupFile'))$('restoreBackupFile').onchange=e=>{
+  restoreBackupFile(e.target.files&&e.target.files[0]);
+  e.target.value='';
+};
+if($('settingsBackupNow'))$('settingsBackupNow').onclick=manualBackupNow;
+if($('settingsOpenBackup'))$('settingsOpenBackup').onclick=()=>goTab('backup');
+
+window.__bbbmBackupNow=manualBackupNow;
+window.__bbbmDownloadBackup=downloadBackup;
+
+// Once per calendar day, automatically download one JSON backup after the POS is opened.
+// Browser security may block automatic downloads in some environments; manual Download Backup File remains available.
+const DAILY_DOWNLOAD_KEY='bbbm_last_daily_backup_download_v1';
+function localDateKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dailyAutoDownloadBackup(){
+  try{
+    if(!currentUser)return;
+    const today=localDateKey();
+    if(localStorage.getItem(DAILY_DOWNLOAD_KEY)===today)return;
+    const snap=makeBackupSnapshot();
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Daily_Backup_'+today+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    localStorage.setItem(DAILY_DOWNLOAD_KEY,today);
+    saveAutoBackup('Daily Auto Download');
+    if($('backupMsg'))$('backupMsg').textContent='✅ Today’s automatic backup file downloaded.';
+  }catch(e){
+    console.warn('Daily automatic backup download was blocked or failed',e);
+  }
+}
+// Give login/cloud loading time to finish, then attempt today's one-time download.
+setTimeout(dailyAutoDownloadBackup,8000);
+
 renderBackupPanel();
 
-// Keep a snapshot automatically when cloud data is refreshed, and periodically while POS stays open.
+// Keep automatic backups after cloud refresh and every 30 minutes.
 const _loadCloudDataForBackup=loadCloudData;
-loadCloudData=async function(){await _loadCloudDataForBackup();saveAutoBackup('Auto')};
-setInterval(()=>saveAutoBackup('Auto'),30*60*1000);
-window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
+loadCloudData=async function(){
+  await _loadCloudDataForBackup();
+  saveAutoBackup('Auto');
+};
+setInterval(()=>{if(currentUser)saveAutoBackup('Auto')},30*60*1000);
+window.addEventListener('beforeunload',()=>{try{saveAutoBackup('Auto')}catch(e){}});
 
+})();
 
 // ===== Touch numeric keypad for Sale Price =====
 window.addEventListener('DOMContentLoaded', function(){
