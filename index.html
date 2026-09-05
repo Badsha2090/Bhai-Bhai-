@@ -458,6 +458,12 @@ section#sales label, section#pos label{
 }
 </style>
 
+<style id="global-back-credit-page-css">
+.topbar{justify-content:flex-start!important}.topbar-title-wrap{min-width:0}.topbar-right{margin-left:auto}
+.global-back-btn{border:0;background:#0b4f8a;color:#fff;border-radius:8px;height:38px;padding:0 13px;margin-right:12px;font-size:13px;font-weight:900;cursor:pointer}
+#creditcustomers .card{overflow:hidden}#creditPageTotal{font-size:18px;color:#b45309}
+@media(max-width:760px){.global-back-btn{height:34px;padding:0 9px;margin-right:7px;font-size:12px}}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -531,7 +537,8 @@ section#sales label, section#pos label{
 
       <main class="main-area">
         <div class="topbar">
-          <div>
+          <button type="button" id="globalBackBtn" class="global-back-btn">← Back</button>
+          <div class="topbar-title-wrap">
             <div class="page-title" id="pageTitle">Dashboard</div>
             <div class="page-subtitle">Overview of your business</div>
           </div>
@@ -560,17 +567,6 @@ section#sales label, section#pos label{
                   <div class="metric-note">Click to see customer-wise due</div>
                 </div>
               </button>
-            </div>
-
-            <div id="dashCreditDetails" class="card dash-credit-details hidden">
-              <div class="panel-head">
-                <div>
-                  <h3>💳 Credit Customers</h3>
-                  <div class="soft-label">কার কাছে কত টাকা বাকি আছে</div>
-                </div>
-                <button type="button" id="dashCreditClose" class="mini-link">Close</button>
-              </div>
-              <div id="dashCreditCustomerList" class="dash-credit-list"></div>
             </div>
 
             <div class="dashboard-grid">
@@ -842,6 +838,14 @@ section#sales label, section#pos label{
               <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
             </div>
             <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Customer</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+          </section>
+
+          <section id="creditcustomers" class="section">
+            <div class="section-heading"><div><h2>💳 Credit Customers</h2><p>কার কাছে কত টাকা বাকি আছে</p></div></div>
+            <div class="card">
+              <div class="panel-head"><h3>Customer-wise Outstanding Credit</h3><strong id="creditPageTotal">৳0.00</strong></div>
+              <div id="dashCreditCustomerList" class="dash-credit-list"></div>
+            </div>
           </section>
 
           <section id="returns" class="section">
@@ -1316,6 +1320,7 @@ function dashboardCreditCustomers(){
 function renderDashboardCredit(){
  const total=outstandingCreditAll();
  if($('mCreditDueDash'))$('mCreditDueDash').textContent=money(total);
+ if($('creditPageTotal'))$('creditPageTotal').textContent=money(total);
  const box=$('dashCreditCustomerList');
  if(!box)return;
  const rows=dashboardCreditCustomers();
@@ -1433,10 +1438,7 @@ $('reportDate').onchange=renderReport;$('reportMonth').onchange=renderReport;
 
 if($('dashCreditMetric'))$('dashCreditMetric').onclick=function(){
   renderDashboardCredit();
-  $('dashCreditDetails').classList.toggle('hidden');
-};
-if($('dashCreditClose'))$('dashCreditClose').onclick=function(){
-  $('dashCreditDetails').classList.add('hidden');
+  goTab('creditcustomers');
 };
 
 $('eDate').value=today();
@@ -1762,10 +1764,15 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',reports:'Reports',barcode:'Barcode Print'};
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
+ const active=document.querySelector('.section.active');
+ if(active && active.id!=='dashboard') goTab('dashboard');
+ else if(window.history.length>1) window.history.back();
+};
 document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
 document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
