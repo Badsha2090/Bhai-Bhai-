@@ -430,6 +430,34 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="dashboard-credit-css">
+.dash-credit-metric{
+  width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit;
+  border:1px solid #f0c98f!important;background:#fff!important;
+}
+.dash-credit-metric:hover{box-shadow:0 6px 18px rgba(16,32,51,.10)}
+.metric-credit .metric-icon{background:#fff0dc}
+.dash-credit-details{margin-top:12px;overflow:hidden}
+.dash-credit-details.hidden{display:none!important}
+.dash-credit-list{padding:6px 14px 12px}
+.dash-credit-row{
+  display:grid;grid-template-columns:minmax(0,1.4fr) minmax(110px,.7fr) minmax(95px,.5fr);
+  gap:10px;align-items:center;padding:11px 2px;border-bottom:1px solid #edf1f5;font-size:12px
+}
+.dash-credit-row:last-child{border-bottom:0}
+.dash-credit-row .cust b{display:block;font-size:13px}
+.dash-credit-row .cust span{display:block;color:#718096;margin-top:2px}
+.dash-credit-row .bills{color:#64748b}
+.dash-credit-row .due{text-align:right;font-weight:900;font-size:14px;color:#b45309}
+.dash-credit-empty{padding:18px 2px;text-align:center;color:#64748b;font-size:12px}
+@media(max-width:620px){
+  .dash-credit-row{grid-template-columns:1fr auto}
+  .dash-credit-row .bills{grid-column:1/2;font-size:10px}
+  .dash-credit-row .due{grid-row:1/3;grid-column:2}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -524,6 +552,25 @@ section#sales label, section#pos label{
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
               <div class="card metric metric-cyan"><div class="metric-icon">▣</div><div><div class="l">CURRENT STOCK</div><div id="mStock" class="v">0</div><div class="metric-note">Across all units</div></div></div>
               <div class="card metric metric-teal"><div class="metric-icon">💰</div><div><div class="l">STOCK VALUE</div><div id="mStockValue" class="v">৳0.00</div><div class="metric-note">At average purchase cost</div></div></div>
+              <button type="button" id="dashCreditMetric" class="card metric metric-credit dash-credit-metric">
+                <div class="metric-icon">💳</div>
+                <div>
+                  <div class="l">TOTAL CREDIT DUE</div>
+                  <div id="mCreditDueDash" class="v">৳0.00</div>
+                  <div class="metric-note">Click to see customer-wise due</div>
+                </div>
+              </button>
+            </div>
+
+            <div id="dashCreditDetails" class="card dash-credit-details hidden">
+              <div class="panel-head">
+                <div>
+                  <h3>💳 Credit Customers</h3>
+                  <div class="soft-label">কার কাছে কত টাকা বাকি আছে</div>
+                </div>
+                <button type="button" id="dashCreditClose" class="mini-link">Close</button>
+              </div>
+              <div id="dashCreditCustomerList" class="dash-credit-list"></div>
             </div>
 
             <div class="dashboard-grid">
@@ -1252,6 +1299,32 @@ function totalCashCollections(){
 function cashBalance(){
  return totalCashSales()+totalCashCollections()-totalCashReturns()-totalExpenses();
 }
+function dashboardCreditCustomers(){
+ const groups={};
+ (db.sales||[]).filter(x=>x.paymentMethod==='Credit').forEach(x=>{
+   const due=creditDue(x);
+   if(due<=0)return;
+   const phone=String(x.creditPhone||'').trim();
+   const name=String(x.creditName||'').trim();
+   const key=phone ? 'p:'+phone : 'n:'+name.toLowerCase();
+   if(!groups[key])groups[key]={name:name||'Customer',phone:phone,due:0,bills:new Set()};
+   groups[key].due+=due;
+   if(x.billNo!==''&&x.billNo!=null)groups[key].bills.add(String(x.billNo));
+ });
+ return Object.values(groups).sort((a,b)=>b.due-a.due);
+}
+function renderDashboardCredit(){
+ const total=outstandingCreditAll();
+ if($('mCreditDueDash'))$('mCreditDueDash').textContent=money(total);
+ const box=$('dashCreditCustomerList');
+ if(!box)return;
+ const rows=dashboardCreditCustomers();
+ box.innerHTML=rows.length?rows.map(x=>`<div class="dash-credit-row">
+   <div class="cust"><b>${x.name||'Customer'}</b><span>${x.phone||'No mobile number'}</span></div>
+   <div class="bills">${x.bills.size} bill${x.bills.size===1?'':'s'} due</div>
+   <div class="due">${money(x.due)}</div>
+ </div>`).join(''):'<div class="dash-credit-empty">এখন কোনো outstanding credit নেই।</div>';
+}
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
  const cs=vals.reduce((a,b)=>a+b.current,0),sv=vals.reduce((a,b)=>a+b.value,0),tdp=db.purchases.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0),tds=db.sales.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0);
@@ -1272,6 +1345,7 @@ function render(){
  if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
  if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
  if(typeof renderReport==='function')renderReport();
+ if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
  $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
@@ -1356,6 +1430,14 @@ function renderReport(){
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
 $('reportDate').onchange=renderReport;$('reportMonth').onchange=renderReport;
+
+if($('dashCreditMetric'))$('dashCreditMetric').onclick=function(){
+  renderDashboardCredit();
+  $('dashCreditDetails').classList.toggle('hidden');
+};
+if($('dashCreditClose'))$('dashCreditClose').onclick=function(){
+  $('dashCreditDetails').classList.add('hidden');
+};
 
 $('eDate').value=today();
 $('expenseForm').onsubmit=async function(e){
