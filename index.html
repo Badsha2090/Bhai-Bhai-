@@ -616,6 +616,29 @@ section#sales label, section#pos label{
 .current-selling-rate{display:block;color:#0f766e;font-size:10px;font-weight:900;white-space:nowrap}
 </style>
 
+
+<style id="bill-search-css">
+.bill-search-card{margin-bottom:14px}
+.bill-search-row{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.bill-search-field{flex:1;min-width:210px}
+.bill-search-field label{display:block;font-size:12px;font-weight:900;margin-bottom:5px}
+.bill-search-field input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px;font-weight:800}
+.bill-search-status{margin-top:8px;font-size:11px;color:#64748b;font-weight:700}
+.bill-search-result{margin-top:10px;border-top:1px solid #e2e8f0;padding-top:10px}
+.bill-search-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.bill-search-title{font-weight:900;font-size:14px}
+.bill-search-meta{font-size:11px;color:#64748b;margin-top:2px}
+.bill-search-table{width:100%;border-collapse:collapse;font-size:11px}
+.bill-search-table th,.bill-search-table td{padding:7px 5px;border-bottom:1px solid #e5e7eb;text-align:left}
+.bill-search-total{display:flex;justify-content:flex-end;margin-top:9px;font-weight:900;font-size:14px}
+.bill-search-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+@media(max-width:760px){
+ .bill-search-row{align-items:stretch}
+ .bill-search-field{flex-basis:100%}
+ .bill-search-row .btn{flex:1}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -795,7 +818,21 @@ section#sales label, section#pos label{
 
           <section id="sales" class="section">
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
-            <div class="card form-card">
+            
+<div class="card bill-search-card" id="billSearchCard">
+  <div class="bill-search-row">
+    <div class="bill-search-field">
+      <label for="billSearchInput">🔎 Bill Search</label>
+      <input id="billSearchInput" type="text" inputmode="none" autocomplete="off" placeholder="Bill No. লিখুন">
+    </div>
+    <button type="button" class="btn primary" id="billSearchBtn">Search</button>
+    <button type="button" class="btn gray" id="billSearchClear">Clear</button>
+  </div>
+  <div id="billSearchStatus" class="bill-search-status">পুরনো Bill No. লিখে Search করুন</div>
+  <div id="billSearchResult" class="bill-search-result hidden"></div>
+</div>
+
+<div class="card form-card">
               <form id="saleForm" class="dataform">
                 <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
                 <label>Item Name<input id="sItem" readonly></label>
@@ -1752,6 +1789,106 @@ function sumWhere(arr,field='total',filter=()=>true){return (arr||[]).filter(x=>
 function outstandingCreditAll(){
  return (db.sales||[]).filter(x=>x.paymentMethod==='Credit').reduce((a,x)=>a+creditDue(x),0);
 }
+
+function billSearchTransaction(no){
+  const q=String(no||'').trim();
+  if(!q)return [];
+  const found=(db.sales||[]).find(s=>String(s.billNo||'').trim()===q);
+  if(!found)return [];
+  // A multi-item checkout can have more than one bill number.
+  // Rebuild the full checkout using the shared date + sale time + customer/payment identity.
+  const same=(db.sales||[]).filter(s=>{
+    const sameTime=String(s.date||'')===String(found.date||'') && String(s.saleTime||'')===String(found.saleTime||'');
+    const sameCustomer=String(s.creditPhone||'')===String(found.creditPhone||'') && String(s.creditName||'')===String(found.creditName||'');
+    const samePay=String(s.paymentMethod||'Cash')===String(found.paymentMethod||'Cash');
+    return sameTime && sameCustomer && samePay;
+  });
+  return same.length?same:[found];
+}
+function billNoLabel(rows){
+  const nums=rows.map(x=>String(x.billNo||'').trim()).filter(Boolean);
+  if(!nums.length)return '-';
+  if(nums.length===1)return nums[0];
+  const numeric=nums.every(n=>/^\d+$/.test(n));
+  if(numeric){
+    const a=nums.map(Number).sort((x,y)=>x-y);
+    return a[0]===a[a.length-1]?String(a[0]):String(a[0])+' - '+String(a[a.length-1]);
+  }
+  return nums.join(', ');
+}
+function renderBillSearchResult(no){
+  const box=$('billSearchResult'),status=$('billSearchStatus');
+  if(!box||!status)return;
+  const rows=billSearchTransaction(no);
+  if(!rows.length){
+    box.classList.add('hidden');
+    box.innerHTML='';
+    status.textContent='এই Bill No. পাওয়া যায়নি';
+    return;
+  }
+  const first=rows[0]||{};
+  const total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const customer=first.creditName||'';
+  const phone=first.creditPhone||'';
+  const pay=first.paymentMethod||'Cash';
+  const when=[first.date||'',first.saleTime||''].filter(Boolean).join(' ');
+  const tr=rows.map(x=>`<tr>
+    <td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}</small></td>
+    <td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td>
+    <td>${money(+x.price||0)}</td>
+    <td>${money(+x.total||0)}</td>
+  </tr>`).join('');
+  box.innerHTML=`<div class="bill-search-head">
+    <div>
+      <div class="bill-search-title">Bill #${billNoLabel(rows)}</div>
+      <div class="bill-search-meta">${when}${customer?' • '+customer:''}${phone?' • '+phone:''}${pay?' • '+pay:''}</div>
+    </div>
+  </div>
+  <div style="overflow:auto"><table class="bill-search-table">
+    <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+    <tbody>${tr}</tbody>
+  </table></div>
+  <div class="bill-search-total">Total: ${money(total)}</div>
+  <div class="bill-search-actions"><button type="button" class="btn gray" id="billSearchPrintBtn">🖨️ Print / Reprint</button></div>`;
+  box.classList.remove('hidden');
+  status.textContent=rows.length+' item পাওয়া গেছে';
+  const pb=$('billSearchPrintBtn');
+  if(pb)pb.onclick=()=>printBillSearchRows(rows);
+}
+function printBillSearchRows(rows){
+  if(!rows||!rows.length)return;
+  const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const items=rows.map(x=>`<tr><td>${x.item||''}</td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  const w=window.open('','_blank','width=420,height=700');
+  if(!w)return alert('Popup blocked. Please allow popups to print.');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
+  body{font-family:Arial,sans-serif;padding:12px;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
+  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}</style></head><body>
+  <h3>Bhai Bhai Building Materials</h3>
+  <p>Bill: ${billNoLabel(rows)}</p><p>Date: ${first.date||''} ${first.saleTime||''}</p>
+  ${first.creditName?`<p>Customer: ${first.creditName}${first.creditPhone?' - '+first.creditPhone:''}</p>`:''}
+  <p>Payment: ${first.paymentMethod||'Cash'}</p>
+  <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${items}</tbody></table>
+  <div class="tot">Total: ${money(total)}</div>
+  <script>window.onload=function(){window.print()}<\/script></body></html>`);
+  w.document.close();
+}
+(function bindBillSearch(){
+  const inp=$('billSearchInput'),btn=$('billSearchBtn'),clear=$('billSearchClear');
+  if(!inp||!btn||!clear)return;
+  btn.onclick=()=>renderBillSearchResult(inp.value);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderBillSearchResult(inp.value)}});
+  inp.addEventListener('click',()=>{
+    if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(inp,'numeric');
+  });
+  clear.onclick=()=>{
+    inp.value='';
+    const r=$('billSearchResult');if(r){r.innerHTML='';r.classList.add('hidden')}
+    $('billSearchStatus').textContent='পুরনো Bill No. লিখে Search করুন';
+  };
+})();
+
 function renderReport(){
  if(!$('reportType'))return;
  const sale=sumWhere(db.sales),purchase=sumWhere(db.purchases),expense=sumWhere(db.expenses,'amount');
