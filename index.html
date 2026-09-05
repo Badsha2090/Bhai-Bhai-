@@ -609,6 +609,13 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="inventory-purchase-rate-current-sell-css">
+.stock-purchase-rate{display:block;margin-top:3px;color:#7c3aed;font-size:10px;font-weight:800;white-space:nowrap}
+.stock-rate-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.current-selling-rate{display:block;color:#0f766e;font-size:10px;font-weight:900;white-space:nowrap}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1664,8 +1671,8 @@ function render(){
 <td>${fmtQty(x.purchased)} ${x.unit||'PCS'}</td>
 <td>${fmtQty(x.sold)} ${x.unit||'PCS'}</td>
 <td><b>${fmtQty(x.current)} ${x.unit||'PCS'}</b></td>
-<td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?money(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button></div></td>
-<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-bought-qty">Bought: ${fmtQty(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtQty(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
+<td><div class="stock-rate-cell"><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button><small class="current-selling-rate">Current: ${sr!=null&&sr!==''?money(sr):'Not set'}</small></div></td>
+<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-purchase-rate">Purchase Rate: ${money(x.avg)} / ${x.unit||'PCS'}</small><small class="stock-bought-qty">Bought: ${fmtQty(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtQty(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
 </tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
 document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
 if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInventorySearch();
@@ -2907,8 +2914,8 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 <td>${fmtFn(x.purchased)} ${x.unit||'PCS'}</td>
 <td>${fmtFn(x.sold)} ${x.unit||'PCS'}</td>
 <td><b>${fmtFn(x.current)} ${x.unit||'PCS'}</b></td>
-<td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?moneyFn(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${itemSafe}">✏️ Edit</button></div></td>
-<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-bought-qty">Bought: ${fmtFn(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtFn(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
+<td><div class="stock-rate-cell"><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${itemSafe}">✏️ Edit</button><small class="current-selling-rate">Current: ${sr!=null&&sr!==''?moneyFn(sr):'Not set'}</small></div></td>
+<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-purchase-rate">Purchase Rate: ${moneyFn(x.avg)} / ${x.unit||'PCS'}</small><small class="stock-bought-qty">Bought: ${fmtFn(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtFn(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
 </tr>`;
  }
 
