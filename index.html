@@ -464,6 +464,67 @@ section#sales label, section#pos label{
 #creditcustomers .card{overflow:hidden}#creditPageTotal{font-size:18px;color:#b45309}
 @media(max-width:760px){.global-back-btn{height:34px;padding:0 9px;margin-right:7px;font-size:12px}}
 </style>
+
+<style id="credit-detail-autoname-gap-css">
+/* Keep Menu and Back as two separate buttons with visible spacing */
+.top-action-group{
+  display:flex!important;align-items:center!important;gap:16px!important;
+  flex:0 0 auto!important;margin-right:16px!important;
+}
+.top-action-group #bbbmMenuBtn{margin-right:0!important}
+.top-action-group .global-back-btn{margin-right:0!important}
+
+/* Credit customer rows are clickable */
+.dash-credit-row.credit-customer-click{
+  cursor:pointer;border-radius:8px;padding-left:8px;padding-right:8px;
+}
+.dash-credit-row.credit-customer-click:hover{background:#f6f9fc}
+.dash-credit-row .open-arrow{font-size:18px;color:#1769e0;font-weight:900;margin-left:8px}
+
+/* Customer detail page */
+.credit-detail-heading{align-items:center}
+.credit-detail-summary{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1px;background:#e8edf2;margin-bottom:12px;overflow:hidden
+}
+.credit-detail-summary>div{background:#fff;padding:14px}
+.credit-detail-summary span{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase}
+.credit-detail-summary b{display:block;font-size:18px;margin-top:4px}
+.credit-bill-card{margin-bottom:12px;overflow:hidden}
+.credit-bill-head{
+  display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
+  padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5ebf1
+}
+.credit-bill-head .bill-date{font-size:12px;font-weight:900}
+.credit-bill-head .bill-no{font-size:11px;color:#64748b;margin-top:3px}
+.credit-bill-head .bill-due{text-align:right}
+.credit-bill-head .bill-due small{display:block;color:#64748b;font-size:9px}
+.credit-bill-head .bill-due b{font-size:15px;color:#b45309}
+.credit-item-row{
+  display:grid;grid-template-columns:minmax(0,1.6fr) minmax(100px,.7fr) minmax(95px,.6fr);
+  gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #edf1f5;font-size:11px
+}
+.credit-item-row:last-child{border-bottom:0}
+.credit-item-row .item-name b{display:block;font-size:12px}
+.credit-item-row .item-name span{display:block;color:#64748b;margin-top:2px}
+.credit-item-row .item-calc{color:#526477}
+.credit-item-row .item-due{text-align:right;font-weight:900}
+.credit-item-row .item-due.paid{color:#16803a}
+.credit-item-row .item-due.due{color:#b45309}
+.credit-detail-empty{padding:20px;text-align:center;color:#64748b}
+
+/* Small helper note when a known phone fills customer name */
+#creditPhone.credit-known{outline:3px solid #22a35a!important;outline-offset:1px!important}
+@media(max-width:760px){
+  .top-action-group{gap:10px!important;margin-right:8px!important}
+  .credit-detail-summary{grid-template-columns:1fr 1fr}
+  .credit-bill-head{padding:10px}
+  .credit-item-row{grid-template-columns:1fr auto;padding:10px}
+  .credit-item-row .item-calc{grid-column:1/2;font-size:10px}
+  .credit-item-row .item-due{grid-row:1/3;grid-column:2}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -537,7 +598,9 @@ section#sales label, section#pos label{
 
       <main class="main-area">
         <div class="topbar">
-          <button type="button" id="globalBackBtn" class="global-back-btn">← Back</button>
+          <div class="bbbm-top-left top-action-group">
+            <button type="button" id="globalBackBtn" class="global-back-btn">← Back</button>
+          </div>
           <div class="topbar-title-wrap">
             <div class="page-title" id="pageTitle">Dashboard</div>
             <div class="page-subtitle">Overview of your business</div>
@@ -841,10 +904,27 @@ section#sales label, section#pos label{
           </section>
 
           <section id="creditcustomers" class="section">
-            <div class="section-heading"><div><h2>💳 Credit Customers</h2><p>কার কাছে কত টাকা বাকি আছে</p></div></div>
-            <div class="card">
-              <div class="panel-head"><h3>Customer-wise Outstanding Credit</h3><strong id="creditPageTotal">৳0.00</strong></div>
-              <div id="dashCreditCustomerList" class="dash-credit-list"></div>
+            <div id="creditCustomerListView">
+              <div class="section-heading"><div><h2>💳 Credit Customers</h2><p>কার কাছে কত টাকা বাকি আছে</p></div></div>
+              <div class="card">
+                <div class="panel-head"><h3>Customer-wise Outstanding Credit</h3><strong id="creditPageTotal">৳0.00</strong></div>
+                <div id="dashCreditCustomerList" class="dash-credit-list"></div>
+              </div>
+            </div>
+
+            <div id="creditCustomerDetailView" class="hidden">
+              <div class="section-heading credit-detail-heading">
+                <div>
+                  <h2 id="creditDetailName">💳 Customer Credit Details</h2>
+                  <p id="creditDetailPhone"></p>
+                </div>
+                <button type="button" id="creditDetailBackBtn" class="btn gray smallbtn">← Credit Customers</button>
+              </div>
+              <div class="card credit-detail-summary">
+                <div><span>Total Due</span><b id="creditDetailTotalDue">৳0.00</b></div>
+                <div><span>Credit Bills / Sales</span><b id="creditDetailBillCount">0</b></div>
+              </div>
+              <div id="creditDetailBills"></div>
             </div>
           </section>
 
@@ -1307,15 +1387,17 @@ function dashboardCreditCustomers(){
  const groups={};
  (db.sales||[]).filter(x=>x.paymentMethod==='Credit').forEach(x=>{
    const due=creditDue(x);
-   if(due<=0)return;
    const phone=String(x.creditPhone||'').trim();
    const name=String(x.creditName||'').trim();
-   const key=phone ? 'p:'+phone : 'n:'+name.toLowerCase();
-   if(!groups[key])groups[key]={name:name||'Customer',phone:phone,due:0,bills:new Set()};
-   groups[key].due+=due;
-   if(x.billNo!==''&&x.billNo!=null)groups[key].bills.add(String(x.billNo));
+   const key=phone ? 'p:'+phone.replace(/\D/g,'') : 'n:'+name.toLowerCase();
+   if(!groups[key])groups[key]={key,name:name||'Customer',phone:phone,due:0,bills:new Set(),rows:[]};
+   groups[key].rows.push(x);
+   if(due>0){
+     groups[key].due+=due;
+     if(x.billNo!==''&&x.billNo!=null)groups[key].bills.add(String(x.billNo));
+   }
  });
- return Object.values(groups).sort((a,b)=>b.due-a.due);
+ return Object.values(groups).filter(x=>x.due>0).sort((a,b)=>b.due-a.due);
 }
 function renderDashboardCredit(){
  const total=outstandingCreditAll();
@@ -1324,11 +1406,81 @@ function renderDashboardCredit(){
  const box=$('dashCreditCustomerList');
  if(!box)return;
  const rows=dashboardCreditCustomers();
- box.innerHTML=rows.length?rows.map(x=>`<div class="dash-credit-row">
+ box.innerHTML=rows.length?rows.map((x,i)=>`<div class="dash-credit-row credit-customer-click" data-credit-customer="${i}">
    <div class="cust"><b>${x.name||'Customer'}</b><span>${x.phone||'No mobile number'}</span></div>
-   <div class="bills">${x.bills.size} bill${x.bills.size===1?'':'s'} due</div>
-   <div class="due">${money(x.due)}</div>
+   <div class="bills">${x.bills.size} outstanding item/bill${x.bills.size===1?'':'s'}</div>
+   <div class="due">${money(x.due)} <span class="open-arrow">›</span></div>
  </div>`).join(''):'<div class="dash-credit-empty">এখন কোনো outstanding credit নেই।</div>';
+ box.querySelectorAll('[data-credit-customer]').forEach(el=>el.onclick=()=>{
+   const list=dashboardCreditCustomers();
+   const x=list[+el.dataset.creditCustomer];
+   if(x)renderDashboardCreditDetail(x.key);
+ });
+}
+function creditCustomerKey(x){
+ const phone=String(x.creditPhone||'').trim().replace(/\D/g,'');
+ const name=String(x.creditName||'').trim().toLowerCase();
+ return phone ? 'p:'+phone : 'n:'+name;
+}
+function renderDashboardCreditDetail(key){
+ const all=(db.sales||[]).filter(x=>x.paymentMethod==='Credit'&&creditCustomerKey(x)===key);
+ if(!all.length)return;
+ const latest=[...all].reverse().find(x=>x.creditName||x.creditPhone)||all[all.length-1];
+ const name=latest.creditName||'Customer', phone=latest.creditPhone||'';
+ const totalDue=all.reduce((a,x)=>a+creditDue(x),0);
+
+ // Group rows from the same checkout by sale date + sale time.
+ const tx={};
+ all.forEach(x=>{
+   const k=(x.date||'')+'|'+(x.saleTime||'')+'|'+(x.creditPhone||'')+'|'+(x.creditName||'');
+   if(!tx[k])tx[k]={date:x.date||'',time:x.saleTime||'',rows:[]};
+   tx[k].rows.push(x);
+ });
+ const groups=Object.values(tx).sort((a,b)=>((b.date||'')+' '+(b.time||'')).localeCompare((a.date||'')+' '+(a.time||'')));
+
+ $('creditDetailName').textContent='💳 '+name;
+ $('creditDetailPhone').textContent=phone||'No mobile number';
+ $('creditDetailTotalDue').textContent=money(totalDue);
+ $('creditDetailBillCount').textContent=String(groups.length);
+
+ const target=$('creditDetailBills');
+ target.innerHTML=groups.length?groups.map(g=>{
+   const nums=g.rows.map(r=>+r.billNo).filter(Boolean).sort((a,b)=>a-b);
+   const billLabel=nums.length===1
+     ? 'BBBM-'+String(nums[0]).padStart(6,'0')
+     : nums.length>1
+       ? 'BBBM-'+String(nums[0]).padStart(6,'0')+'–'+String(nums[nums.length-1]).padStart(6,'0')
+       : 'Bill';
+   const groupDue=g.rows.reduce((a,r)=>a+creditDue(r),0);
+   const groupTotal=g.rows.reduce((a,r)=>a+(+r.total||0),0);
+   const dateText=g.date||'-';
+   const timeText=g.time?(' · '+g.time):'';
+   return `<div class="card credit-bill-card">
+     <div class="credit-bill-head">
+       <div><div class="bill-date">📅 ${dateText}${timeText}</div><div class="bill-no">${billLabel} · Total ${money(groupTotal)}</div></div>
+       <div class="bill-due"><small>OUTSTANDING</small><b>${money(groupDue)}</b></div>
+     </div>
+     <div>${g.rows.map(r=>{
+       const d=creditDue(r);
+       return `<div class="credit-item-row">
+         <div class="item-name"><b>${r.item||'-'}</b><span>${r.barcode||''}</span></div>
+         <div class="item-calc">${fmtQty(r.qty)} ${r.unit||''} × ${money(r.price)}</div>
+         <div class="item-due ${d>0?'due':'paid'}">${d>0?('Due '+money(d)):'Paid'}</div>
+       </div>`;
+     }).join('')}</div>
+   </div>`;
+ }).join(''):'<div class="card credit-detail-empty">এই customer-এর কোনো credit sale পাওয়া যায়নি।</div>';
+
+ $('creditCustomerListView').classList.add('hidden');
+ $('creditCustomerDetailView').classList.remove('hidden');
+ if($('pageTitle'))$('pageTitle').textContent='Customer Credit Details';
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeDashboardCreditDetail(){
+ if($('creditCustomerDetailView'))$('creditCustomerDetailView').classList.add('hidden');
+ if($('creditCustomerListView'))$('creditCustomerListView').classList.remove('hidden');
+ if($('pageTitle'))$('pageTitle').textContent='Credit Customers';
+ window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
@@ -1437,6 +1589,8 @@ $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden
 $('reportDate').onchange=renderReport;$('reportMonth').onchange=renderReport;
 
 if($('dashCreditMetric'))$('dashCreditMetric').onclick=function(){
+  if($('creditCustomerDetailView'))$('creditCustomerDetailView').classList.add('hidden');
+  if($('creditCustomerListView'))$('creditCustomerListView').classList.remove('hidden');
   renderDashboardCredit();
   goTab('creditcustomers');
 };
@@ -1657,6 +1811,37 @@ document.querySelectorAll('.pay-option').forEach(label=>{
 $('creditBackBtn').onclick=function(){
  $('creditCustomerBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null;
 };
+function normalizeCustomerPhone(v){return String(v||'').replace(/\D/g,'')}
+function autoFillCreditCustomerName(){
+ const phoneEl=$('creditPhone'),nameEl=$('creditName');
+ if(!phoneEl||!nameEl)return;
+ const q=normalizeCustomerPhone(phoneEl.value);
+ phoneEl.classList.remove('credit-known');
+ if(!q)return;
+
+ // Exact phone match first. For 6+ typed digits, use it only if exactly one saved phone starts with those digits.
+ const creditSales=[...(db.sales||[])].filter(x=>x.paymentMethod==='Credit'&&normalizeCustomerPhone(x.creditPhone));
+ let found=[...creditSales].reverse().find(x=>normalizeCustomerPhone(x.creditPhone)===q);
+ if(!found && q.length>=6){
+   const matches=[];
+   const seen=new Set();
+   [...creditSales].reverse().forEach(x=>{
+     const p=normalizeCustomerPhone(x.creditPhone);
+     if(p.startsWith(q)&&!seen.has(p)){seen.add(p);matches.push(x)}
+   });
+   if(matches.length===1)found=matches[0];
+ }
+ if(found && found.creditName){
+   nameEl.value=found.creditName;
+   nameEl.dispatchEvent(new Event('input',{bubbles:true}));
+   phoneEl.classList.add('credit-known');
+ }
+}
+if($('creditPhone')){
+ $('creditPhone').addEventListener('input',autoFillCreditCustomerName);
+ $('creditPhone').addEventListener('change',autoFillCreditCustomerName);
+}
+
 $('creditContinueBtn').onclick=function(){
  const name=$('creditName').value.trim(),phone=$('creditPhone').value.trim();
  if(!name&&!phone){alert('Customer name or mobile number দিন।');return}if(!pendingSale)return;
@@ -1760,6 +1945,10 @@ $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
 async function goTab(tab){
  await stopScanner();
+ if(tab!=='creditcustomers'){
+   const d=$('creditCustomerDetailView'),l=$('creditCustomerListView');
+   if(d)d.classList.add('hidden');if(l)l.classList.remove('hidden');
+ }
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
@@ -1769,10 +1958,13 @@ async function goTab(tab){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
+ const detail=$('creditCustomerDetailView');
+ if(detail && !detail.classList.contains('hidden')){closeDashboardCreditDetail();return}
  const active=document.querySelector('.section.active');
  if(active && active.id!=='dashboard') goTab('dashboard');
  else if(window.history.length>1) window.history.back();
 };
+if($('creditDetailBackBtn'))$('creditDetailBackBtn').onclick=closeDashboardCreditDetail;
 document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
 document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
