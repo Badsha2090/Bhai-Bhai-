@@ -1421,9 +1421,9 @@ body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#
   </div>
   <div class="card form-card">
     <div class="panel-head"><h3>Automatic Backup</h3></div>
-    <p class="muted">এই POS browser-এ data change/load হওয়ার পর automatic snapshot রাখা হবে। সর্বশেষ 14টি copy রাখা হবে। Cloud data Supabase-এও থাকবে।</p>
+    <p class="muted">এই POS browser-এ automatic snapshot রাখা হবে। সর্বশেষ 14টি copy থাকবে। Backup Now চাপলে সাথে সাথে JSON file-ও download হবে। Cloud data Supabase-এও থাকবে।</p>
     <div class="row">
-      <button type="button" class="btn primary" id="backupNowBtn">💾 Backup Now</button>
+      <button type="button" class="btn primary" id="backupNowBtn">💾 Backup Now + Download</button>
       <button type="button" class="btn gray" id="downloadBackupBtn">⬇ Download Backup File</button>
       <label class="btn gray" style="cursor:pointer;margin:0">⬆ Restore Backup<input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"></label>
     </div>
@@ -2699,10 +2699,36 @@ async function restoreBackupFile(file){
   }
 }
 function manualBackupNow(){
-  const ok=saveAutoBackup('Manual');
-  if($('backupMsg'))$('backupMsg').textContent=ok?'✅ Backup saved successfully on this POS.':'Backup already saved / no change.';
-  renderBackupPanel();
-  if(ok)alert('Backup saved successfully.');
+  try{
+    const snap=makeBackupSnapshot();
+    const list=backupCopies();
+    const signature=JSON.stringify({db:snap.db,productMeta:snap.productMeta});
+    list.unshift({
+      createdAt:snap.createdAt,
+      reason:'Manual + Download',
+      signature,
+      snapshot:snap
+    });
+    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
+    safeSet(BACKUP_KEY,list);
+    renderBackupPanel();
+
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Manual_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup saved + JSON file downloaded.';
+    alert('Backup saved and downloaded successfully.');
+  }catch(e){
+    console.error('Manual backup failed',e);
+    if($('backupMsg'))$('backupMsg').textContent='❌ Backup failed: '+(e.message||e);
+    alert('Backup failed: '+(e.message||e));
+  }
 }
 if($('backupNowBtn'))$('backupNowBtn').onclick=manualBackupNow;
 if($('downloadBackupBtn'))$('downloadBackupBtn').onclick=downloadBackup;
