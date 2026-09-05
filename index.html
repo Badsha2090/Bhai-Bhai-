@@ -527,7 +527,17 @@ section#sales label, section#pos label{
 
 <style id="all-settings-css">
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.settings-card{padding:16px}.settings-card h3{margin:0 0 12px;font-size:15px}.settings-card label{display:block;font-size:11px;font-weight:800;color:#405267;margin:9px 0}.settings-card input:not([type=checkbox]),.settings-card select,.settings-card textarea{width:100%;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;background:#fff;font:inherit}.settings-card .check{display:flex;align-items:center;gap:8px;font-size:12px}.settings-card .check input{width:17px;height:17px}.set-actions{display:flex;gap:8px;flex-wrap:wrap}.set-note{font-size:10px;color:#64748b;line-height:1.45}.set-info{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf1f5;font-size:11px}.set-info span{color:#64748b}.set-info b{text-align:right}body.kb-small #sideNumberPad,body.kb-small #purchaseSidePad{transform:scale(.88);transform-origin:top right}body.kb-large #sideNumberPad,body.kb-large #purchaseSidePad{transform:scale(1.08);transform-origin:top right}@media(max-width:850px){.settings-grid{grid-template-columns:1fr}}
-</style></head>
+</style>
+<style id="inventory-rate-stockqty-css">
+.stock-rate-cell{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.stock-rate-edit{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:5px 8px;font-size:10px;font-weight:800;cursor:pointer}
+.stock-rate-edit:active{transform:scale(.97)}
+.stock-value-qty{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:700;white-space:nowrap}
+#stockRows td:nth-child(6){white-space:nowrap}
+@media(max-width:760px){.stock-rate-cell{flex-direction:column;align-items:flex-start}.stock-rate-edit{padding:4px 7px}}
+</style>
+
+</head>
 <body>
 <header id="legacyHeader">
   <h1>Bhai Bhai Building Materials Trading LLC</h1>
@@ -1081,7 +1091,7 @@ section#sales label, section#pos label{
 
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
-            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
       </main>
@@ -1385,6 +1395,20 @@ function stockMap(){
  Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
 }
 
+function editStockSellingRate(code,item){
+ code=String(code||'').trim(); if(!code)return;
+ const old=metaFor(code).sellPrice;
+ const entered=prompt('New Selling Rate - '+(item||code),old!=null&&old!==''?String(old):'');
+ if(entered===null)return;
+ const clean=String(entered).trim();
+ if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return}
+ saveMeta(code,{sellPrice:Number(clean)});
+ render();
+ const saleCode=$('sBarcode');
+ if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+ alert('Selling Rate updated: '+money(Number(clean)));
+}
+
 function totalCashSales(){
  return (db.sales||[]).filter(x=>(x.paymentMethod||'Cash')==='Cash').reduce((a,x)=>a+(+x.total||0),0);
 }
@@ -1522,7 +1546,17 @@ function render(){
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
- $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
+ $('stockRows').innerHTML=vals.length?vals.map(x=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
+<td>${x.item}</td>
+<td>${x.barcode}</td>
+<td><span class="unit-badge">${x.unit||'PCS'}</span></td>
+<td>${fmtQty(x.purchased)} ${x.unit||'PCS'}</td>
+<td>${fmtQty(x.sold)} ${x.unit||'PCS'}</td>
+<td><b>${fmtQty(x.current)} ${x.unit||'PCS'}</b></td>
+<td><div class="stock-rate-cell"><b>${sr!=null&&sr!==''?money(sr):'—'}</b><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button></div></td>
+<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small></td>
+</tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
+document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
 
  const recent=db.sales.slice().reverse().slice(0,6);
  if($('dashRecentSales'))$('dashRecentSales').innerHTML=recent.length?recent.map(x=>`<tr><td>${x.date}</td><td><b>${x.item}</b></td><td>${fmtQty(x.qty)}</td><td>${x.unit||'PCS'}</td><td><b>${money(x.total)}</b></td></tr>`).join(''):'<tr><td colspan="5">No sale yet.</td></tr>';
