@@ -668,6 +668,11 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="dashboard-bill-metric-fix-css">
+.dash-bill-history-metric{cursor:pointer;text-align:left}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -774,6 +779,14 @@ section#sales label, section#pos label{
                   <div class="metric-note">Click to see customer-wise due</div>
                 </div>
               </button>
+              <button type="button" id="dashBillHistoryMetric" class="card metric metric-cyan dash-bill-history-metric">
+                <div class="metric-icon">🧾</div>
+                <div>
+                  <div class="l">BILL HISTORY</div>
+                  <div id="mBillCountDash" class="v">0</div>
+                  <div class="metric-note">Click to see recent & old bills</div>
+                </div>
+              </button>
             </div>
 
             <div class="dashboard-grid">
@@ -804,17 +817,7 @@ section#sales label, section#pos label{
                 </div>
               </div>
             </div>
-          
-<div class="card dashboard-bill-card" id="dashboardBillCard">
-  <div class="dashboard-bill-card-inner">
-    <div>
-      <div class="dashboard-bill-title">🧾 Bill History</div>
-      <div class="dashboard-bill-sub">Recent + পুরনো সব bill দেখুন ও search করুন</div>
-    </div>
-    <button type="button" class="btn primary" id="openBillHistoryBtn">Open Bills</button>
-  </div>
-</div>
-</section>
+          </section>
 
           <section id="purchase" class="section">
             <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
@@ -1671,6 +1674,7 @@ function dashboardCreditCustomers(){
 function renderDashboardCredit(){
  const total=outstandingCreditAll();
  if($('mCreditDueDash'))$('mCreditDueDash').textContent=money(total);
+ if($('mBillCountDash'))$('mBillCountDash').textContent=allBillTransactions().length;
  if($('creditPageTotal'))$('creditPageTotal').textContent=money(total);
  const box=$('dashCreditCustomerList');
  if(!box)return;
@@ -2407,10 +2411,12 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
+ if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
  const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+if($('dashBillHistoryMetric'))$('dashBillHistoryMetric').onclick=function(){goTab('billhistory')};
 if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
  const detail=$('creditCustomerDetailView');
  if(detail && !detail.classList.contains('hidden')){closeDashboardCreditDetail();return}
@@ -2420,6 +2426,16 @@ if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
 };
 if($('creditDetailBackBtn'))$('creditDetailBackBtn').onclick=closeDashboardCreditDetail;
 document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+if($('billHistorySearchBtn'))$('billHistorySearchBtn').onclick=function(){renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'')};
+if($('billHistorySearchInput')){
+ $('billHistorySearchInput').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();renderBillHistoryPage(this.value)}};
+ $('billHistorySearchInput').onclick=function(){if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(this,'numeric')};
+}
+if($('billHistorySearchClear'))$('billHistorySearchClear').onclick=function(){
+ if($('billHistorySearchInput'))$('billHistorySearchInput').value='';
+ renderBillHistoryPage('');
+};
+
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
 document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
@@ -3412,39 +3428,6 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 </script>
 
 
-<script id="dashboard-bill-history-js">
-(function(){
-  const openBtn=document.getElementById('openBillHistoryBtn');
-  if(openBtn)openBtn.addEventListener('click',()=>{
-    if(typeof goTab==='function')goTab('billhistory');
-    setTimeout(()=>{if(typeof renderBillHistoryPage==='function')renderBillHistoryPage('')},0);
-  });
-
-  const input=document.getElementById('billHistorySearchInput');
-  const searchBtn=document.getElementById('billHistorySearchBtn');
-  const clearBtn=document.getElementById('billHistorySearchClear');
-
-  function runSearch(){
-    if(typeof renderBillHistoryPage==='function')renderBillHistoryPage(input?input.value:'');
-  }
-  if(searchBtn)searchBtn.addEventListener('click',runSearch);
-  if(input){
-    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runSearch()}});
-    input.addEventListener('click',()=>{
-      if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric');
-    });
-  }
-  if(clearBtn)clearBtn.addEventListener('click',()=>{
-    if(input)input.value='';
-    if(typeof renderBillHistoryPage==='function')renderBillHistoryPage('');
-  });
-
-  document.addEventListener('click',e=>{
-    const nav=e.target.closest&&e.target.closest('[data-tab="billhistory"]');
-    if(nav)setTimeout(()=>{if(typeof renderBillHistoryPage==='function')renderBillHistoryPage(input?input.value:'')},0);
-  });
-})();
-</script>
 
 </body>
 </html>
