@@ -1228,11 +1228,21 @@ async function loadCloudData(){
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
     collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''}))
   };
+  // Keep any manually edited Selling Rate. Cloud purchase history must not
+  // overwrite the current rate every time data reloads.
+  const latestPurchaseSell={};
   for(const p of db.purchases){
-    const meta={unit:p.unit||'PCS',item:p.item};
-    if(p.sellingPrice!=null)meta.sellPrice=p.sellingPrice;
-    saveMeta(p.barcode,meta);
+    const code=String(p.barcode||'');
+    if(!code)continue;
+    saveMeta(code,{unit:p.unit||'PCS',item:p.item});
+    if(p.sellingPrice!=null)latestPurchaseSell[code]=p.sellingPrice;
   }
+  Object.keys(latestPurchaseSell).forEach(code=>{
+    const existing=metaFor(code);
+    if(existing.sellPrice==null || existing.sellPrice===''){
+      saveMeta(code,{sellPrice:latestPurchaseSell[code]});
+    }
+  });
   safeSet(DB,db);
 }
 async function ensureCloudUser(u){
@@ -1487,7 +1497,7 @@ window.addEventListener('bbbm-save-selling-rate',function(e){
  try{
    const d=e.detail||{},code=String(d.code||'').trim(),rate=Number(d.rate);
    if(!code||isNaN(rate)||rate<0)return;
-   saveMeta(code,{sellPrice:rate});
+   saveMeta(code,{sellPrice:rate,sellPriceManual:true});
    render();
    if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
    const saleCode=$('sBarcode');
@@ -1507,7 +1517,7 @@ function editStockSellingRate(code,item){
      onSave:function(entered){
        const clean=String(entered||'').trim();
        if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return false}
-       saveMeta(code,{sellPrice:Number(clean)});
+       saveMeta(code,{sellPrice:Number(clean),sellPriceManual:true});
        render();
        if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
        const saleCode=$('sBarcode');
