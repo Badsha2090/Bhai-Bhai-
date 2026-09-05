@@ -525,7 +525,9 @@ section#sales label, section#pos label{
 }
 </style>
 
-</head>
+<style id="all-settings-css">
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.settings-card{padding:16px}.settings-card h3{margin:0 0 12px;font-size:15px}.settings-card label{display:block;font-size:11px;font-weight:800;color:#405267;margin:9px 0}.settings-card input:not([type=checkbox]),.settings-card select,.settings-card textarea{width:100%;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;background:#fff;font:inherit}.settings-card .check{display:flex;align-items:center;gap:8px;font-size:12px}.settings-card .check input{width:17px;height:17px}.set-actions{display:flex;gap:8px;flex-wrap:wrap}.set-note{font-size:10px;color:#64748b;line-height:1.45}.set-info{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf1f5;font-size:11px}.set-info span{color:#64748b}.set-info b{text-align:right}body.kb-small #sideNumberPad,body.kb-small #purchaseSidePad{transform:scale(.88);transform-origin:top right}body.kb-large #sideNumberPad,body.kb-large #purchaseSidePad{transform:scale(1.08);transform-origin:top right}@media(max-width:850px){.settings-grid{grid-template-columns:1fr}}
+</style></head>
 <body>
 <header id="legacyHeader">
   <h1>Bhai Bhai Building Materials Trading LLC</h1>
@@ -586,7 +588,7 @@ section#sales label, section#pos label{
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
           <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
-          <button class="coming"><span>⚙️</span> Settings <small>Soon</small></button>
+          <button data-tab="settings"><span>⚙️</span> Settings</button>
           <button data-tab="backup"><span>☁️</span> Backup & Sync</button>
         </div>
 
@@ -1026,6 +1028,21 @@ section#sales label, section#pos label{
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
  </div>
 </section>
+<section id="settings" class="section">
+<div class="section-heading"><div><h2>⚙️ Settings</h2><p>POS system configuration</p></div></div>
+<div class="settings-grid">
+<div class="card settings-card"><h3>🏪 Shop Information</h3><label>Shop Name<input id="setShopName"></label><label>Address<textarea id="setShopAddress" rows="2"></textarea></label><label>Phone<input id="setShopPhone"></label><button type="button" class="btn primary set-save" data-save="shop">Save</button></div>
+<div class="card settings-card"><h3>🧾 Receipt Settings</h3><label>Header<input id="setReceiptHeader"></label><label>Footer<input id="setReceiptFooter"></label><label>Paper Size<select id="setPaperSize"><option value="80">80mm</option><option value="58">58mm</option></select></label><label class="check"><input id="setReceiptAddress" type="checkbox"> Show address</label><label class="check"><input id="setReceiptPhone" type="checkbox"> Show phone</label><button type="button" class="btn primary set-save" data-save="receipt">Save</button></div>
+<div class="card settings-card"><h3>👤 User & Password</h3><label>Display Name<input id="setUserDisplayName"></label><label>New Password<input id="setNewPassword" type="password"></label><label>Confirm Password<input id="setConfirmPassword" type="password"></label><button type="button" class="btn primary" id="setUserSave">Update User</button><p class="set-note">Login security নষ্ট না করার জন্য password change existing account/auth method দিয়েই থাকবে।</p></div>
+<div class="card settings-card"><h3>📦 Product Settings</h3><label>Default Unit<select id="setDefaultUnit"><option>PCS</option><option>Bag</option><option>KG</option><option>Gram</option><option>CFT</option><option>Feet</option><option>Meter</option></select></label><label>Low Stock Limit<input id="setLowStock" type="number" min="0" step=".01"></label><label class="check"><input id="setAutoBarcode" type="checkbox"> Auto-generate barcode</label><button type="button" class="btn primary set-save" data-save="product">Save</button></div>
+<div class="card settings-card"><h3>🛒 Sales Settings</h3><label>Default Quantity<input id="setSaleQty" type="number" min=".01" step=".01"></label><label>Default Payment<select id="setDefaultPayment"><option>Cash</option><option>Credit</option></select></label><label class="check"><input id="setSalePriceEdit" type="checkbox"> Allow selling price edit</label><button type="button" class="btn primary set-save" data-save="sales">Save</button></div>
+<div class="card settings-card"><h3>📥 Purchase Settings</h3><label>Default Quantity<input id="setPurchaseQty" type="number" min=".01" step=".01"></label><label class="check"><input id="setShowPurchaseSellPrice" type="checkbox"> Show Selling Price</label><button type="button" class="btn primary set-save" data-save="purchase">Save</button></div>
+<div class="card settings-card"><h3>⌨️ Keyboard Settings</h3><label class="check"><input id="setSaleKeypad" type="checkbox"> Sale keypad</label><label class="check"><input id="setPurchaseKeypad" type="checkbox"> Purchase keypad</label><label class="check"><input id="setCreditKeyboard" type="checkbox"> Credit customer keyboard</label><label>Size<select id="setKeyboardSize"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label><button type="button" class="btn primary set-save" data-save="keyboard">Save</button></div>
+<div class="card settings-card"><h3>💾 Backup & Restore</h3><label class="check"><input id="setAutoBackup" type="checkbox"> Automatic backup preference</label><div class="set-actions"><button type="button" class="btn primary" id="settingsBackupNow">Backup Now</button><button type="button" class="btn gray" id="settingsOpenBackup">Backup & Sync</button></div><p class="set-note">Last backup: <b id="settingsLastBackup">—</b></p></div>
+<div class="card settings-card"><h3>🖨️ Printer Settings</h3><label>Bill Printer<input id="setBillPrinter"></label><label>Barcode Printer<input id="setBarcodePrinter"></label><label>Receipt Copies<input id="setReceiptCopies" type="number" min="1" max="5"></label><label class="check"><input id="setAutoPrint" type="checkbox"> Auto print after sale</label><button type="button" class="btn primary set-save" data-save="printer">Save</button></div>
+<div class="card settings-card"><h3>🛠️ System Settings</h3><label>Currency<select id="setCurrency"><option value="৳">৳ BDT</option><option value="AED">AED</option></select></label><label>Date Format<select id="setDateFormat"><option>DD-MM-YYYY</option><option>YYYY-MM-DD</option></select></label><label class="check"><input id="setConfirmDelete" type="checkbox"> Confirm before delete</label><label class="check"><input id="setConfirmReturn" type="checkbox"> Confirm before return</label><button type="button" class="btn primary set-save" data-save="system">Save</button></div>
+<div class="card settings-card"><h3>ℹ️ About / System Info</h3><div class="set-info"><span>System</span><b>Bhai Bhai Building Materials POS</b></div><div class="set-info"><span>Version</span><b>2026.09</b></div><div class="set-info"><span>Cloud</span><b>Supabase</b></div><div class="set-info"><span>Current User</span><b id="settingsCurrentUser">—</b></div><div class="set-info"><span>Last Backup</span><b id="settingsAboutBackup">—</b></div></div>
+</div></section>
 <section id="barcode" class="section">
   <div class="section-heading"><div><h2>🖨️ Barcode Print</h2><p>Stock item select করে barcode label print করুন.</p></div></div>
   <div class="card form-card">
@@ -1953,7 +1970,7 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print'};
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2709,5 +2726,20 @@ window.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 
-</body>
+<script id="all-settings-js">
+(function(){
+const K='bbbm_settings_v1',$=id=>document.getElementById(id);
+const D={shopName:'Bhai Bhai Building Materials Trading LLC',shopAddress:'',shopPhone:'',receiptHeader:'Bhai Bhai Building Materials',receiptFooter:'Thank you',paperSize:'80',receiptAddress:true,receiptPhone:true,defaultUnit:'PCS',lowStock:5,autoBarcode:true,saleQty:1,defaultPayment:'Cash',salePriceEdit:true,purchaseQty:1,showPurchaseSellPrice:true,saleKeypad:true,purchaseKeypad:true,creditKeyboard:true,keyboardSize:'normal',autoBackup:true,billPrinter:'',barcodePrinter:'EZPOS LP002',receiptCopies:1,autoPrint:false,currency:'৳',dateFormat:'DD-MM-YYYY',confirmDelete:true,confirmReturn:true,lastBackup:''};
+function load(){try{return Object.assign({},D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return {...D}}}function save(s){localStorage.setItem(K,JSON.stringify(s));apply(s)}
+function v(id){return $(id)?$(id).value:''}function c(id){return !!($(id)&&$(id).checked)}function sv(id,x){if($(id))$(id).value=x??''}function sc(id,x){if($(id))$(id).checked=!!x}function msg(x){try{alert(x)}catch(e){}}
+function fill(){let s=load();[['setShopName','shopName'],['setShopAddress','shopAddress'],['setShopPhone','shopPhone'],['setReceiptHeader','receiptHeader'],['setReceiptFooter','receiptFooter'],['setPaperSize','paperSize'],['setDefaultUnit','defaultUnit'],['setLowStock','lowStock'],['setSaleQty','saleQty'],['setDefaultPayment','defaultPayment'],['setPurchaseQty','purchaseQty'],['setKeyboardSize','keyboardSize'],['setBillPrinter','billPrinter'],['setBarcodePrinter','barcodePrinter'],['setReceiptCopies','receiptCopies'],['setCurrency','currency'],['setDateFormat','dateFormat']].forEach(a=>sv(a[0],s[a[1]]));[['setReceiptAddress','receiptAddress'],['setReceiptPhone','receiptPhone'],['setAutoBarcode','autoBarcode'],['setSalePriceEdit','salePriceEdit'],['setShowPurchaseSellPrice','showPurchaseSellPrice'],['setSaleKeypad','saleKeypad'],['setPurchaseKeypad','purchaseKeypad'],['setCreditKeyboard','creditKeyboard'],['setAutoBackup','autoBackup'],['setAutoPrint','autoPrint'],['setConfirmDelete','confirmDelete'],['setConfirmReturn','confirmReturn']].forEach(a=>sc(a[0],s[a[1]]));if($('settingsLastBackup'))$('settingsLastBackup').textContent=s.lastBackup||'—';if($('settingsAboutBackup'))$('settingsAboutBackup').textContent=s.lastBackup||'—';let w=$('who');if($('settingsCurrentUser'))$('settingsCurrentUser').textContent=w?w.textContent:'—';if($('setUserDisplayName')&&w)$('setUserDisplayName').value=w.textContent}
+function apply(s){if($('sideNumberPad'))$('sideNumberPad').style.display=s.saleKeypad?'':'none';if($('purchaseSidePad'))$('purchaseSidePad').style.display=s.purchaseKeypad?'':'none';if($('creditCustomerKeyboard'))$('creditCustomerKeyboard').style.display=s.creditKeyboard?'':'none';document.body.classList.remove('kb-small','kb-large');if(s.keyboardSize==='small')document.body.classList.add('kb-small');if(s.keyboardSize==='large')document.body.classList.add('kb-large');if($('sPrice'))$('sPrice').readOnly=!s.salePriceEdit;let p=$('pSellPrice');if(p){let l=p.closest('label')||p.parentElement;if(l)l.style.display=s.showPurchaseSellPrice?'':'none'}}
+function collect(g){let s=load();if(g==='shop'){s.shopName=v('setShopName');s.shopAddress=v('setShopAddress');s.shopPhone=v('setShopPhone')}if(g==='receipt'){s.receiptHeader=v('setReceiptHeader');s.receiptFooter=v('setReceiptFooter');s.paperSize=v('setPaperSize');s.receiptAddress=c('setReceiptAddress');s.receiptPhone=c('setReceiptPhone')}if(g==='product'){s.defaultUnit=v('setDefaultUnit');s.lowStock=+v('setLowStock')||0;s.autoBarcode=c('setAutoBarcode')}if(g==='sales'){s.saleQty=+v('setSaleQty')||1;s.defaultPayment=v('setDefaultPayment');s.salePriceEdit=c('setSalePriceEdit')}if(g==='purchase'){s.purchaseQty=+v('setPurchaseQty')||1;s.showPurchaseSellPrice=c('setShowPurchaseSellPrice')}if(g==='keyboard'){s.saleKeypad=c('setSaleKeypad');s.purchaseKeypad=c('setPurchaseKeypad');s.creditKeyboard=c('setCreditKeyboard');s.keyboardSize=v('setKeyboardSize')}if(g==='printer'){s.billPrinter=v('setBillPrinter');s.barcodePrinter=v('setBarcodePrinter');s.receiptCopies=Math.max(1,+v('setReceiptCopies')||1);s.autoPrint=c('setAutoPrint')}if(g==='system'){s.currency=v('setCurrency');s.dateFormat=v('setDateFormat');s.confirmDelete=c('setConfirmDelete');s.confirmReturn=c('setConfirmReturn')}save(s);msg('Settings saved')}
+document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>collect(b.dataset.save));if($('setAutoBackup'))$('setAutoBackup').onchange=()=>{let s=load();s.autoBackup=c('setAutoBackup');save(s)};
+if($('settingsOpenBackup'))$('settingsOpenBackup').onclick=()=>{let b=document.querySelector('.nav button[data-tab="backup"]');if(b)b.click()};
+if($('settingsBackupNow'))$('settingsBackupNow').onclick=()=>{try{if(typeof makeBackupSnapshot==='function'){let snap=makeBackupSnapshot(),blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Bhai_Bhai_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();let s=load();s.lastBackup=new Date().toLocaleString();save(s);fill()}else msg('Backup function not available')}catch(e){msg('Backup failed')}};
+if($('setUserSave'))$('setUserSave').onclick=()=>{let n=v('setUserDisplayName').trim(),p=v('setNewPassword'),q=v('setConfirmPassword');if(p!==q){msg('Password does not match');return}if(n&&$('who'))$('who').textContent=n;sv('setNewPassword','');sv('setConfirmPassword','');msg(p?'Display name saved. Login password remains protected by existing account authentication.':'Display name saved');fill()};
+fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]').forEach(b=>b.addEventListener('click',()=>setTimeout(fill,0)));
+})();
+</script></body>
 </html>
