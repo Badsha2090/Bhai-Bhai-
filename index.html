@@ -1489,6 +1489,7 @@ window.addEventListener('bbbm-save-selling-rate',function(e){
    if(!code||isNaN(rate)||rate<0)return;
    saveMeta(code,{sellPrice:rate});
    render();
+   if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
    const saleCode=$('sBarcode');
    if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
    alert('Selling Rate updated: '+money(rate));
@@ -1508,6 +1509,7 @@ function editStockSellingRate(code,item){
        if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return false}
        saveMeta(code,{sellPrice:Number(clean)});
        render();
+       if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
        const saleCode=$('sBarcode');
        if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
        alert('Selling Rate updated: '+money(Number(clean)));
@@ -2903,7 +2905,12 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
  function esc(v){return String(v==null?'':v).toLowerCase().trim()}
  function rowHtml(x){
-   const sr=(typeof metaFor==='function'?metaFor(x.barcode):{}).sellPrice;
+   let sr='';
+   try{
+     const allMeta=JSON.parse(localStorage.getItem('bbbm_product_meta_v2')||'{}');
+     const rec=(allMeta&&allMeta[String(x.barcode||'')])||{};
+     sr=rec.sellPrice!=null?rec.sellPrice:'';
+   }catch(_){sr='';}
    const moneyFn=(typeof money==='function'?money:n=>'৳'+Number(n||0).toLocaleString());
    const fmtFn=(typeof fmtQty==='function'?fmtQty:n=>Number(n||0).toLocaleString());
    const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
