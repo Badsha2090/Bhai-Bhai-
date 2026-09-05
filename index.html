@@ -722,6 +722,86 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="full-system-dark-mode-css">
+/* Square Quick Actions */
+#dashboard .dashboard-quick-actions{border-radius:14px!important}
+#dashboard .dashboard-quick-actions .btn,
+#dashboard .dashboard-quick-actions button{
+  width:92px!important;height:92px!important;min-height:92px!important;
+  padding:10px!important;border-radius:14px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  text-align:center!important;white-space:normal!important;line-height:1.15!important;vertical-align:top!important;
+}
+@media(max-width:760px){
+ #dashboard .dashboard-quick-actions .btn,
+ #dashboard .dashboard-quick-actions button{
+   width:82px!important;height:82px!important;min-height:82px!important;
+   padding:8px!important;font-size:12px!important;
+ }
+}
+
+/* Full POS dark mode */
+body.bbbm-dark-mode,
+body.bbbm-dark-mode #appView,
+body.bbbm-dark-mode .main,
+body.bbbm-dark-mode .content,
+body.bbbm-dark-mode .section{
+  background:#0f172a!important;color:#e5e7eb!important;
+}
+body.bbbm-dark-mode .topbar,
+body.bbbm-dark-mode .sidebar{
+  background:#111827!important;color:#f8fafc!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode .card,
+body.bbbm-dark-mode .modal-card,
+body.bbbm-dark-mode .panel{
+  background:#172033!important;color:#f8fafc!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode .dashboard-quick-actions{
+  background:linear-gradient(135deg,#172033 0%,#111827 50%,#1e1b4b 100%)!important;
+  border-color:#334155!important;
+}
+body.bbbm-dark-mode input,
+body.bbbm-dark-mode select,
+body.bbbm-dark-mode textarea{
+  background:#0f172a!important;color:#f8fafc!important;border-color:#475569!important;
+}
+body.bbbm-dark-mode input::placeholder,
+body.bbbm-dark-mode textarea::placeholder{color:#94a3b8!important}
+body.bbbm-dark-mode table,
+body.bbbm-dark-mode thead,
+body.bbbm-dark-mode tbody,
+body.bbbm-dark-mode tr,
+body.bbbm-dark-mode td,
+body.bbbm-dark-mode th{
+  color:#e5e7eb!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode th{background:#1e293b!important}
+body.bbbm-dark-mode .l,
+body.bbbm-dark-mode .metric-note,
+body.bbbm-dark-mode #dashPrivacyHint,
+body.bbbm-dark-mode small,
+body.bbbm-dark-mode .muted{
+  color:#cbd5e1!important;
+}
+body.bbbm-dark-mode .v{color:#fff!important}
+body.bbbm-dark-mode .nav button{color:#e5e7eb!important}
+body.bbbm-dark-mode .nav button:hover,
+body.bbbm-dark-mode .nav button.active{background:#334155!important;color:#fff!important}
+body.bbbm-dark-mode .btn.gray,
+body.bbbm-dark-mode .dash-dark-mode-btn,
+body.bbbm-dark-mode .dash-show-values-btn{
+  background:#334155!important;color:#fff!important;border-color:#475569!important;
+}
+body.bbbm-dark-mode .bill-history-row{border-color:#334155!important}
+body.bbbm-dark-mode .bill-history-row:hover{background:#1e293b!important}
+body.bbbm-dark-mode .bill-history-meta,
+body.bbbm-dark-mode .bill-detail-meta,
+body.bbbm-dark-mode .bill-search-status,
+body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -824,6 +904,7 @@ section#sales label, section#pos label{
               </div>
 
             <div class="dashboard-privacy-bar">
+  <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
   <span id="dashPrivacyHint">Dashboard values hidden</span>
 </div>
@@ -3516,6 +3597,29 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    const nav=e.target.closest&&e.target.closest('[data-tab="dashboard"]');
    if(nav)setTimeout(hideValues,0);
  });
+})();
+</script>
+
+
+<script id="full-system-dark-mode-js">
+(function(){
+  const btn=document.getElementById('dashDarkModeBtn');
+  if(!btn)return;
+  const KEY='bbbm_full_dark_v1';
+
+  function apply(on){
+    document.body.classList.toggle('bbbm-dark-mode',!!on);
+    btn.textContent=on?'☀️ Light Mode':'🌙 Dark Mode';
+    try{localStorage.setItem(KEY,on?'1':'0')}catch(e){}
+  }
+
+  let saved=false;
+  try{saved=localStorage.getItem(KEY)==='1'}catch(e){}
+  apply(saved);
+
+  btn.addEventListener('click',function(){
+    apply(!document.body.classList.contains('bbbm-dark-mode'));
+  });
 })();
 </script>
 
