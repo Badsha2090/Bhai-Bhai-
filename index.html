@@ -802,6 +802,24 @@ body.bbbm-dark-mode .bill-search-status,
 body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
 </style>
 
+<style id="quick-actions-refined-css">
+#dashboard .dashboard-quick-actions{padding:16px!important;border-radius:18px!important;overflow:hidden}
+#dashboard .dashboard-quick-actions .panel-head{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:13px!important}
+#dashboard .dashboard-quick-actions .panel-head h3{margin:0!important;font-size:18px!important;font-weight:900!important}
+#dashboard .dashboard-quick-actions .soft-label{padding:5px 9px!important;border-radius:999px!important;font-size:10px!important;font-weight:800!important}
+#dashboard .dashboard-quick-actions .quick-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
+#dashboard .dashboard-quick-actions .quick-grid button{width:100%!important;height:88px!important;min-height:88px!important;border-radius:16px!important;padding:9px 7px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:7px!important;font-size:12px!important;font-weight:900!important;line-height:1.15!important;transition:transform .12s ease!important}
+#dashboard .dashboard-quick-actions .quick-grid button span{display:block!important;font-size:25px!important;line-height:1!important}
+#dashboard .dashboard-quick-actions .quick-grid button:active{transform:scale(.97)!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(1){background:linear-gradient(145deg,#16a34a,#15803d)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(2){background:linear-gradient(145deg,#2563eb,#1d4ed8)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(3){background:linear-gradient(145deg,#f97316,#ea580c)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(4){background:linear-gradient(145deg,#7c3aed,#6d28d9)!important;color:#fff!important;border:0!important}
+.dash-daily-report-metric{cursor:pointer;text-align:left}
+.dash-report-open{font-size:18px!important}
+body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#334155!important;color:#e2e8f0!important}
+@media(max-width:760px){#dashboard .dashboard-quick-actions .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}#dashboard .dashboard-quick-actions .quick-grid button{height:76px!important;min-height:76px!important;padding:6px 4px!important;font-size:10px!important;border-radius:13px!important}#dashboard .dashboard-quick-actions .quick-grid button span{font-size:21px!important}}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -896,10 +914,8 @@ body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
                 <div class="quick-grid">
                   <button data-go="sales"><span>🛒</span>New Sale (POS)</button>
                   <button data-go="purchase"><span>📦</span>New Purchase</button>
-                  <button data-go="stock"><span>▣</span>View Stock</button>
                   <button data-go="expense"><span>🏷️</span>Expense Entry</button>
                   <button data-go="barcode"><span>🖨️</span>Barcode Print</button>
-                  <button data-go="reports"><span>📊</span>Daily Report</button>
                 </div>
               </div>
 
@@ -932,6 +948,10 @@ body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
                   <div id="mBillCountDash" class="v">0</div>
                   <div class="metric-note">Click to see recent & old bills</div>
                 </div>
+              </button>
+              <button type="button" id="dashDailyReportMetric" class="card metric metric-purple dash-daily-report-metric">
+                <div class="metric-icon">📊</div>
+                <div><div class="l">DAILY REPORT</div><div class="v dash-report-open">OPEN</div><div class="metric-note">Click to view daily report</div></div>
               </button>
             </div>
 
@@ -2553,6 +2573,7 @@ async function goTab(tab){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 if($('dashBillHistoryMetric'))$('dashBillHistoryMetric').onclick=function(){goTab('billhistory')};
+if($('dashDailyReportMetric'))$('dashDailyReportMetric').onclick=function(){goTab('reports')};
 if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
  const detail=$('creditCustomerDetailView');
  if(detail && !detail.classList.contains('hidden')){closeDashboardCreditDetail();return}
