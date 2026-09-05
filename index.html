@@ -830,6 +830,20 @@ body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#
 #backupRows small{font-size:9px}
 </style>
 
+
+<style id="accounts-enabled-css">
+#accounts .accounts-stats{margin-bottom:14px}
+#accounts .accounts-opening-row{align-items:end!important}
+#accounts .accounts-opening-row .btn{min-height:42px}
+body.bbbm-dark-mode #accounts .stat-card,
+body.bbbm-dark-mode #accounts .history-card,
+body.bbbm-dark-mode #accounts .form-card{background:#172033!important;color:#f8fafc!important;border-color:#334155!important}
+@media(max-width:760px){
+ #accounts .accounts-opening-row{display:block!important}
+ #accounts .accounts-opening-row .btn{width:100%;margin-top:8px}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -889,7 +903,7 @@ body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#
           <button class="coming"><span>◇</span> Products <small>Soon</small></button>
           <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
-          <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
+          <button data-tab="accounts"><span>💳</span> Accounts</button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
           <button data-tab="billhistory"><span>🧾</span> Bill History</button>
 <button data-tab="settings"><span>⚙️</span> Settings</button>
@@ -1409,6 +1423,57 @@ body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#
       <label>Show Price<select id="bShowPrice"><option value="yes">Yes</option><option value="no">No</option></select></label>
       <div class="full"><button type="submit" class="btn primary">🖨️ Print Barcode</button></div>
     </form>
+  </div>
+</section>
+
+
+<section id="accounts" class="section">
+  <div class="section-heading">
+    <div><h2>💳 Accounts</h2><p>Cash, credit, purchase and expense হিসাব এক জায়গায়।</p></div>
+  </div>
+
+  <div class="stats-grid accounts-stats">
+    <div class="stat-card"><div><span>Cash in Hand</span><strong id="accCashInHand">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Cash Sale</span><strong id="accTodayCashSale">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Credit Collection</span><strong id="accTodayCollection">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Purchase</span><strong id="accTodayPurchase">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Expense</span><strong id="accTodayExpense">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Total Customer Due</span><strong id="accCustomerDue">৳0.00</strong></div></div>
+  </div>
+
+  <div class="card form-card">
+    <div class="panel-head"><h3>💵 Opening Cash</h3><span class="soft-label">Cash drawer starting balance</span></div>
+    <div class="row accounts-opening-row">
+      <label style="flex:1">Amount
+        <input id="accOpeningCashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      </label>
+      <button type="button" class="btn primary" id="accSaveOpeningCash">Save Opening Cash</button>
+    </div>
+    <div id="accOpeningCashMsg" class="msg"></div>
+  </div>
+
+  <div class="card history-card">
+    <div class="panel-head"><h3>📅 Today's Account Summary</h3><span id="accTodayDate" class="soft-label"></span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>Amount</th><th>Effect on Cash</th></tr></thead>
+        <tbody id="accTodayRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card history-card">
+    <div class="panel-head"><h3>📊 Overall Summary</h3></div>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><th>Total Sales</th><td id="accTotalSales">৳0.00</td></tr>
+          <tr><th>Total Purchases</th><td id="accTotalPurchases">৳0.00</td></tr>
+          <tr><th>Total Expenses</th><td id="accTotalExpenses">৳0.00</td></tr>
+          <tr><th>Total Credit Due</th><td id="accTotalDue">৳0.00</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -2578,7 +2643,8 @@ async function goTab(tab){
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
  if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',settings:'Settings'};
+      if(tab==='accounts')renderAccounts();
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2608,6 +2674,78 @@ document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This featur
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
+
+
+// ===== Accounts =====
+const ACC_OPENING_KEY='bbbm_accounts_opening_cash_v1';
+function accMoney(n){return '৳'+Number(n||0).toFixed(2)}
+function accDateKey(v){
+  if(!v)return '';
+  const s=String(v);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  const d=new Date(s);
+  if(isNaN(d))return s;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function accTodayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function accOpeningMap(){try{return safeGet(ACC_OPENING_KEY,{})||{}}catch(e){return {}}}
+function renderAccounts(){
+  if(!$('accounts'))return;
+  const today=accTodayKey();
+  const sales=db.sales||[], purchases=db.purchases||[], expenses=db.expenses||[], collections=db.collections||[];
+
+  const todaySales=sales.filter(x=>accDateKey(x.date)===today);
+  const todayCashSales=todaySales.filter(x=>String(x.paymentMethod||'Cash').toLowerCase()!=='credit')
+    .reduce((a,x)=>a+(+x.total||0),0);
+  const todayPurchases=purchases.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.total||0),0);
+  const todayExpenses=expenses.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.amount||+x.total||0),0);
+  const todayCollections=collections.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.amount||0),0);
+  const due=typeof outstandingCreditAll==='function'?outstandingCreditAll():0;
+
+  const opening=+(accOpeningMap()[today]||0);
+  // Purchases/expenses are treated as cash out for drawer estimate.
+  const cashInHand=opening+todayCashSales+todayCollections-todayPurchases-todayExpenses;
+
+  if($('accCashInHand'))$('accCashInHand').textContent=accMoney(cashInHand);
+  if($('accTodayCashSale'))$('accTodayCashSale').textContent=accMoney(todayCashSales);
+  if($('accTodayCollection'))$('accTodayCollection').textContent=accMoney(todayCollections);
+  if($('accTodayPurchase'))$('accTodayPurchase').textContent=accMoney(todayPurchases);
+  if($('accTodayExpense'))$('accTodayExpense').textContent=accMoney(todayExpenses);
+  if($('accCustomerDue'))$('accCustomerDue').textContent=accMoney(due);
+  if($('accTodayDate'))$('accTodayDate').textContent=today;
+  if($('accOpeningCashInput'))$('accOpeningCashInput').value=opening||'';
+
+  const totalSales=sales.reduce((a,x)=>a+(+x.total||0),0);
+  const totalPurchases=purchases.reduce((a,x)=>a+(+x.total||0),0);
+  const totalExpenses=expenses.reduce((a,x)=>a+(+x.amount||+x.total||0),0);
+  if($('accTotalSales'))$('accTotalSales').textContent=accMoney(totalSales);
+  if($('accTotalPurchases'))$('accTotalPurchases').textContent=accMoney(totalPurchases);
+  if($('accTotalExpenses'))$('accTotalExpenses').textContent=accMoney(totalExpenses);
+  if($('accTotalDue'))$('accTotalDue').textContent=accMoney(due);
+
+  const rows=[
+    ['Opening Cash',opening,'+'],
+    ['Cash Sales',todayCashSales,'+'],
+    ['Credit Collection',todayCollections,'+'],
+    ['Purchases',todayPurchases,'−'],
+    ['Expenses',todayExpenses,'−'],
+    ['Expected Cash in Hand',cashInHand,'=']
+  ];
+  if($('accTodayRows'))$('accTodayRows').innerHTML=rows.map((r,i)=>
+    `<tr${i===rows.length-1?' style="font-weight:900"':''}><td>${r[0]}</td><td>${accMoney(r[1])}</td><td>${r[2]}</td></tr>`
+  ).join('');
+}
+if($('accSaveOpeningCash'))$('accSaveOpeningCash').onclick=function(){
+  const v=Math.max(0,+($('accOpeningCashInput').value||0));
+  const map=accOpeningMap();
+  map[accTodayKey()]=v;
+  safeSet(ACC_OPENING_KEY,map);
+  if($('accOpeningCashMsg'))$('accOpeningCashMsg').textContent='✅ Opening cash saved.';
+  renderAccounts();
+};
 
 // ===== Bhai Bhai working backup (inside main app scope) =====
 const BACKUP_KEY='bbbm_auto_backups_v1', BACKUP_MAX=14;
