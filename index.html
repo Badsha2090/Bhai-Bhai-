@@ -554,6 +554,50 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="inventory-floating-keyboard-css">
+#bbbmFloatingKeyboard{
+ position:fixed; z-index:99999; width:330px; max-width:92vw; background:#0f172a;
+ border:1px solid #334155; border-radius:12px; box-shadow:0 14px 35px rgba(0,0,0,.28);
+ padding:7px; display:none; user-select:none; touch-action:none;
+}
+#bbbmFloatingKeyboard.numeric{width:220px}
+#bbbmKbHandle{
+ display:flex; align-items:center; justify-content:space-between; gap:8px;
+ padding:4px 5px 7px; cursor:move; color:#e2e8f0; font-size:11px; font-weight:800;
+}
+#bbbmKbHandle .drag-text{display:flex;align-items:center;gap:5px}
+#bbbmKbClose{
+ border:0;background:#334155;color:#fff;border-radius:6px;width:25px;height:25px;font-size:13px;font-weight:900;cursor:pointer
+}
+#bbbmKbKeys{display:grid;gap:4px}
+#bbbmFloatingKeyboard.text #bbbmKbKeys{grid-template-columns:repeat(10,minmax(0,1fr))}
+#bbbmFloatingKeyboard.numeric #bbbmKbKeys{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bbbm-kb-key{
+ border:0;border-radius:6px;background:#f8fafc;color:#0f172a;min-height:31px;
+ font-size:11px;font-weight:900;padding:4px;cursor:pointer;
+}
+.bbbm-kb-key.wide2{grid-column:span 2}
+.bbbm-kb-key.wide3{grid-column:span 3}
+.bbbm-kb-key.action{background:#cbd5e1}
+.bbbm-kb-key.ok{background:#16a34a;color:#fff}
+.bbbm-kb-key.clear{background:#fee2e2;color:#991b1b}
+#bbbmRateEditor{
+ position:fixed;z-index:99998;display:none;width:270px;max-width:88vw;background:#fff;
+ border:1px solid #cbd5e1;border-radius:12px;padding:12px;box-shadow:0 12px 30px rgba(0,0,0,.22)
+}
+#bbbmRateEditor h4{margin:0 0 4px;font-size:14px}
+#bbbmRateEditor p{margin:0 0 9px;font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bbbmRateInput{width:100%;border:1px solid #94a3b8;border-radius:8px;padding:10px 11px;font-size:18px;font-weight:900;text-align:right}
+#bbbmRateActions{display:flex;gap:7px;margin-top:9px}
+#bbbmRateActions button{flex:1}
+@media(max-width:760px){
+ #bbbmFloatingKeyboard{width:305px;padding:6px}
+ #bbbmFloatingKeyboard.numeric{width:205px}
+ .bbbm-kb-key{min-height:29px;font-size:10px}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -1423,6 +1467,22 @@ function stockMap(){
 function editStockSellingRate(code,item){
  code=String(code||'').trim(); if(!code)return;
  const old=metaFor(code).sellPrice;
+ if(window.__bbbmOpenRateEditor){
+   window.__bbbmOpenRateEditor({
+     code:code,item:item||code,oldRate:(old!=null&&old!==''?String(old):''),
+     onSave:function(entered){
+       const clean=String(entered||'').trim();
+       if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return false}
+       saveMeta(code,{sellPrice:Number(clean)});
+       render();
+       const saleCode=$('sBarcode');
+       if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+       alert('Selling Rate updated: '+money(Number(clean)));
+       return true;
+     }
+   });
+   return;
+ }
  const entered=prompt('New Selling Rate - '+(item||code),old!=null&&old!==''?String(old):'');
  if(entered===null)return;
  const clean=String(entered).trim();
@@ -2857,6 +2917,135 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    apply();
  },0)));
  setTimeout(apply,0);
+})();
+</script>
+
+
+<script id="inventory-floating-keyboard-js">
+(function(){
+ let target=null, mode='text', drag=false, offX=0, offY=0, saveRateCb=null;
+ const kb=document.createElement('div');
+ kb.id='bbbmFloatingKeyboard';
+ kb.innerHTML='<div id="bbbmKbHandle"><span class="drag-text">↔ Move Keyboard</span><button type="button" id="bbbmKbClose">✕</button></div><div id="bbbmKbKeys"></div>';
+ document.body.appendChild(kb);
+ const handle=kb.querySelector('#bbbmKbHandle'), keys=kb.querySelector('#bbbmKbKeys'), close=kb.querySelector('#bbbmKbClose');
+
+ const rateBox=document.createElement('div');
+ rateBox.id='bbbmRateEditor';
+ rateBox.innerHTML='<h4>✏️ Selling Rate</h4><p id="bbbmRateItem"></p><input id="bbbmRateInput" type="text" inputmode="none" autocomplete="off"><div id="bbbmRateActions"><button type="button" class="btn gray" id="bbbmRateCancel">Cancel</button><button type="button" class="btn primary" id="bbbmRateSave">Save</button></div>';
+ document.body.appendChild(rateBox);
+ const rateInput=rateBox.querySelector('#bbbmRateInput');
+
+ function textKeys(){
+   return [
+    ['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['0','0'],
+    ['Q','Q'],['W','W'],['E','E'],['R','R'],['T','T'],['Y','Y'],['U','U'],['I','I'],['O','O'],['P','P'],
+    ['A','A'],['S','S'],['D','D'],['F','F'],['G','G'],['H','H'],['J','J'],['K','K'],['L','L'],['⌫','BACK'],
+    ['Z','Z'],['X','X'],['C','C'],['V','V'],['B','B'],['N','N'],['M','M'],['-','-'],['/','/'],['Clear','CLEAR'],
+    ['Space','SPACE','wide3'],['Close','CLOSE','wide3'],['OK','OK','wide3']
+   ];
+ }
+ function numKeys(){
+   return [['7','7'],['8','8'],['9','9'],['4','4'],['5','5'],['6','6'],['1','1'],['2','2'],['3','3'],['C','CLEAR','clear'],['0','0'],['.','.'],['⌫','BACK','action'],['OK','OK','ok','wide2']];
+ }
+ function renderKeys(){
+   kb.className=mode;
+   keys.innerHTML='';
+   const arr=mode==='numeric'?numKeys():textKeys();
+   arr.forEach(x=>{
+     const b=document.createElement('button'); b.type='button'; b.className='bbbm-kb-key';
+     if(x[2])b.classList.add(x[2]); if(x[3])b.classList.add(x[3]);
+     if(x[0]==='OK')b.classList.add('ok'); if(x[0]==='Clear'||x[0]==='C')b.classList.add('clear');
+     b.textContent=x[0]; b.dataset.k=x[1];
+     b.addEventListener('pointerdown',e=>{e.preventDefault(); press(x[1])});
+     keys.appendChild(b);
+   });
+ }
+ function setValue(v){
+   if(!target)return; target.value=v; target.dispatchEvent(new Event('input',{bubbles:true}));
+ }
+ function press(k){
+   if(!target)return;
+   let v=String(target.value||'');
+   if(k==='BACK')setValue(v.slice(0,-1));
+   else if(k==='CLEAR')setValue('');
+   else if(k==='SPACE')setValue(v+' ');
+   else if(k==='CLOSE')hide();
+   else if(k==='OK'){
+     if(target===rateInput){saveRate()}
+     else {target.dispatchEvent(new Event('change',{bubbles:true})); hide()}
+   } else setValue(v+k);
+   try{target.focus({preventScroll:true})}catch(e){target.focus()}
+ }
+ function placeNear(el){
+   const r=el.getBoundingClientRect(), w=(mode==='numeric'?220:330), vh=window.innerHeight, vw=window.innerWidth;
+   let left=Math.max(8,Math.min(vw-w-8,r.left));
+   let top=r.bottom+8;
+   if(top+260>vh)top=Math.max(8,r.top-250);
+   kb.style.left=left+'px'; kb.style.top=top+'px';
+ }
+ function show(el,m){
+   target=el; mode=m||'text'; renderKeys(); kb.style.display='block'; placeNear(el);
+ }
+ function hide(){kb.style.display='none'; if(target!==rateInput)target=null}
+ window.__bbbmOpenFloatingKeyboard=show;
+
+ function saveRate(){
+   if(!saveRateCb)return;
+   const ok=saveRateCb(rateInput.value);
+   if(ok!==false){rateBox.style.display='none';kb.style.display='none';saveRateCb=null;target=null}
+ }
+ window.__bbbmOpenRateEditor=function(opts){
+   saveRateCb=opts&&opts.onSave;
+   rateBox.querySelector('#bbbmRateItem').textContent=(opts&&opts.item)||'';
+   rateInput.value=(opts&&opts.oldRate)||'';
+   const vw=window.innerWidth,vh=window.innerHeight;
+   rateBox.style.left=Math.max(10,(vw-270)/2)+'px';
+   rateBox.style.top=Math.max(10,Math.min(vh-170,110))+'px';
+   rateBox.style.display='block';
+   target=rateInput; mode='numeric'; renderKeys(); kb.style.display='block';
+   kb.style.left=Math.max(8,Math.min(vw-228,rateBox.offsetLeft+25))+'px';
+   kb.style.top=Math.min(vh-265,rateBox.offsetTop+155)+'px';
+   setTimeout(()=>rateInput.focus(),0);
+ };
+
+ rateBox.querySelector('#bbbmRateCancel').onclick=()=>{rateBox.style.display='none';kb.style.display='none';saveRateCb=null;target=null};
+ rateBox.querySelector('#bbbmRateSave').onclick=saveRate;
+ rateInput.addEventListener('focus',()=>show(rateInput,'numeric'));
+ rateInput.addEventListener('click',()=>show(rateInput,'numeric'));
+
+ // Search keyboard opens on tap/focus.
+ const search=document.getElementById('inventorySearch');
+ if(search){
+   search.setAttribute('inputmode','none');
+   search.addEventListener('focus',()=>show(search,'text'));
+   search.addEventListener('click',()=>show(search,'text'));
+ }
+
+ // Draggable keyboard via handle.
+ function startDrag(e){
+   if(e.target===close)return;
+   drag=true; const r=kb.getBoundingClientRect(); offX=e.clientX-r.left; offY=e.clientY-r.top;
+   try{handle.setPointerCapture(e.pointerId)}catch(_){}
+   e.preventDefault();
+ }
+ function moveDrag(e){
+   if(!drag)return;
+   const maxX=Math.max(0,window.innerWidth-kb.offsetWidth),maxY=Math.max(0,window.innerHeight-kb.offsetHeight);
+   kb.style.left=Math.max(0,Math.min(maxX,e.clientX-offX))+'px';
+   kb.style.top=Math.max(0,Math.min(maxY,e.clientY-offY))+'px';
+   e.preventDefault();
+ }
+ function endDrag(){drag=false}
+ handle.addEventListener('pointerdown',startDrag);
+ handle.addEventListener('pointermove',moveDrag);
+ handle.addEventListener('pointerup',endDrag);
+ handle.addEventListener('pointercancel',endDrag);
+ close.onclick=hide;
+
+ document.addEventListener('keydown',e=>{
+   if(e.key==='Escape'){hide();rateBox.style.display='none'}
+ });
 })();
 </script>
 
