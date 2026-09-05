@@ -639,6 +639,35 @@ section#sales label, section#pos label{
 }
 </style>
 
+
+<style id="dashboard-bill-history-css">
+.dashboard-bill-card{margin-top:14px}
+.dashboard-bill-card-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dashboard-bill-title{font-size:16px;font-weight:900}
+.dashboard-bill-sub{font-size:11px;color:#64748b;margin-top:3px}
+.bill-history-search-card{margin-bottom:12px}
+.bill-history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.bill-history-list{display:flex;flex-direction:column;gap:8px}
+.bill-history-row{border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.bill-history-row:hover{background:#f8fafc}
+.bill-history-main{min-width:0}
+.bill-history-no{font-weight:900;font-size:13px}
+.bill-history-meta{font-size:10px;color:#64748b;margin-top:2px;white-space:normal}
+.bill-history-total{font-weight:900;font-size:13px;white-space:nowrap}
+.bill-history-empty{padding:18px;text-align:center;color:#64748b;font-size:12px}
+.bill-detail-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+.bill-detail-title{font-size:16px;font-weight:900}
+.bill-detail-meta{font-size:11px;color:#64748b;margin-top:3px}
+.bill-detail-actions{display:flex;gap:7px;flex-wrap:wrap}
+.bill-detail-table{width:100%;border-collapse:collapse;font-size:11px}
+.bill-detail-table th,.bill-detail-table td{padding:7px 5px;border-bottom:1px solid #e5e7eb;text-align:left}
+.bill-detail-total{text-align:right;font-size:15px;font-weight:900;margin-top:10px}
+@media(max-width:760px){
+ .dashboard-bill-card-inner .btn{width:100%}
+ .bill-history-row{align-items:flex-start}
+}
+</style>
+
 </head>
 <body>
 <header id="legacyHeader">
@@ -700,7 +729,8 @@ section#sales label, section#pos label{
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
           <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
-          <button data-tab="settings"><span>⚙️</span> Settings</button>
+          <button data-tab="billhistory"><span>🧾</span> Bill History</button>
+<button data-tab="settings"><span>⚙️</span> Settings</button>
           <button data-tab="backup"><span>☁️</span> Backup & Sync</button>
         </div>
 
@@ -774,7 +804,17 @@ section#sales label, section#pos label{
                 </div>
               </div>
             </div>
-          </section>
+          
+<div class="card dashboard-bill-card" id="dashboardBillCard">
+  <div class="dashboard-bill-card-inner">
+    <div>
+      <div class="dashboard-bill-title">🧾 Bill History</div>
+      <div class="dashboard-bill-sub">Recent + পুরনো সব bill দেখুন ও search করুন</div>
+    </div>
+    <button type="button" class="btn primary" id="openBillHistoryBtn">Open Bills</button>
+  </div>
+</div>
+</section>
 
           <section id="purchase" class="section">
             <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
@@ -819,19 +859,6 @@ section#sales label, section#pos label{
           <section id="sales" class="section">
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
             
-<div class="card bill-search-card" id="billSearchCard">
-  <div class="bill-search-row">
-    <div class="bill-search-field">
-      <label for="billSearchInput">🔎 Bill Search</label>
-      <input id="billSearchInput" type="text" inputmode="none" autocomplete="off" placeholder="Bill No. লিখুন">
-    </div>
-    <button type="button" class="btn primary" id="billSearchBtn">Search</button>
-    <button type="button" class="btn gray" id="billSearchClear">Clear</button>
-  </div>
-  <div id="billSearchStatus" class="bill-search-status">পুরনো Bill No. লিখে Search করুন</div>
-  <div id="billSearchResult" class="bill-search-result hidden"></div>
-</div>
-
 <div class="card form-card">
               <form id="saleForm" class="dataform">
                 <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
@@ -1154,6 +1181,40 @@ section#sales label, section#pos label{
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
  </div>
 </section>
+
+<section id="billhistory" class="section">
+  <div class="section-heading">
+    <div>
+      <h2>🧾 Bill History</h2>
+      <p>Recent bill, পুরনো bill এবং Bill No. দিয়ে search</p>
+    </div>
+  </div>
+
+  <div class="card bill-history-search-card">
+    <div class="bill-search-row">
+      <div class="bill-search-field">
+        <label for="billHistorySearchInput">🔎 Bill Search</label>
+        <input id="billHistorySearchInput" type="text" inputmode="none" autocomplete="off" placeholder="Bill No. লিখুন">
+      </div>
+      <button type="button" class="btn primary" id="billHistorySearchBtn">Search</button>
+      <button type="button" class="btn gray" id="billHistorySearchClear">Clear</button>
+    </div>
+    <div id="billHistorySearchStatus" class="bill-search-status">সব bill দেখানো হচ্ছে</div>
+  </div>
+
+  <div class="card">
+    <div class="bill-history-toolbar">
+      <div>
+        <h3 style="margin:0">Recent & All Bills</h3>
+        <small id="billHistoryCount">0 bills</small>
+      </div>
+    </div>
+    <div id="billHistoryList" class="bill-history-list"></div>
+  </div>
+
+  <div id="billHistoryDetail" class="card hidden"></div>
+</section>
+
 <section id="settings" class="section">
 <div class="section-heading"><div><h2>⚙️ Settings</h2><p>POS system configuration</p></div></div>
 <div class="settings-grid">
@@ -1889,6 +1950,80 @@ function printBillSearchRows(rows){
   };
 })();
 
+
+function allBillTransactions(){
+  const groups={};
+  (db.sales||[]).forEach(s=>{
+    const key=[String(s.date||''),String(s.saleTime||''),String(s.creditPhone||''),String(s.creditName||''),String(s.paymentMethod||'Cash')].join('|');
+    if(!groups[key])groups[key]=[];
+    groups[key].push(s);
+  });
+  return Object.values(groups).sort((a,b)=>{
+    const aa=(a[0]&&((a[0].date||'')+' '+(a[0].saleTime||'')))||'';
+    const bb=(b[0]&&((b[0].date||'')+' '+(b[0].saleTime||'')))||'';
+    return bb.localeCompare(aa);
+  });
+}
+function billMatchesQuery(rows,q){
+  q=String(q||'').trim().toLowerCase();
+  if(!q)return true;
+  return rows.some(x=>String(x.billNo||'').toLowerCase().includes(q));
+}
+function renderBillHistoryPage(q){
+  const list=$('billHistoryList'),count=$('billHistoryCount'),status=$('billHistorySearchStatus');
+  if(!list)return;
+  let bills=allBillTransactions();
+  if(String(q||'').trim())bills=bills.filter(rows=>billMatchesQuery(rows,q));
+  if(count)count.textContent=bills.length+' bills';
+  if(status)status.textContent=String(q||'').trim()?(bills.length+' bill পাওয়া গেছে'):'সব bill দেখানো হচ্ছে';
+  if(!bills.length){
+    list.innerHTML='<div class="bill-history-empty">কোনো bill পাওয়া যায়নি</div>';
+    return;
+  }
+  list.innerHTML=bills.map((rows,i)=>{
+    const first=rows[0]||{};
+    const total=rows.reduce((a,x)=>a+(+x.total||0),0);
+    const customer=first.creditName||'';
+    const pay=first.paymentMethod||'Cash';
+    return `<div class="bill-history-row" data-bill-index="${i}">
+      <div class="bill-history-main">
+        <div class="bill-history-no">Bill #${billNoLabel(rows)}</div>
+        <div class="bill-history-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''} • ${pay}</div>
+      </div>
+      <div class="bill-history-total">${money(total)}</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.bill-history-row').forEach((el,i)=>{
+    el.onclick=()=>showBillHistoryDetail(bills[i]);
+  });
+}
+function showBillHistoryDetail(rows){
+  const box=$('billHistoryDetail');
+  if(!box||!rows||!rows.length)return;
+  const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const customer=first.creditName||'',phone=first.creditPhone||'';
+  const tr=rows.map(x=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  box.innerHTML=`<div class="bill-detail-head">
+    <div><div class="bill-detail-title">Bill #${billNoLabel(rows)}</div>
+    <div class="bill-detail-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''}${phone?' • '+phone:''} • ${first.paymentMethod||'Cash'}</div></div>
+    <div class="bill-detail-actions">
+      <button type="button" class="btn gray" id="billDetailCloseBtn">← Back to Bills</button>
+      <button type="button" class="btn primary" id="billDetailPrintBtn">🖨️ Print / Reprint</button>
+    </div>
+  </div>
+  <div style="overflow:auto"><table class="bill-detail-table"><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${tr}</tbody></table></div>
+  <div class="bill-detail-total">Total: ${money(total)}</div>`;
+  box.classList.remove('hidden');
+  $('billHistoryList').closest('.card').classList.add('hidden');
+  $('billHistorySearchInput').closest('.card').classList.add('hidden');
+  $('billDetailCloseBtn').onclick=()=>{
+    box.classList.add('hidden');box.innerHTML='';
+    $('billHistoryList').closest('.card').classList.remove('hidden');
+    $('billHistorySearchInput').closest('.card').classList.remove('hidden');
+  };
+  $('billDetailPrintBtn').onclick=()=>printBillSearchRows(rows);
+}
+
 function renderReport(){
  if(!$('reportType'))return;
  const sale=sumWhere(db.sales),purchase=sumWhere(db.purchases),expense=sumWhere(db.expenses,'amount');
@@ -2272,7 +2407,7 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',settings:'Settings'};
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -3273,6 +3408,41 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  document.addEventListener('keydown',e=>{
    if(e.key==='Escape'){hide();rateBox.style.display='none'}
  });
+})();
+</script>
+
+
+<script id="dashboard-bill-history-js">
+(function(){
+  const openBtn=document.getElementById('openBillHistoryBtn');
+  if(openBtn)openBtn.addEventListener('click',()=>{
+    if(typeof goTab==='function')goTab('billhistory');
+    setTimeout(()=>{if(typeof renderBillHistoryPage==='function')renderBillHistoryPage('')},0);
+  });
+
+  const input=document.getElementById('billHistorySearchInput');
+  const searchBtn=document.getElementById('billHistorySearchBtn');
+  const clearBtn=document.getElementById('billHistorySearchClear');
+
+  function runSearch(){
+    if(typeof renderBillHistoryPage==='function')renderBillHistoryPage(input?input.value:'');
+  }
+  if(searchBtn)searchBtn.addEventListener('click',runSearch);
+  if(input){
+    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runSearch()}});
+    input.addEventListener('click',()=>{
+      if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric');
+    });
+  }
+  if(clearBtn)clearBtn.addEventListener('click',()=>{
+    if(input)input.value='';
+    if(typeof renderBillHistoryPage==='function')renderBillHistoryPage('');
+  });
+
+  document.addEventListener('click',e=>{
+    const nav=e.target.closest&&e.target.closest('[data-tab="billhistory"]');
+    if(nav)setTimeout(()=>{if(typeof renderBillHistoryPage==='function')renderBillHistoryPage(input?input.value:'')},0);
+  });
 })();
 </script>
 
