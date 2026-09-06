@@ -270,6 +270,657 @@ section#sales label, section#pos label{
 }
 #sidePadDisplay small{display:block;font-size:11px;color:#64748b;font-weight:600;text-align:left}
 </style>
+
+<style id="bbbm-safe-ui-css">
+/* Safe add-on: collapsible sidebar + compact non-barcode selector */
+#appView.bbbm-menu-closed .sidebar{transform:translateX(-100%);}
+#appView.bbbm-menu-closed .main-area{margin-left:0;width:100%;}
+.sidebar{transition:transform .18s ease;}
+.main-area{transition:margin-left .18s ease,width .18s ease;}
+#bbbmMenuBtn{
+  border:0;background:#0b4f8a;color:#fff;border-radius:7px;
+  width:38px;height:36px;font-size:21px;font-weight:900;cursor:pointer;
+  flex:0 0 auto;margin-right:10px
+}
+.bbbm-top-left{display:flex;align-items:center;min-width:0}
+.bbbm-nb-wrap{position:relative;margin-left:auto}
+.bbbm-nb-btn{
+  border:1px solid #1769e0;background:#1769e0;color:#fff;border-radius:7px;
+  padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap
+}
+.bbbm-nb-panel{
+  display:none;position:absolute;right:0;top:40px;z-index:1000;width:min(470px,88vw);
+  background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:10px;
+  box-shadow:0 12px 30px rgba(15,23,42,.20)
+}
+.bbbm-nb-panel.open{display:block}
+.bbbm-nb-search{width:100%;padding:9px 10px!important;margin:0 0 8px!important}
+.bbbm-nb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.bbbm-nb-cat{border:1px solid #cfe0ef;background:#f8fbff;border-radius:7px;padding:8px 5px;font-size:11px;font-weight:800;cursor:pointer}
+.bbbm-nb-cat.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.bbbm-nb-items{max-height:250px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bbbm-nb-item{border:1px solid #dbe4ee;background:#fff;border-radius:7px;padding:8px;text-align:left;cursor:pointer;font-size:11px}
+.bbbm-nb-item b{display:block}.bbbm-nb-item small{color:#6b7a8c}
+.bbbm-nb-empty{grid-column:1/-1;padding:14px;text-align:center;color:#6b7a8c;font-size:11px}
+@media(max-width:760px){
+  #appView .sidebar{position:fixed!important;left:0;top:0;bottom:0;width:238px!important;height:100vh!important;z-index:1200!important}
+  #appView:not(.bbbm-menu-closed) .sidebar{transform:translateX(0)!important}
+  #appView.bbbm-menu-closed .sidebar{transform:translateX(-100%)!important}
+  #appView .main-area{margin-left:0!important;width:100%!important}
+  .bbbm-nb-items{grid-template-columns:1fr}
+  .bbbm-nb-cats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+
+
+<style id="bbbm-rod-mm-direct-css">
+.bbbm-rod-mm-direct{
+  display:none;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+  margin:8px 0 10px;
+  padding:8px;
+  border:1px solid #dbe4ee;
+  border-radius:9px;
+  background:#f8fbff;
+}
+.bbbm-rod-mm-direct.open{display:grid}
+.bbbm-rod-mm-direct button{
+  border:1px solid #cbd5e1;
+  background:#fff;
+  color:#0f172a;
+  border-radius:8px;
+  min-height:39px;
+  padding:7px 5px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.bbbm-rod-mm-direct button:active{transform:scale(.98)}
+.bbbm-rod-mm-note{
+  display:none;
+  margin:-4px 0 8px;
+  font-size:11px;
+  color:#64748b;
+}
+.bbbm-rod-mm-note.show{display:block}
+@media(max-width:520px){
+  .bbbm-rod-mm-direct{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
+
+<style id="bbbm-cement-css">
+.bbbm-cement-brands{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0;padding:8px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fbff}
+.bbbm-cement-brands.open{display:grid}
+.bbbm-cement-brands button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:39px;padding:7px 5px;font-size:11px;font-weight:800;cursor:pointer}
+@media(max-width:520px){.bbbm-cement-brands{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
+
+<style id="bbbm-rod-company-css">
+.bbbm-rod-companies,.bbbm-rod-mm-company{
+  display:none;gap:7px;margin:8px 0;padding:8px;
+  border:1px solid #dbe4ee;border-radius:9px;background:#f8fbff
+}
+.bbbm-rod-companies{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bbbm-rod-mm-company{grid-template-columns:repeat(4,minmax(0,1fr));background:#fff}
+.bbbm-rod-companies.open,.bbbm-rod-mm-company.open{display:grid}
+.bbbm-rod-companies button,.bbbm-rod-mm-company button{
+  border:1px solid #cbd5e1;background:#fff;border-radius:8px;
+  min-height:39px;padding:7px 5px;font-size:11px;font-weight:900;cursor:pointer
+}
+.bbbm-rod-companies button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.bbbm-rod-title{display:none;font-size:11px;color:#64748b;margin:3px 0 5px;font-weight:700}
+.bbbm-rod-title.show{display:block}
+@media(max-width:520px){
+  .bbbm-rod-companies{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bbbm-rod-mm-company{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
+
+<style id="purchase-side-pad-css">
+#purchase .form-card{position:relative!important;padding-right:315px!important;min-height:500px!important}
+#purchase input,#purchase select{min-height:36px!important;height:36px!important;padding:6px 9px!important;font-size:14px!important}
+#purchase label{font-size:13px!important;margin-bottom:6px!important}
+#purchase form.dataform{gap:8px!important}
+#pBarcode{max-width:180px!important}
+#pItem,#pQty,#pUnit,#pPrice,#pSellPrice,#pDate,#pTotal{max-width:260px!important}
+#pQty,#pPrice,#pSellPrice,#pTotal{max-width:200px!important}
+#purchaseSidePad{position:absolute;right:18px;top:78px;width:275px;background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 12px 35px rgba(15,23,42,.18);padding:12px;z-index:20}
+.ppad-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px;font-size:13px}
+.ppad-head button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-weight:800;cursor:pointer}
+.ppad-head button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.ppad-display{width:100%;min-height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;padding:7px 9px;text-align:right;font-size:19px;font-weight:800;margin-bottom:8px;overflow:hidden}
+.ppad-display small{display:block;font-size:10px;color:#64748b;font-weight:600;text-align:left}
+.ppad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.ppad-grid button,.ppad-text button{min-height:48px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;font-size:20px;font-weight:800;cursor:pointer}
+.ppad-clear{background:#fee2e2!important;color:#991b1b}.ppad-ok{background:#1769e0!important;color:#fff!important;border-color:#1769e0!important}
+.ppad-text{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}.ppad-text.hidden{display:none!important}
+.ppad-text button{min-height:34px;font-size:12px;padding:2px}
+.ppad-text .wide{grid-column:span 2}.ppad-text .space{grid-column:span 3}
+.ppad-note{margin-top:8px;font-size:10px;color:#64748b;line-height:1.3}
+#purchase input.ppad-active{outline:3px solid #1769e0!important;outline-offset:1px!important}
+@media(max-width:900px){#purchaseSidePad{position:static!important;width:100%!important;margin-top:14px!important}#purchase .form-card{padding-right:16px!important}}
+</style>
+
+
+<style id="credit-customer-keyboard-css">
+#creditCustomerBox .credit-fields{margin-bottom:10px}
+.credit-kb{border:1px solid #cfe0ef;background:#fff;border-radius:10px;padding:10px;margin:4px 0 12px}
+.credit-kb-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.credit-kb-head strong{font-size:13px}
+.credit-kb-head button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 9px;font-weight:800;cursor:pointer}
+.credit-kb-head button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+.credit-kb-display{min-height:42px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;padding:7px 9px;font-size:17px;font-weight:800;margin-bottom:8px;overflow:hidden}
+.credit-kb-display small{display:block;font-size:10px;color:#64748b;font-weight:600}
+.credit-text-keys{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.credit-num-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.credit-text-keys.hidden,.credit-num-keys.hidden{display:none!important}
+.credit-text-keys button,.credit-num-keys button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;min-height:38px;font-size:13px;font-weight:800;cursor:pointer}
+.credit-num-keys button{min-height:46px;font-size:19px}
+.credit-text-keys .space{grid-column:span 4}.credit-text-keys .wide{grid-column:span 2}
+.credit-num-keys .ckb-clear{background:#fee2e2;color:#991b1b}
+.credit-num-keys .ckb-ok{background:#1769e0;color:#fff;border-color:#1769e0}
+#creditName.ckb-active,#creditPhone.ckb-active{outline:3px solid #1769e0!important;outline-offset:1px!important}
+.credit-kb-note{margin-top:7px;font-size:10px;color:#64748b}
+@media(max-width:760px){
+ .credit-text-keys{grid-template-columns:repeat(7,1fr)}
+}
+</style>
+
+
+<style id="dashboard-credit-css">
+.dash-credit-metric{
+  width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit;
+  border:1px solid #f0c98f!important;background:#fff!important;
+}
+.dash-credit-metric:hover{box-shadow:0 6px 18px rgba(16,32,51,.10)}
+.metric-credit .metric-icon{background:#fff0dc}
+.dash-credit-details{margin-top:12px;overflow:hidden}
+.dash-credit-details.hidden{display:none!important}
+.dash-credit-list{padding:6px 14px 12px}
+.dash-credit-row{
+  display:grid;grid-template-columns:minmax(0,1.4fr) minmax(110px,.7fr) minmax(95px,.5fr);
+  gap:10px;align-items:center;padding:11px 2px;border-bottom:1px solid #edf1f5;font-size:12px
+}
+.dash-credit-row:last-child{border-bottom:0}
+.dash-credit-row .cust b{display:block;font-size:13px}
+.dash-credit-row .cust span{display:block;color:#718096;margin-top:2px}
+.dash-credit-row .bills{color:#64748b}
+.dash-credit-row .due{text-align:right;font-weight:900;font-size:14px;color:#b45309}
+.dash-credit-empty{padding:18px 2px;text-align:center;color:#64748b;font-size:12px}
+@media(max-width:620px){
+  .dash-credit-row{grid-template-columns:1fr auto}
+  .dash-credit-row .bills{grid-column:1/2;font-size:10px}
+  .dash-credit-row .due{grid-row:1/3;grid-column:2}
+}
+</style>
+
+<style id="global-back-credit-page-css">
+.topbar{justify-content:flex-start!important}.topbar-title-wrap{min-width:0}.topbar-right{margin-left:auto}
+.global-back-btn{border:0;background:#0b4f8a;color:#fff;border-radius:8px;height:38px;padding:0 13px;margin-right:12px;font-size:13px;font-weight:900;cursor:pointer}
+#creditcustomers .card{overflow:hidden}#creditPageTotal{font-size:18px;color:#b45309}
+@media(max-width:760px){.global-back-btn{height:34px;padding:0 9px;margin-right:7px;font-size:12px}}
+</style>
+
+<style id="credit-detail-autoname-gap-css">
+/* Keep Menu and Back as two separate buttons with visible spacing */
+.top-action-group{
+  display:flex!important;align-items:center!important;gap:16px!important;
+  flex:0 0 auto!important;margin-right:16px!important;
+}
+.top-action-group #bbbmMenuBtn{margin-right:0!important}
+.top-action-group .global-back-btn{margin-right:0!important}
+
+/* Credit customer rows are clickable */
+.dash-credit-row.credit-customer-click{
+  cursor:pointer;border-radius:8px;padding-left:8px;padding-right:8px;
+}
+.dash-credit-row.credit-customer-click:hover{background:#f6f9fc}
+.dash-credit-row .open-arrow{font-size:18px;color:#1769e0;font-weight:900;margin-left:8px}
+
+/* Customer detail page */
+.credit-detail-heading{align-items:center}
+.credit-detail-summary{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1px;background:#e8edf2;margin-bottom:12px;overflow:hidden
+}
+.credit-detail-summary>div{background:#fff;padding:14px}
+.credit-detail-summary span{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase}
+.credit-detail-summary b{display:block;font-size:18px;margin-top:4px}
+.credit-bill-card{margin-bottom:12px;overflow:hidden}
+.credit-bill-head{
+  display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
+  padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5ebf1
+}
+.credit-bill-head .bill-date{font-size:12px;font-weight:900}
+.credit-bill-head .bill-no{font-size:11px;color:#64748b;margin-top:3px}
+.credit-bill-head .bill-due{text-align:right}
+.credit-bill-head .bill-due small{display:block;color:#64748b;font-size:9px}
+.credit-bill-head .bill-due b{font-size:15px;color:#b45309}
+.credit-item-row{
+  display:grid;grid-template-columns:minmax(0,1.6fr) minmax(100px,.7fr) minmax(95px,.6fr);
+  gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #edf1f5;font-size:11px
+}
+.credit-item-row:last-child{border-bottom:0}
+.credit-item-row .item-name b{display:block;font-size:12px}
+.credit-item-row .item-name span{display:block;color:#64748b;margin-top:2px}
+.credit-item-row .item-calc{color:#526477}
+.credit-item-row .item-due{text-align:right;font-weight:900}
+.credit-item-row .item-due.paid{color:#16803a}
+.credit-item-row .item-due.due{color:#b45309}
+.credit-detail-empty{padding:20px;text-align:center;color:#64748b}
+
+/* Small helper note when a known phone fills customer name */
+#creditPhone.credit-known{outline:3px solid #22a35a!important;outline-offset:1px!important}
+@media(max-width:760px){
+  .top-action-group{gap:10px!important;margin-right:8px!important}
+  .credit-detail-summary{grid-template-columns:1fr 1fr}
+  .credit-bill-head{padding:10px}
+  .credit-item-row{grid-template-columns:1fr auto;padding:10px}
+  .credit-item-row .item-calc{grid-column:1/2;font-size:10px}
+  .credit-item-row .item-due{grid-row:1/3;grid-column:2}
+}
+</style>
+
+<style id="all-settings-css">
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.settings-card{padding:16px}.settings-card h3{margin:0 0 12px;font-size:15px}.settings-card label{display:block;font-size:11px;font-weight:800;color:#405267;margin:9px 0}.settings-card input:not([type=checkbox]),.settings-card select,.settings-card textarea{width:100%;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;background:#fff;font:inherit}.settings-card .check{display:flex;align-items:center;gap:8px;font-size:12px}.settings-card .check input{width:17px;height:17px}.set-actions{display:flex;gap:8px;flex-wrap:wrap}.set-note{font-size:10px;color:#64748b;line-height:1.45}.set-info{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #edf1f5;font-size:11px}.set-info span{color:#64748b}.set-info b{text-align:right}body.kb-small #sideNumberPad,body.kb-small #purchaseSidePad{transform:scale(.88);transform-origin:top right}body.kb-large #sideNumberPad,body.kb-large #purchaseSidePad{transform:scale(1.08);transform-origin:top right}@media(max-width:850px){.settings-grid{grid-template-columns:1fr}}
+</style>
+<style id="inventory-rate-stockqty-css">
+.stock-rate-cell{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.stock-rate-edit{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:5px 8px;font-size:10px;font-weight:800;cursor:pointer}
+.stock-rate-edit:active{transform:scale(.97)}
+.stock-value-qty{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:700;white-space:nowrap}
+#stockRows td:nth-child(6){white-space:nowrap}
+@media(max-width:760px){.stock-rate-cell{flex-direction:column;align-items:flex-start}.stock-rate-edit{padding:4px 7px}}
+</style>
+
+
+<style id="inventory-search-css">
+.inventory-search-card{padding:12px 14px;margin-bottom:12px}
+.inventory-search-wrap{display:flex;align-items:center;gap:8px}
+.inventory-search-icon{font-size:18px;flex:0 0 auto}
+#inventorySearch{flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;font-size:14px;font-weight:700;background:#fff;color:#102033}
+#inventorySearch:focus{outline:2px solid rgba(59,130,246,.18);border-color:#60a5fa}
+.inventory-search-clear{padding:10px 12px;white-space:nowrap}
+.inventory-search-count{font-size:10px;color:#64748b;font-weight:700;margin-top:7px}
+.inventory-no-result{text-align:center!important;color:#64748b!important;padding:18px!important}
+@media(max-width:760px){
+ .inventory-search-wrap{gap:6px}
+ #inventorySearch{font-size:13px;padding:10px}
+ .inventory-search-clear{padding:9px 10px}
+}
+</style>
+
+
+<style id="inventory-floating-keyboard-css">
+#bbbmFloatingKeyboard{
+ position:fixed; z-index:99999; width:330px; max-width:92vw; background:#0f172a;
+ border:1px solid #334155; border-radius:12px; box-shadow:0 14px 35px rgba(0,0,0,.28);
+ padding:7px; display:none; user-select:none; touch-action:none;
+}
+#bbbmFloatingKeyboard.numeric{width:220px}
+#bbbmKbHandle{
+ display:flex; align-items:center; justify-content:space-between; gap:8px;
+ padding:4px 5px 7px; cursor:move; color:#e2e8f0; font-size:11px; font-weight:800;
+}
+#bbbmKbHandle .drag-text{display:flex;align-items:center;gap:5px}
+#bbbmKbClose{
+ border:0;background:#334155;color:#fff;border-radius:6px;width:25px;height:25px;font-size:13px;font-weight:900;cursor:pointer
+}
+#bbbmKbKeys{display:grid;gap:4px}
+#bbbmFloatingKeyboard.text #bbbmKbKeys{grid-template-columns:repeat(10,minmax(0,1fr))}
+#bbbmFloatingKeyboard.numeric #bbbmKbKeys{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bbbm-kb-key{
+ border:0;border-radius:6px;background:#f8fafc;color:#0f172a;min-height:31px;
+ font-size:11px;font-weight:900;padding:4px;cursor:pointer;
+}
+.bbbm-kb-key.wide2{grid-column:span 2}
+.bbbm-kb-key.wide3{grid-column:span 3}
+.bbbm-kb-key.action{background:#cbd5e1}
+.bbbm-kb-key.ok{background:#16a34a;color:#fff}
+.bbbm-kb-key.clear{background:#fee2e2;color:#991b1b}
+#bbbmRateEditor{
+ position:fixed;z-index:99998;display:none;width:270px;max-width:88vw;background:#fff;
+ border:1px solid #cbd5e1;border-radius:12px;padding:12px;box-shadow:0 12px 30px rgba(0,0,0,.22)
+}
+#bbbmRateEditor h4{margin:0 0 4px;font-size:14px}
+#bbbmRateEditor p{margin:0 0 9px;font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bbbmRateInput{width:100%;border:1px solid #94a3b8;border-radius:8px;padding:10px 11px;font-size:18px;font-weight:900;text-align:right}
+#bbbmRateActions{display:flex;gap:7px;margin-top:9px}
+#bbbmRateActions button{flex:1}
+@media(max-width:760px){
+ #bbbmFloatingKeyboard{width:305px;padding:6px}
+ #bbbmFloatingKeyboard.numeric{width:205px}
+ .bbbm-kb-key{min-height:29px;font-size:10px}
+}
+</style>
+
+
+<style id="inventory-purchaseqty-css">
+.stock-bought-qty{
+ display:block;margin-top:3px;color:#0f766e;font-size:10px;font-weight:800;white-space:nowrap
+}
+.stock-batch-qty{
+ display:block;margin-top:2px;color:#64748b;font-size:9px;font-weight:700;line-height:1.35;
+ max-width:240px;white-space:normal
+}
+</style>
+
+
+<style id="inventory-purchase-rate-current-sell-css">
+.stock-purchase-rate{display:block;margin-top:3px;color:#7c3aed;font-size:10px;font-weight:800;white-space:nowrap}
+.stock-rate-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.current-selling-rate{display:block;color:#0f766e;font-size:10px;font-weight:900;white-space:nowrap}
+</style>
+
+
+<style id="bill-search-css">
+.bill-search-card{margin-bottom:14px}
+.bill-search-row{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.bill-search-field{flex:1;min-width:210px}
+.bill-search-field label{display:block;font-size:12px;font-weight:900;margin-bottom:5px}
+.bill-search-field input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px;font-weight:800}
+.bill-search-status{margin-top:8px;font-size:11px;color:#64748b;font-weight:700}
+.bill-search-result{margin-top:10px;border-top:1px solid #e2e8f0;padding-top:10px}
+.bill-search-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.bill-search-title{font-weight:900;font-size:14px}
+.bill-search-meta{font-size:11px;color:#64748b;margin-top:2px}
+.bill-search-table{width:100%;border-collapse:collapse;font-size:11px}
+.bill-search-table th,.bill-search-table td{padding:7px 5px;border-bottom:1px solid #e5e7eb;text-align:left}
+.bill-search-total{display:flex;justify-content:flex-end;margin-top:9px;font-weight:900;font-size:14px}
+.bill-search-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+@media(max-width:760px){
+ .bill-search-row{align-items:stretch}
+ .bill-search-field{flex-basis:100%}
+ .bill-search-row .btn{flex:1}
+}
+</style>
+
+
+<style id="dashboard-bill-history-css">
+.dashboard-bill-card{margin-top:14px}
+.dashboard-bill-card-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dashboard-bill-title{font-size:16px;font-weight:900}
+.dashboard-bill-sub{font-size:11px;color:#64748b;margin-top:3px}
+.bill-history-search-card{margin-bottom:12px}
+.bill-history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.bill-history-list{display:flex;flex-direction:column;gap:8px}
+.bill-history-row{border:1px solid #e2e8f0;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.bill-history-row:hover{background:#f8fafc}
+.bill-history-main{min-width:0}
+.bill-history-no{font-weight:900;font-size:13px}
+.bill-history-meta{font-size:10px;color:#64748b;margin-top:2px;white-space:normal}
+.bill-history-total{font-weight:900;font-size:13px;white-space:nowrap}
+.bill-history-empty{padding:18px;text-align:center;color:#64748b;font-size:12px}
+.bill-detail-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+.bill-detail-title{font-size:16px;font-weight:900}
+.bill-detail-meta{font-size:11px;color:#64748b;margin-top:3px}
+.bill-detail-actions{display:flex;gap:7px;flex-wrap:wrap}
+.bill-detail-table{width:100%;border-collapse:collapse;font-size:11px}
+.bill-detail-table th,.bill-detail-table td{padding:7px 5px;border-bottom:1px solid #e5e7eb;text-align:left}
+.bill-detail-total{text-align:right;font-size:15px;font-weight:900;margin-top:10px}
+@media(max-width:760px){
+ .dashboard-bill-card-inner .btn{width:100%}
+ .bill-history-row{align-items:flex-start}
+}
+</style>
+
+
+<style id="dashboard-bill-metric-fix-css">
+.dash-bill-history-metric{cursor:pointer;text-align:left}
+</style>
+
+<style id="dashboard-5sec-hide-css">
+.dashboard-privacy-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+.dashboard-privacy-bar #dashPrivacyHint{font-size:11px;color:#64748b;font-weight:700}
+.dash-show-values-btn{font-weight:900}
+.dashboard-values-hidden .metric .v{font-size:0!important}
+.dashboard-values-hidden .metric .v::after{content:"••••••";font-size:22px;letter-spacing:2px;line-height:1.15}
+</style>
+
+
+<style id="dashboard-quick-actions-colorful-css">
+#dashboard .dashboard-quick-actions{
+  padding:18px!important;
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#fff7ed 0%,#eff6ff 48%,#f5f3ff 100%)!important;
+  border:1px solid #dbeafe!important;
+  box-shadow:0 8px 22px rgba(15,23,42,.10)!important;
+}
+#dashboard .dashboard-quick-actions h3,
+#dashboard .dashboard-quick-actions h2{
+  font-size:20px!important;
+  font-weight:900!important;
+  margin-bottom:12px!important;
+}
+#dashboard .dashboard-quick-actions .btn,
+#dashboard .dashboard-quick-actions button{
+  min-height:52px!important;
+  padding:12px 16px!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  border-radius:12px!important;
+  box-shadow:0 5px 12px rgba(15,23,42,.12)!important;
+}
+#dashboard .dashboard-quick-actions .btn:nth-of-type(1),
+#dashboard .dashboard-quick-actions button:nth-of-type(1){background:#16a34a!important;color:#fff!important;border-color:#16a34a!important}
+#dashboard .dashboard-quick-actions .btn:nth-of-type(2),
+#dashboard .dashboard-quick-actions button:nth-of-type(2){background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
+#dashboard .dashboard-quick-actions .btn:nth-of-type(3),
+#dashboard .dashboard-quick-actions button:nth-of-type(3){background:#f97316!important;color:#fff!important;border-color:#f97316!important}
+#dashboard .dashboard-quick-actions .btn:nth-of-type(4),
+#dashboard .dashboard-quick-actions button:nth-of-type(4){background:#7c3aed!important;color:#fff!important;border-color:#7c3aed!important}
+#dashboard .dashboard-quick-actions .btn:nth-of-type(5),
+#dashboard .dashboard-quick-actions button:nth-of-type(5){background:#0891b2!important;color:#fff!important;border-color:#0891b2!important}
+@media(max-width:760px){
+ #dashboard .dashboard-quick-actions{padding:14px!important}
+ #dashboard .dashboard-quick-actions .btn,
+ #dashboard .dashboard-quick-actions button{min-height:48px!important;font-size:13px!important}
+}
+</style>
+
+
+<style id="full-system-dark-mode-css">
+/* Square Quick Actions */
+#dashboard .dashboard-quick-actions{border-radius:14px!important}
+#dashboard .dashboard-quick-actions .btn,
+#dashboard .dashboard-quick-actions button{
+  width:92px!important;height:92px!important;min-height:92px!important;
+  padding:10px!important;border-radius:14px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  text-align:center!important;white-space:normal!important;line-height:1.15!important;vertical-align:top!important;
+}
+@media(max-width:760px){
+ #dashboard .dashboard-quick-actions .btn,
+ #dashboard .dashboard-quick-actions button{
+   width:82px!important;height:82px!important;min-height:82px!important;
+   padding:8px!important;font-size:12px!important;
+ }
+}
+
+/* Full POS dark mode */
+body.bbbm-dark-mode,
+body.bbbm-dark-mode #appView,
+body.bbbm-dark-mode .main,
+body.bbbm-dark-mode .content,
+body.bbbm-dark-mode .section{
+  background:#0f172a!important;color:#e5e7eb!important;
+}
+body.bbbm-dark-mode .topbar,
+body.bbbm-dark-mode .sidebar{
+  background:#111827!important;color:#f8fafc!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode .card,
+body.bbbm-dark-mode .modal-card,
+body.bbbm-dark-mode .panel{
+  background:#172033!important;color:#f8fafc!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode .dashboard-quick-actions{
+  background:linear-gradient(135deg,#172033 0%,#111827 50%,#1e1b4b 100%)!important;
+  border-color:#334155!important;
+}
+body.bbbm-dark-mode input,
+body.bbbm-dark-mode select,
+body.bbbm-dark-mode textarea{
+  background:#0f172a!important;color:#f8fafc!important;border-color:#475569!important;
+}
+body.bbbm-dark-mode input::placeholder,
+body.bbbm-dark-mode textarea::placeholder{color:#94a3b8!important}
+body.bbbm-dark-mode table,
+body.bbbm-dark-mode thead,
+body.bbbm-dark-mode tbody,
+body.bbbm-dark-mode tr,
+body.bbbm-dark-mode td,
+body.bbbm-dark-mode th{
+  color:#e5e7eb!important;border-color:#334155!important;
+}
+body.bbbm-dark-mode th{background:#1e293b!important}
+body.bbbm-dark-mode .l,
+body.bbbm-dark-mode .metric-note,
+body.bbbm-dark-mode #dashPrivacyHint,
+body.bbbm-dark-mode small,
+body.bbbm-dark-mode .muted{
+  color:#cbd5e1!important;
+}
+body.bbbm-dark-mode .v{color:#fff!important}
+body.bbbm-dark-mode .nav button{color:#e5e7eb!important}
+body.bbbm-dark-mode .nav button:hover,
+body.bbbm-dark-mode .nav button.active{background:#334155!important;color:#fff!important}
+body.bbbm-dark-mode .btn.gray,
+body.bbbm-dark-mode .dash-dark-mode-btn,
+body.bbbm-dark-mode .dash-show-values-btn{
+  background:#334155!important;color:#fff!important;border-color:#475569!important;
+}
+body.bbbm-dark-mode .bill-history-row{border-color:#334155!important}
+body.bbbm-dark-mode .bill-history-row:hover{background:#1e293b!important}
+body.bbbm-dark-mode .bill-history-meta,
+body.bbbm-dark-mode .bill-detail-meta,
+body.bbbm-dark-mode .bill-search-status,
+body.bbbm-dark-mode .inventory-search-count{color:#94a3b8!important}
+</style>
+
+<style id="quick-actions-refined-css">
+#dashboard .dashboard-quick-actions{padding:16px!important;border-radius:18px!important;overflow:hidden}
+#dashboard .dashboard-quick-actions .panel-head{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:13px!important}
+#dashboard .dashboard-quick-actions .panel-head h3{margin:0!important;font-size:18px!important;font-weight:900!important}
+#dashboard .dashboard-quick-actions .soft-label{padding:5px 9px!important;border-radius:999px!important;font-size:10px!important;font-weight:800!important}
+#dashboard .dashboard-quick-actions .quick-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
+#dashboard .dashboard-quick-actions .quick-grid button{width:100%!important;height:88px!important;min-height:88px!important;border-radius:16px!important;padding:9px 7px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:7px!important;font-size:12px!important;font-weight:900!important;line-height:1.15!important;transition:transform .12s ease!important}
+#dashboard .dashboard-quick-actions .quick-grid button span{display:block!important;font-size:25px!important;line-height:1!important}
+#dashboard .dashboard-quick-actions .quick-grid button:active{transform:scale(.97)!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(1){background:linear-gradient(145deg,#16a34a,#15803d)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(2){background:linear-gradient(145deg,#2563eb,#1d4ed8)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(3){background:linear-gradient(145deg,#f97316,#ea580c)!important;color:#fff!important;border:0!important}
+#dashboard .dashboard-quick-actions .quick-grid button:nth-child(4){background:linear-gradient(145deg,#7c3aed,#6d28d9)!important;color:#fff!important;border:0!important}
+.dash-daily-report-metric{cursor:pointer;text-align:left}
+.dash-report-open{font-size:18px!important}
+body.bbbm-dark-mode #dashboard .dashboard-quick-actions .soft-label{background:#334155!important;color:#e2e8f0!important}
+@media(max-width:760px){#dashboard .dashboard-quick-actions .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}#dashboard .dashboard-quick-actions .quick-grid button{height:76px!important;min-height:76px!important;padding:6px 4px!important;font-size:10px!important;border-radius:13px!important}#dashboard .dashboard-quick-actions .quick-grid button span{font-size:21px!important}}
+</style>
+
+<style id="backup-now-fix-css">
+#backupMsg{
+  margin-top:10px!important;
+  min-height:18px!important;
+  font-weight:800!important;
+}
+#backupRows small{font-size:9px}
+</style>
+
+
+<style id="accounts-enabled-css">
+#accounts .accounts-stats{margin-bottom:14px}
+#accounts .accounts-opening-row{align-items:end!important}
+#accounts .accounts-opening-row .btn{min-height:42px}
+body.bbbm-dark-mode #accounts .stat-card,
+body.bbbm-dark-mode #accounts .history-card,
+body.bbbm-dark-mode #accounts .form-card{background:#172033!important;color:#f8fafc!important;border-color:#334155!important}
+@media(max-width:760px){
+ #accounts .accounts-opening-row{display:block!important}
+ #accounts .accounts-opening-row .btn{width:100%;margin-top:8px}
+}
+</style>
+
+
+<style id="demo-reset-css">
+.demo-reset-card{
+  position:relative;overflow:hidden;
+  border:1px solid #dbeafe!important;
+  background:linear-gradient(145deg,#ffffff 0%,#f8fbff 55%,#eff6ff 100%)!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.08)!important;
+}
+.demo-reset-card:before{
+  content:"";position:absolute;width:170px;height:170px;border-radius:50%;
+  right:-70px;top:-75px;background:rgba(59,130,246,.10);pointer-events:none
+}
+.demo-live-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;position:relative}
+.demo-live-icon{
+  width:58px;height:58px;border-radius:17px;display:flex;align-items:center;justify-content:center;
+  font-size:29px;background:linear-gradient(135deg,#2563eb,#7c3aed);box-shadow:0 8px 18px rgba(37,99,235,.24)
+}
+.demo-live-kicker{font-size:11px;font-weight:900;letter-spacing:1.8px;color:#2563eb;margin-bottom:2px}
+.demo-live-head h3{font-size:21px!important;margin:0!important;color:#0f172a!important}
+.demo-live-date{font-size:13px;font-weight:800;color:#475569;margin-top:3px}
+.demo-live-note{
+  padding:11px 13px;border-radius:12px;background:#fff;border:1px solid #e2e8f0;
+  color:#475569;font-size:13px;line-height:1.55;margin-bottom:12px
+}
+.demo-live-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.demo-live-grid div{
+  padding:10px 7px;border-radius:11px;background:#fff;border:1px solid #e2e8f0;
+  font-size:12px;font-weight:800;color:#334155;text-align:center
+}
+.demo-live-grid span{display:block;font-size:20px;margin-bottom:3px}
+.demo-keep-box{
+  display:flex;flex-direction:column;gap:4px;padding:11px 13px;border-radius:12px;
+  background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;margin:12px 0
+}
+.demo-keep-box b{font-size:13px}.demo-keep-box span{font-size:12px;font-weight:700}
+
+.demo-pin-box{
+  padding:12px 13px;border-radius:13px;background:#f8fafc;border:1px solid #cbd5e1;margin:12px 0
+}
+.demo-pin-title{font-size:13px;font-weight:900;color:#0f172a}
+.demo-pin-sub{font-size:11px;line-height:1.45;color:#64748b;margin:4px 0 9px}
+.demo-pin-change-btn{
+  width:100%;padding:10px!important;border-radius:10px!important;background:#0f172a!important;
+  color:#fff!important;border:0!important;font-weight:850!important
+}
+body.bbbm-dark-mode .demo-pin-box{background:#0b1220;border-color:#334155}
+body.bbbm-dark-mode .demo-pin-title{color:#f8fafc}
+body.bbbm-dark-mode .demo-pin-sub{color:#94a3b8}
+body.bbbm-dark-mode .demo-pin-change-btn{background:#334155!important}
+
+.demo-reset-card .demo-live-btn{
+  width:100%;padding:13px!important;border-radius:12px!important;border:0!important;
+  background:linear-gradient(135deg,#dc2626,#b91c1c)!important;color:#fff!important;
+  font-weight:900!important;font-size:14px!important;box-shadow:0 8px 18px rgba(220,38,38,.22)
+}
+.demo-warning{text-align:center;font-size:11px;font-weight:800;color:#b45309;margin-top:9px}
+body.bbbm-dark-mode .demo-reset-card{
+  border-color:#334155!important;background:linear-gradient(145deg,#111827,#0f172a)!important
+}
+body.bbbm-dark-mode .demo-live-head h3{color:#f8fafc!important}
+body.bbbm-dark-mode .demo-live-date,body.bbbm-dark-mode .demo-live-note{color:#cbd5e1}
+body.bbbm-dark-mode .demo-live-note,body.bbbm-dark-mode .demo-live-grid div{
+  background:#111827;border-color:#334155;color:#e2e8f0
+}
+body.bbbm-dark-mode .demo-keep-box{background:#052e2b;border-color:#065f46;color:#a7f3d0}
+@media(max-width:650px){.demo-live-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+
+<style id="purchase-return-lock-css">
+.pr-lock-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;font-weight:900}
+.purchase-return-card{border:1px solid #fecaca!important}
+.purchase-return-card .btn.danger{background:linear-gradient(135deg,#dc2626,#b91c1c)!important;color:#fff!important;border:0!important;font-weight:900!important}
+.purchase-return-history{margin-top:14px}
+body.bbbm-dark-mode .purchase-return-card{border-color:#7f1d1d!important}
+body.bbbm-dark-mode .pr-lock-badge{background:#431407;border-color:#7c2d12;color:#fdba74}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -320,6 +971,7 @@ section#sales label, section#pos label{
           <button class="active" data-tab="dashboard"><span>◉</span> Dashboard</button>
           <button data-tab="sales"><span>🛒</span> POS / Sales</button>
           <button data-tab="purchase"><span>📦</span> Purchase</button>
+          <button data-tab="purchasereturn"><span>↩️</span> Purchase Return</button>
           <button data-tab="stock"><span>▣</span> Inventory / Stock</button>
           <button data-tab="returns"><span>↩️</span> Sales Return</button>
           <button data-tab="expense"><span>💸</span> Expense</button>
@@ -329,9 +981,10 @@ section#sales label, section#pos label{
           <button class="coming"><span>◇</span> Products <small>Soon</small></button>
           <button class="coming"><span>👥</span> Customers <small>Soon</small></button>
           <button class="coming"><span>🚚</span> Suppliers <small>Soon</small></button>
-          <button class="coming"><span>💳</span> Accounts <small>Soon</small></button>
+          <button data-tab="accounts"><span>💳</span> Accounts</button>
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
-          <button class="coming"><span>⚙️</span> Settings <small>Soon</small></button>
+          <button data-tab="billhistory"><span>🧾</span> Bill History</button>
+<button data-tab="settings"><span>⚙️</span> Settings</button>
           <button data-tab="backup"><span>☁️</span> Backup & Sync</button>
         </div>
 
@@ -343,7 +996,10 @@ section#sales label, section#pos label{
 
       <main class="main-area">
         <div class="topbar">
-          <div>
+          <div class="bbbm-top-left top-action-group">
+            <button type="button" id="globalBackBtn" class="global-back-btn">← Back</button>
+          </div>
+          <div class="topbar-title-wrap">
             <div class="page-title" id="pageTitle">Dashboard</div>
             <div class="page-subtitle">Overview of your business</div>
           </div>
@@ -355,7 +1011,22 @@ section#sales label, section#pos label{
 
         <div class="content-area">
           <section id="dashboard" class="section active">
-            <div class="metric-grid">
+<div class="dashboard-quick-actions card panel span-2">
+                <div class="panel-head"><h3>Quick Actions</h3><span class="soft-label">Fast access</span></div>
+                <div class="quick-grid">
+                  <button data-go="sales"><span>🛒</span>New Sale (POS)</button>
+                  <button data-go="purchase"><span>📦</span>New Purchase</button>
+                  <button data-go="expense"><span>🏷️</span>Expense Entry</button>
+                  <button data-go="barcode"><span>🖨️</span>Barcode Print</button>
+                </div>
+              </div>
+
+            <div class="dashboard-privacy-bar">
+  <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
+  <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
+  <span id="dashPrivacyHint">Dashboard values hidden</span>
+</div>
+<div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
               <div class="card metric metric-orange"><div class="metric-icon">🔥</div><div><div class="l">TOTAL PROFIT</div><div id="mProfit" class="v">৳0.00</div><div class="metric-note">Sales minus stock cost</div></div></div>
@@ -364,6 +1035,26 @@ section#sales label, section#pos label{
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
               <div class="card metric metric-cyan"><div class="metric-icon">▣</div><div><div class="l">CURRENT STOCK</div><div id="mStock" class="v">0</div><div class="metric-note">Across all units</div></div></div>
               <div class="card metric metric-teal"><div class="metric-icon">💰</div><div><div class="l">STOCK VALUE</div><div id="mStockValue" class="v">৳0.00</div><div class="metric-note">At average purchase cost</div></div></div>
+              <button type="button" id="dashCreditMetric" class="card metric metric-credit dash-credit-metric">
+                <div class="metric-icon">💳</div>
+                <div>
+                  <div class="l">TOTAL CREDIT DUE</div>
+                  <div id="mCreditDueDash" class="v">৳0.00</div>
+                  <div class="metric-note">Click to see customer-wise due</div>
+                </div>
+              </button>
+              <button type="button" id="dashBillHistoryMetric" class="card metric metric-cyan dash-bill-history-metric">
+                <div class="metric-icon">🧾</div>
+                <div>
+                  <div class="l">BILL HISTORY</div>
+                  <div id="mBillCountDash" class="v">0</div>
+                  <div class="metric-note">Click to see recent & old bills</div>
+                </div>
+              </button>
+              <button type="button" id="dashDailyReportMetric" class="card metric metric-purple dash-daily-report-metric">
+                <div class="metric-icon">📊</div>
+                <div><div class="l">DAILY REPORT</div><div class="v dash-report-open">OPEN</div><div class="metric-note">Click to view daily report</div></div>
+              </button>
             </div>
 
             <div class="dashboard-grid">
@@ -382,17 +1073,7 @@ section#sales label, section#pos label{
                 <div id="dashLowStock" class="alert-list"></div>
               </div>
 
-              <div class="card panel span-2">
-                <div class="panel-head"><h3>Quick Actions</h3><span class="soft-label">Fast access</span></div>
-                <div class="quick-grid">
-                  <button data-go="sales"><span>🛒</span>New Sale (POS)</button>
-                  <button data-go="purchase"><span>📦</span>New Purchase</button>
-                  <button data-go="stock"><span>▣</span>View Stock</button>
-                  <button data-go="expense"><span>🏷️</span>Expense Entry</button>
-                  <button data-go="barcode"><span>🖨️</span>Barcode Print</button>
-                  <button data-go="reports"><span>📊</span>Daily Report</button>
-                </div>
-              </div>
+              
             </div>
           </section>
 
@@ -408,16 +1089,93 @@ section#sales label, section#pos label{
                 <label>Selling Price / Unit<input id="pSellPrice" type="number" step="0.01" min="0" placeholder="Default sale rate"></label>
                 <label>Date<input id="pDate" type="date" required></label>
                 <label>Total<input id="pTotal" readonly></label>
-                <div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
+                
+<div id="purchaseSidePad">
+  <div class="ppad-head">
+    <strong>⌨️ Purchase Keyboard</strong>
+    <div>
+      <button type="button" class="ppad-mode active" data-ppadmode="num">123</button>
+      <button type="button" class="ppad-mode" data-ppadmode="text">ABC</button>
+    </div>
+  </div>
+  <div id="purchasePadDisplay" class="ppad-display"><small>Quantity</small>0</div>
+  <div id="purchaseNumKeys" class="ppad-grid">
+    <button type="button" data-pkey="7">7</button><button type="button" data-pkey="8">8</button><button type="button" data-pkey="9">9</button>
+    <button type="button" data-pkey="4">4</button><button type="button" data-pkey="5">5</button><button type="button" data-pkey="6">6</button>
+    <button type="button" data-pkey="1">1</button><button type="button" data-pkey="2">2</button><button type="button" data-pkey="3">3</button>
+    <button type="button" class="ppad-clear" data-pkey="clear">C</button><button type="button" data-pkey="0">0</button><button type="button" data-pkey=".">.</button>
+    <button type="button" data-pkey="back">⌫</button><button type="button" class="ppad-ok" data-pkey="ok" style="grid-column:span 2">OK</button>
+  </div>
+  <div id="purchaseTextKeys" class="ppad-text hidden"></div>
+  <div class="ppad-note">Item Name চাপলে ABC, Barcode/Quantity/Price চাপলে Number keyboard চালু হবে।</div>
+</div>
+
+<div class="full"><button class="btn primary" type="submit">Save Purchase</button></div>
               </form>
               <div id="pScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Purchase Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="pStopScan">Close</button></div><div class="scan-tools"><span id="pScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="pZoom1">1×</button><button type="button" id="pZoom15">1.5×</button><button type="button" id="pZoom2">2×</button><button type="button" id="pTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="pPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="pReader" class="scanner-reader"></div></div>
             </div>
             <div class="card history-card"><div class="panel-head"><h3>Purchase History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Total</th><th>By</th></tr></thead><tbody id="purchaseRows"></tbody></table></div></div>
           </section>
 
-          <section id="sales" class="section">
+          
+          <section id="purchasereturn" class="section">
+            <div class="section-heading">
+              <div>
+                <h2>↩️ Purchase Return</h2>
+                <p>Supplier-কে ফেরত দেওয়া item stock থেকে remove করুন।</p>
+              </div>
+              <div class="pr-lock-badge">🔐 PIN Protected</div>
+            </div>
+
+            <div class="card form-card purchase-return-card">
+              <form id="purchaseReturnForm" class="dataform">
+                <label>Barcode
+                  <input id="prBarcode" inputmode="numeric" placeholder="Barcode লিখুন / scan করুন" required>
+                </label>
+                <label>Item Name
+                  <input id="prItem" readonly>
+                </label>
+                <label>Current Stock
+                  <input id="prStock" readonly>
+                </label>
+                <label>Return Quantity
+                  <input id="prQty" type="number" min="0.001" step="0.001" required>
+                </label>
+                <label>Unit
+                  <input id="prUnit" readonly>
+                </label>
+                <label>Purchase Rate / Unit
+                  <input id="prRate" type="number" min="0" step="0.01" required>
+                </label>
+                <label>Return Total
+                  <input id="prTotal" readonly>
+                </label>
+                <label>Date
+                  <input id="prDate" type="date" required>
+                </label>
+                <div class="form-actions">
+                  <button type="submit" class="btn danger">↩️ Return to Supplier & Remove Stock</button>
+                  <button type="button" class="btn gray" id="prClearBtn">Clear</button>
+                </div>
+              </form>
+              <div id="prMsg" class="msg"></div>
+            </div>
+
+            <div class="card panel purchase-return-history">
+              <div class="panel-head"><h3>Purchase Return History</h3><span class="soft-label" id="prHistoryCount">0 returns</span></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Date</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Rate</th><th>Total</th><th>By</th></tr></thead>
+                  <tbody id="prHistoryRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+<section id="sales" class="section">
             <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
-            <div class="card form-card">
+            
+<div class="card form-card">
               <form id="saleForm" class="dataform">
                 <label>Barcode<div class="scan-row"><input id="sBarcode" inputmode="numeric" autocomplete="off" inputmode="numeric" required placeholder="Scan barcode"><button class="btn gray smallbtn" type="button" id="sScanBtn">📷 Scan</button></div></label>
                 <label>Item Name<input id="sItem" readonly></label>
@@ -580,6 +1338,25 @@ section#sales label, section#pos label{
                   <label>Customer Name<input id="creditName" type="text" placeholder="Customer name"></label>
                   <label>Mobile Number<input id="creditPhone" type="tel" placeholder="01XXXXXXXXX"></label>
                 </div>
+                <div id="creditCustomerKeyboard" class="credit-kb">
+                  <div class="credit-kb-head">
+                    <strong>⌨️ Customer Keyboard</strong>
+                    <div>
+                      <button type="button" class="ckb-mode active" data-ckbmode="text">ABC</button>
+                      <button type="button" class="ckb-mode" data-ckbmode="num">123</button>
+                    </div>
+                  </div>
+                  <div id="creditKbDisplay" class="credit-kb-display"><small>Customer Name</small></div>
+                  <div id="creditTextKeys" class="credit-text-keys"></div>
+                  <div id="creditNumKeys" class="credit-num-keys hidden">
+                    <button type="button" data-ckey="7">7</button><button type="button" data-ckey="8">8</button><button type="button" data-ckey="9">9</button>
+                    <button type="button" data-ckey="4">4</button><button type="button" data-ckey="5">5</button><button type="button" data-ckey="6">6</button>
+                    <button type="button" data-ckey="1">1</button><button type="button" data-ckey="2">2</button><button type="button" data-ckey="3">3</button>
+                    <button type="button" class="ckb-clear" data-ckey="clear">C</button><button type="button" data-ckey="0">0</button><button type="button" data-ckey="back">⌫</button>
+                    <button type="button" class="ckb-ok" data-ckey="ok" style="grid-column:span 3">OK</button>
+                  </div>
+                  <div class="credit-kb-note">Customer Name চাপলে ABC, Mobile Number চাপলে 123 keyboard চালু হবে।</div>
+                </div>
                 <div class="finish-actions">
                   <button type="button" class="btn primary finish-btn" id="creditContinueBtn">Continue →</button>
                 </div>
@@ -595,6 +1372,31 @@ section#sales label, section#pos label{
               <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
             </div>
             <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Customer</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+          </section>
+
+          <section id="creditcustomers" class="section">
+            <div id="creditCustomerListView">
+              <div class="section-heading"><div><h2>💳 Credit Customers</h2><p>কার কাছে কত টাকা বাকি আছে</p></div></div>
+              <div class="card">
+                <div class="panel-head"><h3>Customer-wise Outstanding Credit</h3><strong id="creditPageTotal">৳0.00</strong></div>
+                <div id="dashCreditCustomerList" class="dash-credit-list"></div>
+              </div>
+            </div>
+
+            <div id="creditCustomerDetailView" class="hidden">
+              <div class="section-heading credit-detail-heading">
+                <div>
+                  <h2 id="creditDetailName">💳 Customer Credit Details</h2>
+                  <p id="creditDetailPhone"></p>
+                </div>
+                <button type="button" id="creditDetailBackBtn" class="btn gray smallbtn">← Credit Customers</button>
+              </div>
+              <div class="card credit-detail-summary">
+                <div><span>Total Due</span><b id="creditDetailTotalDue">৳0.00</b></div>
+                <div><span>Credit Bills / Sales</span><b id="creditDetailBillCount">0</b></div>
+              </div>
+              <div id="creditDetailBills"></div>
+            </div>
           </section>
 
           <section id="returns" class="section">
@@ -696,6 +1498,98 @@ section#sales label, section#pos label{
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
  </div>
 </section>
+
+<section id="billhistory" class="section">
+  <div class="section-heading">
+    <div>
+      <h2>🧾 Bill History</h2>
+      <p>Recent bill, পুরনো bill এবং Bill No. দিয়ে search</p>
+    </div>
+  </div>
+
+  <div class="card bill-history-search-card">
+    <div class="bill-search-row">
+      <div class="bill-search-field">
+        <label for="billHistorySearchInput">🔎 Bill Search</label>
+        <input id="billHistorySearchInput" type="text" inputmode="none" autocomplete="off" placeholder="Bill No. লিখুন">
+      </div>
+      <button type="button" class="btn primary" id="billHistorySearchBtn">Search</button>
+      <button type="button" class="btn gray" id="billHistorySearchClear">Clear</button>
+    </div>
+    <div id="billHistorySearchStatus" class="bill-search-status">সব bill দেখানো হচ্ছে</div>
+  </div>
+
+  <div class="card">
+    <div class="bill-history-toolbar">
+      <div>
+        <h3 style="margin:0">Recent & All Bills</h3>
+        <small id="billHistoryCount">0 bills</small>
+      </div>
+    </div>
+    <div id="billHistoryList" class="bill-history-list"></div>
+  </div>
+
+  <div id="billHistoryDetail" class="card hidden"></div>
+</section>
+
+<section id="settings" class="section">
+<div class="section-heading"><div><h2>⚙️ Settings</h2><p>POS system configuration</p></div></div>
+<div class="settings-grid">
+<div class="card settings-card"><h3>🏪 Shop Information</h3><label>Shop Name<input id="setShopName"></label><label>Address<textarea id="setShopAddress" rows="2"></textarea></label><label>Phone<input id="setShopPhone"></label><button type="button" class="btn primary set-save" data-save="shop">Save</button></div>
+<div class="card settings-card"><h3>🧾 Receipt Settings</h3><label>Header<input id="setReceiptHeader"></label><label>Footer<input id="setReceiptFooter"></label><label>Paper Size<select id="setPaperSize"><option value="80">80mm</option><option value="58">58mm</option></select></label><label class="check"><input id="setReceiptAddress" type="checkbox"> Show address</label><label class="check"><input id="setReceiptPhone" type="checkbox"> Show phone</label><button type="button" class="btn primary set-save" data-save="receipt">Save</button></div>
+<div class="card settings-card"><h3>👤 User & Password</h3><label>Display Name<input id="setUserDisplayName"></label><label>New Password<input id="setNewPassword" type="password"></label><label>Confirm Password<input id="setConfirmPassword" type="password"></label><button type="button" class="btn primary" id="setUserSave">Update User</button><p class="set-note">Login security নষ্ট না করার জন্য password change existing account/auth method দিয়েই থাকবে।</p></div>
+<div class="card settings-card"><h3>📦 Product Settings</h3><label>Default Unit<select id="setDefaultUnit"><option>PCS</option><option>Bag</option><option>KG</option><option>Gram</option><option>CFT</option><option>Feet</option><option>Meter</option></select></label><label>Low Stock Limit<input id="setLowStock" type="number" min="0" step=".01"></label><label class="check"><input id="setAutoBarcode" type="checkbox"> Auto-generate barcode</label><button type="button" class="btn primary set-save" data-save="product">Save</button></div>
+<div class="card settings-card"><h3>🛒 Sales Settings</h3><label>Default Quantity<input id="setSaleQty" type="number" min=".01" step=".01"></label><label>Default Payment<select id="setDefaultPayment"><option>Cash</option><option>Credit</option></select></label><label class="check"><input id="setSalePriceEdit" type="checkbox"> Allow selling price edit</label><button type="button" class="btn primary set-save" data-save="sales">Save</button></div>
+<div class="card settings-card"><h3>📥 Purchase Settings</h3><label>Default Quantity<input id="setPurchaseQty" type="number" min=".01" step=".01"></label><label class="check"><input id="setShowPurchaseSellPrice" type="checkbox"> Show Selling Price</label><button type="button" class="btn primary set-save" data-save="purchase">Save</button></div>
+<div class="card settings-card"><h3>⌨️ Keyboard Settings</h3><label class="check"><input id="setSaleKeypad" type="checkbox"> Sale keypad</label><label class="check"><input id="setPurchaseKeypad" type="checkbox"> Purchase keypad</label><label class="check"><input id="setCreditKeyboard" type="checkbox"> Credit customer keyboard</label><label>Size<select id="setKeyboardSize"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label><button type="button" class="btn primary set-save" data-save="keyboard">Save</button></div>
+<div class="card settings-card"><h3>💾 Backup & Restore</h3><label class="check"><input id="setAutoBackup" type="checkbox"> Automatic backup preference</label><div class="set-actions"><button type="button" class="btn primary" id="settingsBackupNow">Backup Now</button><button type="button" class="btn gray" id="settingsOpenBackup">Backup & Sync</button></div><p class="set-note">Last backup: <b id="settingsLastBackup">—</b></p></div>
+<div class="card settings-card"><h3>🖨️ Printer Settings</h3><label>Bill Printer<input id="setBillPrinter"></label><label>Barcode Printer<input id="setBarcodePrinter"></label><label>Receipt Copies<input id="setReceiptCopies" type="number" min="1" max="5"></label><label class="check"><input id="setAutoPrint" type="checkbox"> Auto print after sale</label><button type="button" class="btn primary set-save" data-save="printer">Save</button></div>
+<div class="card settings-card"><h3>🛠️ System Settings</h3><label>Currency<select id="setCurrency"><option value="৳">৳ BDT</option><option value="AED">AED</option></select></label><label>Date Format<select id="setDateFormat"><option>DD-MM-YYYY</option><option>YYYY-MM-DD</option></select></label><label class="check"><input id="setConfirmDelete" type="checkbox"> Confirm before delete</label><label class="check"><input id="setConfirmReturn" type="checkbox"> Confirm before return</label><button type="button" class="btn primary set-save" data-save="system">Save</button></div>
+
+<div class="card settings-card demo-reset-card">
+  <div class="demo-live-head">
+    <div class="demo-live-icon">🚀</div>
+    <div>
+      <div class="demo-live-kicker">GO LIVE</div>
+      <h3>Start Live Business</h3>
+      <div class="demo-live-date">📅 16 September 2026</div>
+    </div>
+  </div>
+
+  <div class="demo-live-note">
+    এখনকার Test/Demo হিসাব পরিষ্কার করে দোকানের আসল হিসাব শুরু করার জন্য এই অপশন ব্যবহার করুন।
+  </div>
+
+  <div class="demo-live-grid">
+    <div><span>🧾</span> Demo Sales</div>
+    <div><span>📦</span> Demo Purchase</div>
+    <div><span>↩️</span> Returns</div>
+    <div><span>💸</span> Expenses</div>
+    <div><span>💳</span> Credit Collection</div>
+    <div><span>💵</span> Opening Cash</div>
+  </div>
+
+  <div class="demo-keep-box">
+    <b>🔒 এগুলো নিরাপদ থাকবে</b>
+    <span>Products • Barcodes • Selling Rates • Settings</span>
+  </div>
+
+
+  <div class="demo-pin-box">
+    <div class="demo-pin-title">🔐 Admin PIN Protection</div>
+    <div class="demo-pin-sub">Demo data clear করতে 4-digit Admin PIN লাগবে। PIN আপনি এখান থেকেই পরিবর্তন করতে পারবেন।</div>
+    <button type="button" class="btn demo-pin-change-btn" id="changeDemoPinBtn">🔑 Change Admin PIN</button>
+    <div id="demoPinMsg" class="msg"></div>
+  </div>
+
+  <button type="button" class="btn danger demo-live-btn" id="clearDemoDataBtn">
+    🧹 Clear Demo Data &amp; Prepare for Live
+  </button>
+  <div class="demo-warning">⚠️ শুধু ১৬ সেপ্টেম্বর আসল হিসাব শুরু করার আগে ব্যবহার করবেন</div>
+  <div id="clearDemoDataMsg" class="msg"></div>
+</div>
+<div class="card settings-card"><h3>ℹ️ About / System Info</h3><div class="set-info"><span>System</span><b>Bhai Bhai Building Materials POS</b></div><div class="set-info"><span>Version</span><b>2026.09</b></div><div class="set-info"><span>Cloud</span><b>Supabase</b></div><div class="set-info"><span>Current User</span><b id="settingsCurrentUser">—</b></div><div class="set-info"><span>Last Backup</span><b id="settingsAboutBackup">—</b></div></div>
+</div></section>
 <section id="barcode" class="section">
   <div class="section-heading"><div><h2>🖨️ Barcode Print</h2><p>Stock item select করে barcode label print করুন.</p></div></div>
   <div class="card form-card">
@@ -709,6 +1603,57 @@ section#sales label, section#pos label{
   </div>
 </section>
 
+
+<section id="accounts" class="section">
+  <div class="section-heading">
+    <div><h2>💳 Accounts</h2><p>Cash, credit, purchase and expense হিসাব এক জায়গায়।</p></div>
+  </div>
+
+  <div class="stats-grid accounts-stats">
+    <div class="stat-card"><div><span>Cash in Hand</span><strong id="accCashInHand">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Cash Sale</span><strong id="accTodayCashSale">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Credit Collection</span><strong id="accTodayCollection">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Purchase</span><strong id="accTodayPurchase">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Today's Expense</span><strong id="accTodayExpense">৳0.00</strong></div></div>
+    <div class="stat-card"><div><span>Total Customer Due</span><strong id="accCustomerDue">৳0.00</strong></div></div>
+  </div>
+
+  <div class="card form-card">
+    <div class="panel-head"><h3>💵 Opening Cash</h3><span class="soft-label">Cash drawer starting balance</span></div>
+    <div class="row accounts-opening-row">
+      <label style="flex:1">Amount
+        <input id="accOpeningCashInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      </label>
+      <button type="button" class="btn primary" id="accSaveOpeningCash">Save Opening Cash</button>
+    </div>
+    <div id="accOpeningCashMsg" class="msg"></div>
+  </div>
+
+  <div class="card history-card">
+    <div class="panel-head"><h3>📅 Today's Account Summary</h3><span id="accTodayDate" class="soft-label"></span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>Amount</th><th>Effect on Cash</th></tr></thead>
+        <tbody id="accTodayRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card history-card">
+    <div class="panel-head"><h3>📊 Overall Summary</h3></div>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><th>Total Sales</th><td id="accTotalSales">৳0.00</td></tr>
+          <tr><th>Total Purchases</th><td id="accTotalPurchases">৳0.00</td></tr>
+          <tr><th>Total Expenses</th><td id="accTotalExpenses">৳0.00</td></tr>
+          <tr><th>Total Credit Due</th><td id="accTotalDue">৳0.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <section id="backup" class="section">
   <div class="section-heading"><div><h2>☁️ Backup & Sync</h2><p>Automatic local backup + cloud data safety.</p></div></div>
   <div class="stats-grid">
@@ -718,9 +1663,9 @@ section#sales label, section#pos label{
   </div>
   <div class="card form-card">
     <div class="panel-head"><h3>Automatic Backup</h3></div>
-    <p class="muted">এই POS browser-এ data change/load হওয়ার পর automatic snapshot রাখা হবে। সর্বশেষ 14টি copy রাখা হবে। Cloud data Supabase-এও থাকবে।</p>
+    <p class="muted">এই POS browser-এ automatic snapshot রাখা হবে। সর্বশেষ 14টি copy থাকবে। Backup Now চাপলে সাথে সাথে JSON file-ও download হবে। Cloud data Supabase-এও থাকবে।</p>
     <div class="row">
-      <button type="button" class="btn primary" id="backupNowBtn">💾 Backup Now</button>
+      <button type="button" class="btn primary" id="backupNowBtn">💾 Backup Now + Download</button>
       <button type="button" class="btn gray" id="downloadBackupBtn">⬇ Download Backup File</button>
       <label class="btn gray" style="cursor:pointer;margin:0">⬆ Restore Backup<input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"></label>
     </div>
@@ -734,7 +1679,15 @@ section#sales label, section#pos label{
 
 <section id="stock" class="section">
             <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
-            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+            <div class="card inventory-search-card">
+              <div class="inventory-search-wrap">
+                <span class="inventory-search-icon">🔎</span>
+                <input id="inventorySearch" type="text" inputmode="search" autocomplete="off" placeholder="Item name বা Barcode লিখে search করুন">
+                <button type="button" id="inventorySearchClear" class="btn gray inventory-search-clear">Clear</button>
+              </div>
+              <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
+            </div>
+            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
       </main>
@@ -769,26 +1722,38 @@ async function usernameEmail(username){
   return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
 }
 async function loadCloudData(){
-  const [pr,sr,rr,er,cr]=await Promise.all([
+  const [pr,sr,rr,er,cr,prr]=await Promise.all([
     cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_sales_returns').select('*').order('created_at',{ascending:true}),
     cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true})
+    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true}),
+    cloud.from('bbbm_purchase_returns').select('*').order('created_at',{ascending:true})
   ]);
-  if(pr.error)throw pr.error;if(sr.error)throw sr.error;
+  if(pr.error)throw pr.error;if(sr.error)throw sr.error;if(prr.error)throw prr.error;
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price})),
     sales:(sr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
-    collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''}))
+    collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''})),
+    purchaseReturns:(prr.data||[]).map(x=>({id:x.id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.return_date,by:x.by_name||'',unit:x.unit||'PCS'}))
   };
+  // Keep any manually edited Selling Rate. Cloud purchase history must not
+  // overwrite the current rate every time data reloads.
+  const latestPurchaseSell={};
   for(const p of db.purchases){
-    const meta={unit:p.unit||'PCS',item:p.item};
-    if(p.sellingPrice!=null)meta.sellPrice=p.sellingPrice;
-    saveMeta(p.barcode,meta);
+    const code=String(p.barcode||'');
+    if(!code)continue;
+    saveMeta(code,{unit:p.unit||'PCS',item:p.item});
+    if(p.sellingPrice!=null)latestPurchaseSell[code]=p.sellingPrice;
   }
+  Object.keys(latestPurchaseSell).forEach(code=>{
+    const existing=metaFor(code);
+    if(existing.sellPrice==null || existing.sellPrice===''){
+      saveMeta(code,{sellPrice:latestPurchaseSell[code]});
+    }
+  });
   safeSet(DB,db);
 }
 async function ensureCloudUser(u){
@@ -1032,10 +1997,58 @@ $('setupCloudBtn').onclick=function(){prefillLocalUsers();$('setupMsg').textCont
 $('logoutBtn').onclick=async function(){await stopScanner();await cloud.auth.signOut();currentUser=null;showLogin()};
 
 function stockMap(){
- let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode)});
- db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0};m[s.barcode].sold+=+s.qty});
+ let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode);m[p.barcode].purchaseBatches.push({qty:+p.qty||0,unit:p.unit||m[p.barcode].unit||unitFor(p.barcode),date:p.date||''})});
+ (db.purchaseReturns||[]).forEach(r=>{if(m[r.barcode]){m[r.barcode].purchased-=+r.qty||0;m[r.barcode].cost-=+r.total||0}});
+ db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[s.barcode].sold+=+s.qty});
  (db.returns||[]).forEach(r=>{if(m[r.barcode])m[r.barcode].sold-=+r.qty});
- Object.values(m).forEach(x=>{x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+ Object.values(m).forEach(x=>{x.purchased=Math.max(0,x.purchased);x.cost=Math.max(0,x.cost);x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+}
+
+
+window.addEventListener('bbbm-save-selling-rate',function(e){
+ try{
+   const d=e.detail||{},code=String(d.code||'').trim(),rate=Number(d.rate);
+   if(!code||isNaN(rate)||rate<0)return;
+   saveMeta(code,{sellPrice:rate,sellPriceManual:true});
+   render();
+   if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
+   const saleCode=$('sBarcode');
+   if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+   alert('Selling Rate updated: '+money(rate));
+ }catch(err){
+   console.error(err);
+   alert('Selling Rate update failed.');
+ }
+});
+function editStockSellingRate(code,item){
+ code=String(code||'').trim(); if(!code)return;
+ const old=metaFor(code).sellPrice;
+ if(window.__bbbmOpenRateEditor){
+   window.__bbbmOpenRateEditor({
+     code:code,item:item||code,oldRate:(old!=null&&old!==''?String(old):''),
+     onSave:function(entered){
+       const clean=String(entered||'').trim();
+       if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return false}
+       saveMeta(code,{sellPrice:Number(clean),sellPriceManual:true});
+       render();
+       if(window.__bbbmApplyInventorySearch)setTimeout(window.__bbbmApplyInventorySearch,0);
+       const saleCode=$('sBarcode');
+       if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+       alert('Selling Rate updated: '+money(Number(clean)));
+       return true;
+     }
+   });
+   return;
+ }
+ const entered=prompt('New Selling Rate - '+(item||code),old!=null&&old!==''?String(old):'');
+ if(entered===null)return;
+ const clean=String(entered).trim();
+ if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return}
+ saveMeta(code,{sellPrice:Number(clean)});
+ render();
+ const saleCode=$('sBarcode');
+ if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
+ alert('Selling Rate updated: '+money(Number(clean)));
 }
 
 function totalCashSales(){
@@ -1052,6 +2065,107 @@ function totalCashCollections(){
 }
 function cashBalance(){
  return totalCashSales()+totalCashCollections()-totalCashReturns()-totalExpenses();
+}
+function dashboardCreditCustomers(){
+ const groups={};
+ (db.sales||[]).filter(x=>x.paymentMethod==='Credit').forEach(x=>{
+   const due=creditDue(x);
+   const phone=String(x.creditPhone||'').trim();
+   const name=String(x.creditName||'').trim();
+   const key=phone ? 'p:'+phone.replace(/\D/g,'') : 'n:'+name.toLowerCase();
+   if(!groups[key])groups[key]={key,name:name||'Customer',phone:phone,due:0,bills:new Set(),rows:[]};
+   groups[key].rows.push(x);
+   const billKey=String(x.billNo);
+   if(due>0 && !groups[key].bills.has(billKey)){
+     groups[key].due+=due;
+     if(x.billNo!==''&&x.billNo!=null)groups[key].bills.add(billKey);
+   }
+ });
+ return Object.values(groups).filter(x=>x.due>0).sort((a,b)=>b.due-a.due);
+}
+function renderDashboardCredit(){
+ const total=outstandingCreditAll();
+ if($('mCreditDueDash'))$('mCreditDueDash').textContent=money(total);
+ if($('mBillCountDash'))$('mBillCountDash').textContent=allBillTransactions().length;
+ if($('creditPageTotal'))$('creditPageTotal').textContent=money(total);
+ const box=$('dashCreditCustomerList');
+ if(!box)return;
+ const rows=dashboardCreditCustomers();
+ box.innerHTML=rows.length?rows.map((x,i)=>`<div class="dash-credit-row credit-customer-click" data-credit-customer="${i}">
+   <div class="cust"><b>${x.name||'Customer'}</b><span>${x.phone||'No mobile number'}</span></div>
+   <div class="bills">${x.bills.size} outstanding item/bill${x.bills.size===1?'':'s'}</div>
+   <div class="due">${money(x.due)} <span class="open-arrow">›</span></div>
+ </div>`).join(''):'<div class="dash-credit-empty">এখন কোনো outstanding credit নেই।</div>';
+ box.querySelectorAll('[data-credit-customer]').forEach(el=>el.onclick=()=>{
+   const list=dashboardCreditCustomers();
+   const x=list[+el.dataset.creditCustomer];
+   if(x)renderDashboardCreditDetail(x.key);
+ });
+}
+function creditCustomerKey(x){
+ const phone=String(x.creditPhone||'').trim().replace(/\D/g,'');
+ const name=String(x.creditName||'').trim().toLowerCase();
+ return phone ? 'p:'+phone : 'n:'+name;
+}
+function renderDashboardCreditDetail(key){
+ const all=(db.sales||[]).filter(x=>x.paymentMethod==='Credit'&&creditCustomerKey(x)===key);
+ if(!all.length)return;
+ const latest=[...all].reverse().find(x=>x.creditName||x.creditPhone)||all[all.length-1];
+ const name=latest.creditName||'Customer', phone=latest.creditPhone||'';
+ const seenBills=new Set();const totalDue=all.reduce((a,x)=>{const k=String(x.billNo);if(seenBills.has(k))return a;seenBills.add(k);return a+invoiceDue(x.billNo)},0);
+
+ // Group rows from the same checkout by sale date + sale time.
+ const tx={};
+ all.forEach(x=>{
+   const k=String(x.billNo||((x.date||'')+'|'+(x.saleTime||'')));
+   if(!tx[k])tx[k]={date:x.date||'',time:x.saleTime||'',rows:[]};
+   tx[k].rows.push(x);
+ });
+ const groups=Object.values(tx).sort((a,b)=>((b.date||'')+' '+(b.time||'')).localeCompare((a.date||'')+' '+(a.time||'')));
+
+ $('creditDetailName').textContent='💳 '+name;
+ $('creditDetailPhone').textContent=phone||'No mobile number';
+ $('creditDetailTotalDue').textContent=money(totalDue);
+ $('creditDetailBillCount').textContent=String(groups.length);
+
+ const target=$('creditDetailBills');
+ target.innerHTML=groups.length?groups.map(g=>{
+   const nums=g.rows.map(r=>+r.billNo).filter(Boolean).sort((a,b)=>a-b);
+   const billLabel=nums.length===1
+     ? 'BBBM-'+String(nums[0]).padStart(6,'0')
+     : nums.length>1
+       ? 'BBBM-'+String(nums[0]).padStart(6,'0')+'–'+String(nums[nums.length-1]).padStart(6,'0')
+       : 'Bill';
+   const groupDue=g.rows.length?invoiceDue(g.rows[0].billNo):0;
+   const groupTotal=g.rows.reduce((a,r)=>a+(+r.total||0),0);
+   const dateText=g.date||'-';
+   const timeText=g.time?(' · '+g.time):'';
+   return `<div class="card credit-bill-card">
+     <div class="credit-bill-head">
+       <div><div class="bill-date">📅 ${dateText}${timeText}</div><div class="bill-no">${billLabel} · Total ${money(groupTotal)}</div></div>
+       <div class="bill-due"><small>OUTSTANDING</small><b>${money(groupDue)}</b></div>
+     </div>
+     <div>${g.rows.map(r=>{
+       const d=creditDue(r);
+       return `<div class="credit-item-row">
+         <div class="item-name"><b>${r.item||'-'}</b><span>${r.barcode||''}</span></div>
+         <div class="item-calc">${fmtQty(r.qty)} ${r.unit||''} × ${money(r.price)}</div>
+         <div class="item-due ${d>0?'due':'paid'}">${d>0?('Due '+money(d)):'Paid'}</div>
+       </div>`;
+     }).join('')}</div>
+   </div>`;
+ }).join(''):'<div class="card credit-detail-empty">এই customer-এর কোনো credit sale পাওয়া যায়নি।</div>';
+
+ $('creditCustomerListView').classList.add('hidden');
+ $('creditCustomerDetailView').classList.remove('hidden');
+ if($('pageTitle'))$('pageTitle').textContent='Customer Credit Details';
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeDashboardCreditDetail(){
+ if($('creditCustomerDetailView'))$('creditCustomerDetailView').classList.add('hidden');
+ if($('creditCustomerListView'))$('creditCustomerListView').classList.remove('hidden');
+ if($('pageTitle'))$('pageTitle').textContent='Credit Customers';
+ window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=db.purchases.reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
@@ -1073,9 +2187,21 @@ function render(){
  if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
  if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
  if(typeof renderReport==='function')renderReport();
+ if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
- $('stockRows').innerHTML=vals.length?vals.map(x=>`<tr><td>${x.item}</td><td>${x.barcode}</td><td><span class="unit-badge">${x.unit||'PCS'}</span></td><td>${fmtQty(x.purchased)}</td><td>${fmtQty(x.sold)}</td><td>${fmtQty(x.current)}</td><td>${money(x.value)}</td></tr>`).join(''):'<tr><td colspan="7">No stock yet.</td></tr>';
+ window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map(x=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
+<td>${x.item}</td>
+<td>${x.barcode}</td>
+<td><span class="unit-badge">${x.unit||'PCS'}</span></td>
+<td>${fmtQty(x.purchased)} ${x.unit||'PCS'}</td>
+<td>${fmtQty(x.sold)} ${x.unit||'PCS'}</td>
+<td><b>${fmtQty(x.current)} ${x.unit||'PCS'}</b></td>
+<td><div class="stock-rate-cell"><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button><small class="current-selling-rate">Current: ${sr!=null&&sr!==''?money(sr):'Not set'}</small></div></td>
+<td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-purchase-rate">Purchase Rate: ${money(x.avg)} / ${x.unit||'PCS'}</small><small class="stock-bought-qty">Bought: ${fmtQty(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtQty(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
+</tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
+document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
+if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInventorySearch();
 
  const recent=db.sales.slice().reverse().slice(0,6);
  if($('dashRecentSales'))$('dashRecentSales').innerHTML=recent.length?recent.map(x=>`<tr><td>${x.date}</td><td><b>${x.item}</b></td><td>${fmtQty(x.qty)}</td><td>${x.unit||'PCS'}</td><td><b>${money(x.total)}</b></td></tr>`).join(''):'<tr><td colspan="5">No sale yet.</td></tr>';
@@ -1110,37 +2236,24 @@ $('purchaseForm').onsubmit=async function(e){
 
 
 let selectedCreditSale=null;
-
-function invoiceSales(billNo){
- return (db.sales||[]).filter(s=>String(s.billNo)===String(billNo));
-}
-function invoiceTotal(billNo){
- return invoiceSales(billNo).reduce((a,s)=>a+(+s.total||0),0);
-}
-function invoiceReturned(billNo){
- return (db.returns||[]).filter(r=>String(r.billNo)===String(billNo)).reduce((a,r)=>a+(+r.refund||0),0);
-}
-function invoiceCollected(billNo){
- return (db.collections||[]).filter(c=>String(c.billNo)===String(billNo)).reduce((a,c)=>a+(+c.amount||0),0);
-}
-function invoiceDue(billNo){
- return Math.max(0,invoiceTotal(billNo)-invoiceReturned(billNo)-invoiceCollected(billNo));
-}
+function invoiceSales(billNo){return (db.sales||[]).filter(s=>String(s.billNo)===String(billNo))}
+function invoiceTotal(billNo){return invoiceSales(billNo).reduce((a,s)=>a+(+s.total||0),0)}
+function invoiceReturned(billNo){return (db.returns||[]).filter(r=>String(r.billNo)===String(billNo)).reduce((a,r)=>a+(+r.refund||0),0)}
+function invoiceCollected(billNo){return (db.collections||[]).filter(c=>String(c.billNo)===String(billNo)).reduce((a,c)=>a+(+c.amount||0),0)}
+function invoiceDue(billNo){return Math.max(0,invoiceTotal(billNo)-invoiceReturned(billNo)-invoiceCollected(billNo))}
 function creditReturned(x){return invoiceReturned(x.billNo)}
 function creditCollected(x){return invoiceCollected(x.billNo)}
 function creditDue(x){return invoiceDue(x.billNo)}
-let selectedCreditSale=null;
+$('cDate').value=today();
 $('cFindBtn').onclick=function(){
  const q=$('cSearch').value.trim();if(!q){alert('Bill No or mobile number দিন।');return}
  let x=null;const b=returnBill(q);
  if(b!==null)x=(db.sales||[]).slice().reverse().find(z=>+z.billNo===b&&z.paymentMethod==='Credit');
- else x=(db.sales||[]).slice().reverse().find(z=>z.creditPhone===q&&z.paymentMethod==='Credit'&&invoiceDue(z.billNo)>0);
+ else x=(db.sales||[]).slice().reverse().find(z=>z.paymentMethod==='Credit'&&(z.creditPhone||'').includes(q)&&invoiceDue(z.billNo)>0);
  if(!x){alert('Credit sale পাওয়া যায়নি।');return}
  const due=invoiceDue(x.billNo);if(due<=0){alert('এই bill-এর কোনো due নেই।');return}
- selectedCreditSale=x;
- const items=invoiceSales(x.billNo);
- $('cCustomer').value=x.creditName||x.creditPhone||'Customer';$('cDue').value=due.toFixed(2);$('cAmount').value=due.toFixed(2);$('cDate').value=today();
- $('creditInfo').innerHTML=`<b>${x.creditName||'Customer'}</b> · ${x.creditPhone||''}<br>Bill: BBBM-${String(x.billNo).padStart(6,'0')} · Items: ${items.length} · Invoice Total: ${money(invoiceTotal(x.billNo))} · Due: ${money(due)}`;
+ selectedCreditSale=x;$('cCustomer').value=x.creditName||x.creditPhone||'-';$('cDue').value=money(due);$('cAmount').value='';
+ $('creditInfo').innerHTML=`<b>${x.creditName||'Customer'}</b> · ${x.creditPhone||''}<br>Bill: BBBM-${String(x.billNo).padStart(6,'0')} · Items: ${invoiceSales(x.billNo).length} · Due: ${money(due)}`;
  $('creditInfo').classList.remove('hidden');$('creditForm').classList.remove('hidden');
 };
 $('creditForm').onsubmit=async function(e){
@@ -1149,6 +2262,189 @@ $('creditForm').onsubmit=async function(e){
  const r=await cloud.from('bbbm_credit_collections').insert({user_id:currentUser.id,sale_bill_no:x.billNo,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,amount,payment_method:$('cMethod').value,collection_date:$('cDate').value,note:$('cNote').value.trim()||null,by_name:currentUser.name});
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedCreditSale=null;this.reset();$('cDate').value=today();this.classList.add('hidden');$('creditInfo').classList.add('hidden');$('cSearch').value='';render();renderReport();alert('Credit collection saved.');
 };
+
+function reportMatch(date){
+ const type=$('reportType').value;
+ return type==='daily'?date===$('reportDate').value:date&&date.slice(0,7)===$('reportMonth').value;
+}
+function sumWhere(arr,field='total',filter=()=>true){return (arr||[]).filter(x=>reportMatch(x.date)&&filter(x)).reduce((a,x)=>a+(+x[field]||0),0)}
+function outstandingCreditAll(){
+ const seen=new Set();return (db.sales||[]).filter(x=>x.paymentMethod==='Credit').reduce((a,x)=>{const k=String(x.billNo);if(seen.has(k))return a;seen.add(k);return a+invoiceDue(x.billNo)},0);
+}
+
+function billSearchTransaction(no){
+  const q=String(no||'').trim();
+  if(!q)return [];
+  const found=(db.sales||[]).find(s=>String(s.billNo||'').trim()===q);
+  if(!found)return [];
+  // A multi-item checkout can have more than one bill number.
+  // Rebuild the full checkout using the shared date + sale time + customer/payment identity.
+  const same=(db.sales||[]).filter(s=>{
+    const sameTime=String(s.date||'')===String(found.date||'') && String(s.saleTime||'')===String(found.saleTime||'');
+    const sameCustomer=String(s.creditPhone||'')===String(found.creditPhone||'') && String(s.creditName||'')===String(found.creditName||'');
+    const samePay=String(s.paymentMethod||'Cash')===String(found.paymentMethod||'Cash');
+    return sameTime && sameCustomer && samePay;
+  });
+  return same.length?same:[found];
+}
+function billNoLabel(rows){
+  const nums=rows.map(x=>String(x.billNo||'').trim()).filter(Boolean);
+  if(!nums.length)return '-';
+  if(nums.length===1)return nums[0];
+  const numeric=nums.every(n=>/^\d+$/.test(n));
+  if(numeric){
+    const a=nums.map(Number).sort((x,y)=>x-y);
+    return a[0]===a[a.length-1]?String(a[0]):String(a[0])+' - '+String(a[a.length-1]);
+  }
+  return nums.join(', ');
+}
+function renderBillSearchResult(no){
+  const box=$('billSearchResult'),status=$('billSearchStatus');
+  if(!box||!status)return;
+  const rows=billSearchTransaction(no);
+  if(!rows.length){
+    box.classList.add('hidden');
+    box.innerHTML='';
+    status.textContent='এই Bill No. পাওয়া যায়নি';
+    return;
+  }
+  const first=rows[0]||{};
+  const total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const customer=first.creditName||'';
+  const phone=first.creditPhone||'';
+  const pay=first.paymentMethod||'Cash';
+  const when=[first.date||'',first.saleTime||''].filter(Boolean).join(' ');
+  const tr=rows.map(x=>`<tr>
+    <td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}</small></td>
+    <td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td>
+    <td>${money(+x.price||0)}</td>
+    <td>${money(+x.total||0)}</td>
+  </tr>`).join('');
+  box.innerHTML=`<div class="bill-search-head">
+    <div>
+      <div class="bill-search-title">Bill #${billNoLabel(rows)}</div>
+      <div class="bill-search-meta">${when}${customer?' • '+customer:''}${phone?' • '+phone:''}${pay?' • '+pay:''}</div>
+    </div>
+  </div>
+  <div style="overflow:auto"><table class="bill-search-table">
+    <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+    <tbody>${tr}</tbody>
+  </table></div>
+  <div class="bill-search-total">Total: ${money(total)}</div>
+  <div class="bill-search-actions"><button type="button" class="btn gray" id="billSearchPrintBtn">🖨️ Print / Reprint</button></div>`;
+  box.classList.remove('hidden');
+  status.textContent=rows.length+' item পাওয়া গেছে';
+  const pb=$('billSearchPrintBtn');
+  if(pb)pb.onclick=()=>printBillSearchRows(rows);
+}
+function printBillSearchRows(rows){
+  if(!rows||!rows.length)return;
+  const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const items=rows.map(x=>`<tr><td>${x.item||''}</td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  const w=window.open('','_blank','width=420,height=700');
+  if(!w)return alert('Popup blocked. Please allow popups to print.');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
+  body{font-family:Arial,sans-serif;padding:12px;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
+  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}</style></head><body>
+  <h3>Bhai Bhai Building Materials</h3>
+  <p>Bill: ${billNoLabel(rows)}</p><p>Date: ${first.date||''} ${first.saleTime||''}</p>
+  ${first.creditName?`<p>Customer: ${first.creditName}${first.creditPhone?' - '+first.creditPhone:''}</p>`:''}
+  <p>Payment: ${first.paymentMethod||'Cash'}</p>
+  <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${items}</tbody></table>
+  <div class="tot">Total: ${money(total)}</div>
+  <script>window.onload=function(){window.print()}<\/script></body></html>`);
+  w.document.close();
+}
+(function bindBillSearch(){
+  const inp=$('billSearchInput'),btn=$('billSearchBtn'),clear=$('billSearchClear');
+  if(!inp||!btn||!clear)return;
+  btn.onclick=()=>renderBillSearchResult(inp.value);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderBillSearchResult(inp.value)}});
+  inp.addEventListener('click',()=>{
+    if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(inp,'numeric');
+  });
+  clear.onclick=()=>{
+    inp.value='';
+    const r=$('billSearchResult');if(r){r.innerHTML='';r.classList.add('hidden')}
+    $('billSearchStatus').textContent='পুরনো Bill No. লিখে Search করুন';
+  };
+})();
+
+
+function allBillTransactions(){
+  const groups={};
+  (db.sales||[]).forEach(s=>{
+    const key=[String(s.date||''),String(s.saleTime||''),String(s.creditPhone||''),String(s.creditName||''),String(s.paymentMethod||'Cash')].join('|');
+    if(!groups[key])groups[key]=[];
+    groups[key].push(s);
+  });
+  return Object.values(groups).sort((a,b)=>{
+    const aa=(a[0]&&((a[0].date||'')+' '+(a[0].saleTime||'')))||'';
+    const bb=(b[0]&&((b[0].date||'')+' '+(b[0].saleTime||'')))||'';
+    return bb.localeCompare(aa);
+  });
+}
+function billMatchesQuery(rows,q){
+  q=String(q||'').trim().toLowerCase();
+  if(!q)return true;
+  return rows.some(x=>String(x.billNo||'').toLowerCase().includes(q));
+}
+function renderBillHistoryPage(q){
+  const list=$('billHistoryList'),count=$('billHistoryCount'),status=$('billHistorySearchStatus');
+  if(!list)return;
+  let bills=allBillTransactions();
+  if(String(q||'').trim())bills=bills.filter(rows=>billMatchesQuery(rows,q));
+  if(count)count.textContent=bills.length+' bills';
+  if(status)status.textContent=String(q||'').trim()?(bills.length+' bill পাওয়া গেছে'):'সব bill দেখানো হচ্ছে';
+  if(!bills.length){
+    list.innerHTML='<div class="bill-history-empty">কোনো bill পাওয়া যায়নি</div>';
+    return;
+  }
+  list.innerHTML=bills.map((rows,i)=>{
+    const first=rows[0]||{};
+    const total=rows.reduce((a,x)=>a+(+x.total||0),0);
+    const customer=first.creditName||'';
+    const pay=first.paymentMethod||'Cash';
+    return `<div class="bill-history-row" data-bill-index="${i}">
+      <div class="bill-history-main">
+        <div class="bill-history-no">Bill #${billNoLabel(rows)}</div>
+        <div class="bill-history-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''} • ${pay}</div>
+      </div>
+      <div class="bill-history-total">${money(total)}</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.bill-history-row').forEach((el,i)=>{
+    el.onclick=()=>showBillHistoryDetail(bills[i]);
+  });
+}
+function showBillHistoryDetail(rows){
+  const box=$('billHistoryDetail');
+  if(!box||!rows||!rows.length)return;
+  const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
+  const customer=first.creditName||'',phone=first.creditPhone||'';
+  const tr=rows.map(x=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  box.innerHTML=`<div class="bill-detail-head">
+    <div><div class="bill-detail-title">Bill #${billNoLabel(rows)}</div>
+    <div class="bill-detail-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''}${phone?' • '+phone:''} • ${first.paymentMethod||'Cash'}</div></div>
+    <div class="bill-detail-actions">
+      <button type="button" class="btn gray" id="billDetailCloseBtn">← Back to Bills</button>
+      <button type="button" class="btn primary" id="billDetailPrintBtn">🖨️ Print / Reprint</button>
+    </div>
+  </div>
+  <div style="overflow:auto"><table class="bill-detail-table"><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${tr}</tbody></table></div>
+  <div class="bill-detail-total">Total: ${money(total)}</div>`;
+  box.classList.remove('hidden');
+  $('billHistoryList').closest('.card').classList.add('hidden');
+  $('billHistorySearchInput').closest('.card').classList.add('hidden');
+  $('billDetailCloseBtn').onclick=()=>{
+    box.classList.add('hidden');box.innerHTML='';
+    $('billHistoryList').closest('.card').classList.remove('hidden');
+    $('billHistorySearchInput').closest('.card').classList.remove('hidden');
+  };
+  $('billDetailPrintBtn').onclick=()=>printBillSearchRows(rows);
+}
+
 function renderReport(){
  if(!$('reportType'))return;
  const sale=sumWhere(db.sales),purchase=sumWhere(db.purchases),expense=sumWhere(db.expenses,'amount');
@@ -1166,6 +2462,13 @@ function renderReport(){
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
 $('reportDate').onchange=renderReport;$('reportMonth').onchange=renderReport;
+
+if($('dashCreditMetric'))$('dashCreditMetric').onclick=function(){
+  if($('creditCustomerDetailView'))$('creditCustomerDetailView').classList.add('hidden');
+  if($('creditCustomerListView'))$('creditCustomerListView').classList.remove('hidden');
+  renderDashboardCredit();
+  goTab('creditcustomers');
+};
 
 $('eDate').value=today();
 $('expenseForm').onsubmit=async function(e){
@@ -1192,16 +2495,11 @@ $('expenseForm').onsubmit=async function(e){
 };
 
 let selectedReturnSale=null;
-
 function returnBill(v){v=String(v||'').trim().toUpperCase();if(v.startsWith('BBBM-'))v=v.slice(5);return /^\d+$/.test(v)?+v:null}
 function returnedQty(x){return (db.returns||[]).filter(r=>String(r.billNo)===String(x.billNo)&&r.barcode===x.barcode).reduce((a,r)=>a+(+r.qty||0),0)}
-let selectedReturnSale=null;
 function loadReturnSale(x){
- if(!x)return;
- const left=(+x.qty||0)-returnedQty(x);
- if(left<=0){alert('এই item পুরো return হয়ে গেছে।');return}
- selectedReturnSale=x;
- $('rItem').value=x.item;$('rSoldQty').value=fmtQty(left);$('rQty').value='';$('rQty').max=left;$('rUnit').value=x.unit;$('rRate').value=Number(x.price).toFixed(2);$('rRefund').value='0.00';$('rPayment').value=x.paymentMethod;
+ const left=(+x.qty||0)-returnedQty(x);if(left<=0){alert('এই item পুরো return হয়ে গেছে।');return}
+ selectedReturnSale=x;$('rItem').value=x.item;$('rSoldQty').value=fmtQty(left)+' '+x.unit;$('rQty').value='';$('rUnit').value=x.unit;$('rRate').value=x.price;$('rRefund').value='';$('rPayment').value=x.paymentMethod;
  $('returnSaleInfo').innerHTML=`<b>${x.item}</b> · Bill: ${x.billNo?'BBBM-'+String(x.billNo).padStart(6,'0'):'-'} · Return available: ${fmtQty(left)} ${x.unit}`;
  $('returnSaleInfo').classList.remove('hidden');$('returnForm').classList.remove('hidden');
 }
@@ -1216,11 +2514,10 @@ $('rFindBtn').onclick=function(){
    wrap.classList.remove('hidden');
    sel.innerHTML=matches.map((x,i)=>`<option value="${i}">${x.item} · ${fmtQty((+x.qty||0)-returnedQty(x))} ${x.unit}</option>`).join('');
    sel.onchange=()=>loadReturnSale(matches[+sel.value]);
- }else{
-   wrap.classList.add('hidden');sel.innerHTML='';
- }
+ }else{wrap.classList.add('hidden');sel.innerHTML=''}
  loadReturnSale(matches[0]);
 };
+$('rQty').oninput=function(){if(selectedReturnSale)$('rRefund').value=money((+this.value||0)*selectedReturnSale.price)};
 $('returnForm').onsubmit=async function(e){
  e.preventDefault();const x=selectedReturnSale;if(!x)return;const left=(+x.qty||0)-returnedQty(x),q=+$('rQty').value;
  if(!q||q<=0||q>left){alert('Return quantity ঠিক করুন। Maximum: '+fmtQty(left)+' '+x.unit);return}
@@ -1357,20 +2654,16 @@ function receiptHtml(sale){
 
 </body></html>`;
 }
-
 async function completeSale(printAfter){
  if(!pendingSale)return;
  let printWin=null;if(printAfter){printWin=window.open('','_blank','width=420,height=650');if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>')}
  const sale=pendingSale;$('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
  try{
    const saleTime=new Date().toTimeString().slice(0,8);
-
-   // Ask Supabase for ONE invoice number, then save that same number on every cart line.
    const inv=await cloud.rpc('next_bbbm_invoice_no');
-   if(inv.error)throw new Error('Invoice setup required in Supabase: '+inv.error.message);
+   if(inv.error)throw new Error('Invoice number error: '+inv.error.message);
    const invoiceNo=Number(inv.data);
-   if(!invoiceNo)throw new Error('Could not generate invoice number.');
-
+   if(!invoiceNo)throw new Error('Invoice number could not be generated.');
    const rows=sale.items.map(x=>({
      user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
      payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
@@ -1379,15 +2672,12 @@ async function completeSale(printAfter){
    sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
    const saved=await cloud.from('bbbm_sales').insert(rows).select('bill_no,invoice_no,sale_time,barcode');
    if(saved.error)throw saved.error;
-
-   const inserted=saved.data||[];
-   sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
+   const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
    sale.billNo=invoiceNo;
    sale.displayBill='BBBM-'+String(invoiceNo).padStart(6,'0');
-
    if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}
    await loadCloudData();resetSaleForm();render();
-   alert(printAfter?'Sale saved. One invoice number used for all items.':'Sale saved without print. One invoice number used for all items.');
+   alert(printAfter?'Sale saved. All items have one Bill No.':'Sale saved without print. All items have one Bill No.');
  }catch(err){if(printWin)printWin.close();alert('Sale could not be saved: '+(err.message||err))}
  finally{$('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false}
 }
@@ -1407,6 +2697,37 @@ document.querySelectorAll('.pay-option').forEach(label=>{
 $('creditBackBtn').onclick=function(){
  $('creditCustomerBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null;
 };
+function normalizeCustomerPhone(v){return String(v||'').replace(/\D/g,'')}
+function autoFillCreditCustomerName(){
+ const phoneEl=$('creditPhone'),nameEl=$('creditName');
+ if(!phoneEl||!nameEl)return;
+ const q=normalizeCustomerPhone(phoneEl.value);
+ phoneEl.classList.remove('credit-known');
+ if(!q)return;
+
+ // Exact phone match first. For 6+ typed digits, use it only if exactly one saved phone starts with those digits.
+ const creditSales=[...(db.sales||[])].filter(x=>x.paymentMethod==='Credit'&&normalizeCustomerPhone(x.creditPhone));
+ let found=[...creditSales].reverse().find(x=>normalizeCustomerPhone(x.creditPhone)===q);
+ if(!found && q.length>=6){
+   const matches=[];
+   const seen=new Set();
+   [...creditSales].reverse().forEach(x=>{
+     const p=normalizeCustomerPhone(x.creditPhone);
+     if(p.startsWith(q)&&!seen.has(p)){seen.add(p);matches.push(x)}
+   });
+   if(matches.length===1)found=matches[0];
+ }
+ if(found && found.creditName){
+   nameEl.value=found.creditName;
+   nameEl.dispatchEvent(new Event('input',{bubbles:true}));
+   phoneEl.classList.add('credit-known');
+ }
+}
+if($('creditPhone')){
+ $('creditPhone').addEventListener('input',autoFillCreditCustomerName);
+ $('creditPhone').addEventListener('change',autoFillCreditCustomerName);
+}
+
 $('creditContinueBtn').onclick=function(){
  const name=$('creditName').value.trim(),phone=$('creditPhone').value.trim();
  if(!name&&!phone){alert('Customer name or mobile number দিন।');return}if(!pendingSale)return;
@@ -1508,91 +2829,495 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null};
 $('salePrintBtn').onclick=()=>completeSale(true);
 $('saleNoPrintBtn').onclick=()=>completeSale(false);
+
+// ===== PIN-Protected Settings + Purchase Return =====
+const SECURE_ACCESS_CODE='3698';
+function askSecureCode(title){
+  const v=prompt('🔐 '+title+'\nAccess Code লিখুন:');
+  if(v===null)return false;
+  if(String(v).trim()!==SECURE_ACCESS_CODE){
+    alert('❌ Wrong Access Code.');
+    return false;
+  }
+  return true;
+}
+function purchaseReturnRows(){
+  return (db.purchaseReturns||[]);
+}
+function renderPurchaseReturnHistory(){
+  if(!$('prHistoryRows'))return;
+  const rows=purchaseReturnRows().slice().reverse();
+  $('prHistoryCount').textContent=rows.length+' returns';
+  $('prHistoryRows').innerHTML=rows.length?rows.map(x=>`
+    <tr>
+      <td>${x.date||''}</td>
+      <td><b>${x.item||''}</b></td>
+      <td>${x.barcode||''}</td>
+      <td>${fmtQty(Math.abs(+x.qty||0))} ${x.unit||'PCS'}</td>
+      <td>${money(Math.abs(+x.price||0))}</td>
+      <td><b>${money(Math.abs(+x.total||0))}</b></td>
+      <td>${x.by||''}</td>
+    </tr>`).join(''):'<tr><td colspan="7">No purchase return yet.</td></tr>';
+}
+function fillPurchaseReturnFromBarcode(){
+  const code=String($('prBarcode').value||'').trim();
+  const x=stockMap()[code];
+  if(!x || (+x.current||0)<=0){
+    $('prItem').value='';
+    $('prStock').value='';
+    $('prUnit').value='';
+    $('prRate').value='';
+    $('prTotal').value='';
+    if(code && $('prMsg'))$('prMsg').textContent='Item পাওয়া যায়নি অথবা stock নেই।';
+    return;
+  }
+  $('prItem').value=x.item||'';
+  $('prStock').value=fmtQty(x.current)+' '+(x.unit||'PCS');
+  $('prUnit').value=x.unit||'PCS';
+  const lastPositive=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'')===code && (+p.qty||0)>0);
+  $('prRate').value=lastPositive?Number(lastPositive.price||0):Number(x.avg||0);
+  if($('prMsg'))$('prMsg').textContent='';
+  calcPurchaseReturnTotal();
+}
+function calcPurchaseReturnTotal(){
+  if(!$('prTotal'))return;
+  $('prTotal').value=((+$('prQty').value||0)*(+$('prRate').value||0)).toFixed(2);
+}
+function clearPurchaseReturnForm(){
+  if($('purchaseReturnForm'))$('purchaseReturnForm').reset();
+  if($('prDate'))$('prDate').value=today();
+  if($('prMsg'))$('prMsg').textContent='';
+}
+if($('prDate'))$('prDate').value=today();
+if($('prBarcode'))$('prBarcode').oninput=fillPurchaseReturnFromBarcode;
+if($('prQty'))$('prQty').oninput=calcPurchaseReturnTotal;
+if($('prRate'))$('prRate').oninput=calcPurchaseReturnTotal;
+if($('prClearBtn'))$('prClearBtn').onclick=clearPurchaseReturnForm;
+if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
+  e.preventDefault();
+  if(!askSecureCode('Purchase Return'))return;
+  const code=String($('prBarcode').value||'').trim();
+  const x=stockMap()[code];
+  const q=+$('prQty').value||0;
+  const rate=+$('prRate').value||0;
+  if(!x || (+x.current||0)<=0){alert('Item পাওয়া যায়নি অথবা stock নেই।');return}
+  if(q<=0){alert('Return quantity দিন।');return}
+  if(q>(+x.current||0)){alert('Return quantity current stock-এর চেয়ে বেশি হতে পারবে না।');return}
+  if(!confirm(`${x.item}\n${fmtQty(q)} ${x.unit||'PCS'} supplier-কে return করবেন?\nStock থেকে quantity কমে যাবে।`))return;
+
+  const btn=this.querySelector('[type=submit]');btn.disabled=true;
+  try{
+    const saved=await cloud.from('bbbm_purchase_returns').insert({
+      user_id:currentUser.id,
+      item:x.item,
+      barcode:code,
+      qty:q,
+      price:rate,
+      total:q*rate,
+      unit:x.unit||'PCS',
+      return_date:$('prDate').value||today(),
+      by_name:currentUser.name
+    });
+    if(saved.error)throw saved.error;
+    await loadCloudData();
+    render();
+    renderPurchaseReturnHistory();
+    clearPurchaseReturnForm();
+    alert('✅ Purchase Return saved. Stock updated successfully.');
+  }catch(err){
+    alert('Purchase Return save করা যায়নি: '+(err.message||err));
+  }finally{btn.disabled=false}
+};
+
 async function goTab(tab){
+ if(tab==='settings' && !askSecureCode('Settings'))return;
+ if(tab==='purchasereturn' && !askSecureCode('Purchase Return'))return;
  await stopScanner();
+ if(tab!=='creditcustomers'){
+   const d=$('creditCustomerDetailView'),l=$('creditCustomerListView');
+   if(d)d.classList.add('hidden');if(l)l.classList.remove('hidden');
+ }
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='barcode')refreshBarcodeItems();
- const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',reports:'Reports',barcode:'Barcode Print'};
+ if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
+      if(tab==='accounts')renderAccounts();
+      if(tab==='purchasereturn')renderPurchaseReturnHistory();
+ const names={dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',purchasereturn:'Purchase Return',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+if($('dashBillHistoryMetric'))$('dashBillHistoryMetric').onclick=function(){goTab('billhistory')};
+if($('dashDailyReportMetric'))$('dashDailyReportMetric').onclick=function(){goTab('reports')};
+if($('globalBackBtn'))$('globalBackBtn').onclick=function(){
+ const detail=$('creditCustomerDetailView');
+ if(detail && !detail.classList.contains('hidden')){closeDashboardCreditDetail();return}
+ const active=document.querySelector('.section.active');
+ if(active && active.id!=='dashboard') goTab('dashboard');
+ else if(window.history.length>1) window.history.back();
+};
+if($('creditDetailBackBtn'))$('creditDetailBackBtn').onclick=closeDashboardCreditDetail;
 document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+if($('billHistorySearchBtn'))$('billHistorySearchBtn').onclick=function(){renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'')};
+if($('billHistorySearchInput')){
+ $('billHistorySearchInput').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();renderBillHistoryPage(this.value)}};
+ $('billHistorySearchInput').onclick=function(){if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(this,'numeric')};
+}
+if($('billHistorySearchClear'))$('billHistorySearchClear').onclick=function(){
+ if($('billHistorySearchInput'))$('billHistorySearchInput').value='';
+ renderBillHistoryPage('');
+};
+
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
 document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
 setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
 bootstrap();
-})();
 
-// ===== Bhai Bhai automatic backup =====
+
+
+// ===== Demo Data Reset =====
+
+const DEMO_RESET_PIN_KEY='bbbm_demo_reset_admin_pin_v1';
+function demoResetPin(){
+  try{return String(localStorage.getItem(DEMO_RESET_PIN_KEY)||'').trim()}catch(e){return ''}
+}
+function validFourDigitPin(v){return /^\d{4}$/.test(String(v||'').trim())}
+function ensureDemoResetPin(){
+  let current=demoResetPin();
+  if(current)return true;
+  const first=prompt('প্রথমবারের জন্য 4-digit Admin PIN সেট করুন:');
+  if(first===null)return false;
+  if(!validFourDigitPin(first)){alert('PIN অবশ্যই 4 digit হতে হবে।');return false}
+  const again=prompt('একই 4-digit PIN আবার লিখুন:');
+  if(String(first).trim()!==String(again||'').trim()){alert('PIN মিলেনি। আবার চেষ্টা করুন।');return false}
+  try{localStorage.setItem(DEMO_RESET_PIN_KEY,String(first).trim())}catch(e){}
+  if($('demoPinMsg'))$('demoPinMsg').textContent='✅ Admin PIN set successfully.';
+  return true;
+}
+function verifyDemoResetPin(){
+  if(!ensureDemoResetPin())return false;
+  const entered=prompt('🔐 Admin PIN লিখুন:');
+  if(entered===null)return false;
+  if(String(entered).trim()!==demoResetPin()){
+    alert('❌ Wrong Admin PIN.');
+    if($('demoPinMsg'))$('demoPinMsg').textContent='❌ Wrong PIN. Demo data was not changed.';
+    return false;
+  }
+  return true;
+}
+function changeDemoResetPin(){
+  const old=demoResetPin();
+  if(old){
+    const entered=prompt('বর্তমান Admin PIN লিখুন:');
+    if(entered===null)return;
+    if(String(entered).trim()!==old){alert('❌ Current PIN is wrong.');return}
+  }
+  const next=prompt('নতুন 4-digit Admin PIN লিখুন:');
+  if(next===null)return;
+  if(!validFourDigitPin(next)){alert('PIN অবশ্যই 4 digit হতে হবে।');return}
+  const again=prompt('নতুন PIN আবার লিখুন:');
+  if(String(next).trim()!==String(again||'').trim()){alert('PIN মিলেনি।');return}
+  try{localStorage.setItem(DEMO_RESET_PIN_KEY,String(next).trim())}catch(e){}
+  if($('demoPinMsg'))$('demoPinMsg').textContent='✅ Admin PIN changed successfully.';
+  alert('Admin PIN changed successfully.');
+}
+if($('changeDemoPinBtn'))$('changeDemoPinBtn').onclick=changeDemoResetPin;
+
+async function clearDemoDataForLiveStart(){
+  if(!verifyDemoResetPin())return;
+  const phrase=prompt('Demo data মুছতে CLEAR DEMO লিখুন।\n\nএতে Sale, Purchase, Return, Expense, Credit Collection ও Accounts Opening Cash মুছে যাবে। Product settings/barcode/selling rate/Settings থাকবে।');
+  if(String(phrase||'').trim().toUpperCase()!=='CLEAR DEMO'){
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='Cancelled. Nothing was deleted.';
+    return;
+  }
+  if(!confirm('Final confirmation: সব Demo transaction data permanently delete করবেন?'))return;
+
+  try{
+    // Save a downloadable/local snapshot before deleting demo data.
+    if(typeof saveAutoBackup==='function')saveAutoBackup('Before Demo Reset');
+
+    // Delete cloud transaction rows. Keep product metadata/settings.
+    const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_purchase_returns','bbbm_sales','bbbm_purchases','bbbm_expenses'];
+    for(const table of tables){
+      const {error}=await supabase.from(table).delete().not('id','is',null);
+      if(error)throw new Error(table+': '+error.message);
+    }
+
+    db.purchases=[];
+    db.sales=[];
+    db.returns=[];
+    db.expenses=[];
+    db.collections=[];
+    db.purchaseReturns=[];
+    safeSet(DB,db);
+
+    // Reset Accounts opening cash only; keep all other settings.
+    try{localStorage.removeItem('bbbm_accounts_opening_cash_v1')}catch(e){}
+
+    render();
+    if(typeof renderAccounts==='function')renderAccounts();
+    if(typeof renderBackupPanel==='function')renderBackupPanel();
+
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Demo transaction data cleared. System is ready for live use.';
+    alert('Demo data cleared successfully. Product settings, barcodes, selling rates and Settings were kept.');
+  }catch(e){
+    console.error('Demo reset failed',e);
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Demo reset failed: '+(e.message||e);
+    alert('Demo reset failed. Nothing else will be changed until the error is fixed.');
+    try{await loadCloudData();render()}catch(_){}
+  }
+}
+if($('clearDemoDataBtn'))$('clearDemoDataBtn').onclick=clearDemoDataForLiveStart;
+
+// ===== Accounts =====
+const ACC_OPENING_KEY='bbbm_accounts_opening_cash_v1';
+function accMoney(n){return '৳'+Number(n||0).toFixed(2)}
+function accDateKey(v){
+  if(!v)return '';
+  const s=String(v);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  const d=new Date(s);
+  if(isNaN(d))return s;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function accTodayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function accOpeningMap(){try{return safeGet(ACC_OPENING_KEY,{})||{}}catch(e){return {}}}
+function renderAccounts(){
+  if(!$('accounts'))return;
+  const today=accTodayKey();
+  const sales=db.sales||[], purchases=db.purchases||[], expenses=db.expenses||[], collections=db.collections||[];
+
+  const todaySales=sales.filter(x=>accDateKey(x.date)===today);
+  const todayCashSales=todaySales.filter(x=>String(x.paymentMethod||'Cash').toLowerCase()!=='credit')
+    .reduce((a,x)=>a+(+x.total||0),0);
+  const todayPurchases=purchases.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.total||0),0);
+  const todayExpenses=expenses.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.amount||+x.total||0),0);
+  const todayCollections=collections.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.amount||0),0);
+  const due=typeof outstandingCreditAll==='function'?outstandingCreditAll():0;
+
+  const opening=+(accOpeningMap()[today]||0);
+  // Purchases/expenses are treated as cash out for drawer estimate.
+  const cashInHand=opening+todayCashSales+todayCollections-todayPurchases-todayExpenses;
+
+  if($('accCashInHand'))$('accCashInHand').textContent=accMoney(cashInHand);
+  if($('accTodayCashSale'))$('accTodayCashSale').textContent=accMoney(todayCashSales);
+  if($('accTodayCollection'))$('accTodayCollection').textContent=accMoney(todayCollections);
+  if($('accTodayPurchase'))$('accTodayPurchase').textContent=accMoney(todayPurchases);
+  if($('accTodayExpense'))$('accTodayExpense').textContent=accMoney(todayExpenses);
+  if($('accCustomerDue'))$('accCustomerDue').textContent=accMoney(due);
+  if($('accTodayDate'))$('accTodayDate').textContent=today;
+  if($('accOpeningCashInput'))$('accOpeningCashInput').value=opening||'';
+
+  const totalSales=sales.reduce((a,x)=>a+(+x.total||0),0);
+  const totalPurchases=purchases.reduce((a,x)=>a+(+x.total||0),0);
+  const totalExpenses=expenses.reduce((a,x)=>a+(+x.amount||+x.total||0),0);
+  if($('accTotalSales'))$('accTotalSales').textContent=accMoney(totalSales);
+  if($('accTotalPurchases'))$('accTotalPurchases').textContent=accMoney(totalPurchases);
+  if($('accTotalExpenses'))$('accTotalExpenses').textContent=accMoney(totalExpenses);
+  if($('accTotalDue'))$('accTotalDue').textContent=accMoney(due);
+
+  const rows=[
+    ['Opening Cash',opening,'+'],
+    ['Cash Sales',todayCashSales,'+'],
+    ['Credit Collection',todayCollections,'+'],
+    ['Purchases',todayPurchases,'−'],
+    ['Expenses',todayExpenses,'−'],
+    ['Expected Cash in Hand',cashInHand,'=']
+  ];
+  if($('accTodayRows'))$('accTodayRows').innerHTML=rows.map((r,i)=>
+    `<tr${i===rows.length-1?' style="font-weight:900"':''}><td>${r[0]}</td><td>${accMoney(r[1])}</td><td>${r[2]}</td></tr>`
+  ).join('');
+}
+if($('accSaveOpeningCash'))$('accSaveOpeningCash').onclick=function(){
+  const v=Math.max(0,+($('accOpeningCashInput').value||0));
+  const map=accOpeningMap();
+  map[accTodayKey()]=v;
+  safeSet(ACC_OPENING_KEY,map);
+  if($('accOpeningCashMsg'))$('accOpeningCashMsg').textContent='✅ Opening cash saved.';
+  renderAccounts();
+};
+
+// ===== Bhai Bhai working backup (inside main app scope) =====
 const BACKUP_KEY='bbbm_auto_backups_v1', BACKUP_MAX=14;
-function backupCopies(){return safeGet(BACKUP_KEY,[])}
+
+function backupCopies(){
+  try{return safeGet(BACKUP_KEY,[])||[]}catch(e){return []}
+}
 function makeBackupSnapshot(){
   return {
-    version:3,
+    version:4,
     app:'Bhai Bhai Building Materials',
     createdAt:new Date().toISOString(),
     db:JSON.parse(JSON.stringify(db||{})),
     productMeta:JSON.parse(JSON.stringify(productMeta||{}))
   };
 }
-function saveAutoBackup(reason='Auto'){
-  try{
-    const snap=makeBackupSnapshot(), list=backupCopies();
-    const signature=JSON.stringify(snap.db);
-    const last=list[0];
-    if(reason==='Auto' && last && last.signature===signature){renderBackupPanel();return false}
-    list.unshift({createdAt:snap.createdAt,reason,signature,snapshot:snap});
-    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
-    safeSet(BACKUP_KEY,list);renderBackupPanel();return true;
-  }catch(e){console.warn('Backup failed',e);return false}
-}
 function renderBackupPanel(){
   const list=backupCopies(),last=list[0];
   if($('lastBackupText'))$('lastBackupText').textContent=last?new Date(last.createdAt).toLocaleString():'Not yet';
   if($('backupCountText'))$('backupCountText').textContent=String(list.length);
+  if($('backupStatus'))$('backupStatus').textContent='ON';
   if($('backupRows'))$('backupRows').innerHTML=list.length?list.map(b=>{
     const d=(b.snapshot&&b.snapshot.db)||{}, count=k=>(d[k]||[]).length;
-    return `<tr><td>${new Date(b.createdAt).toLocaleString()}</td><td>${count('purchases')}</td><td>${count('sales')}</td><td>${count('returns')}</td><td>${count('expenses')}</td><td>${count('collections')}</td></tr>`;
+    return `<tr>
+      <td>${new Date(b.createdAt).toLocaleString()}<small style="display:block;color:#64748b">${b.reason||''}</small></td>
+      <td>${count('purchases')}</td><td>${count('sales')}</td><td>${count('returns')}</td>
+      <td>${count('expenses')}</td><td>${count('collections')}</td>
+    </tr>`;
   }).join(''):'<tr><td colspan="6">No backup yet.</td></tr>';
+
+  // Also update Settings backup status if present.
+  if($('settingsLastBackup'))$('settingsLastBackup').textContent=last?new Date(last.createdAt).toLocaleString():'—';
+}
+function saveAutoBackup(reason='Auto'){
+  try{
+    const snap=makeBackupSnapshot(),list=backupCopies();
+    const signature=JSON.stringify({db:snap.db,productMeta:snap.productMeta});
+    const last=list[0];
+    if(reason==='Auto'&&last&&last.signature===signature){
+      renderBackupPanel();return false;
+    }
+    list.unshift({createdAt:snap.createdAt,reason,signature,snapshot:snap});
+    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
+    safeSet(BACKUP_KEY,list);
+    renderBackupPanel();
+    return true;
+  }catch(e){
+    console.error('Backup failed',e);
+    if($('backupMsg'))$('backupMsg').textContent='Backup failed: '+(e.message||e);
+    return false;
+  }
 }
 function downloadBackup(){
-  const snap=makeBackupSnapshot();
-  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
-  const a=document.createElement('a'),url=URL.createObjectURL(blob);
-  a.href=url;a.download='Bhai_Bhai_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  saveAutoBackup('Manual Download');
-  if($('backupMsg'))$('backupMsg').textContent='Backup file downloaded successfully.';
+  try{
+    const snap=makeBackupSnapshot();
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    const url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    saveAutoBackup('Manual Download');
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup saved and file downloaded.';
+  }catch(e){
+    if($('backupMsg'))$('backupMsg').textContent='Backup download failed: '+(e.message||e);
+  }
 }
 async function restoreBackupFile(file){
   if(!file)return;
   try{
     const data=JSON.parse(await file.text());
-    if(!data||!data.db||!Array.isArray(data.db.purchases)||!Array.isArray(data.db.sales))throw new Error('Invalid Bhai Bhai backup file.');
+    if(!data||!data.db||!Array.isArray(data.db.purchases)||!Array.isArray(data.db.sales))
+      throw new Error('Invalid Bhai Bhai backup file.');
     if(!confirm('Restore this backup? Current local snapshot will be saved first.'))return;
     saveAutoBackup('Before Restore');
-    db=data.db;productMeta=data.productMeta||{};
-    safeSet(DB,db);safeSet(META,productMeta);
+    db=data.db;
+    productMeta=data.productMeta||{};
+    safeSet(DB,db);
+    safeSet(META,productMeta);
     render();
     saveAutoBackup('Restored');
-    if($('backupMsg'))$('backupMsg').textContent='Backup restored locally. Cloud records are not deleted or overwritten.';
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup restored locally. Cloud records were not deleted.';
     alert('Backup restored successfully.');
-  }catch(e){alert('Restore failed: '+(e.message||e))}
+  }catch(e){
+    alert('Restore failed: '+(e.message||e));
+  }
 }
-if($('backupNowBtn'))$('backupNowBtn').onclick=()=>{saveAutoBackup('Manual');$('backupMsg').textContent='Backup saved on this POS.'};
+function manualBackupNow(){
+  try{
+    const snap=makeBackupSnapshot();
+    const list=backupCopies();
+    const signature=JSON.stringify({db:snap.db,productMeta:snap.productMeta});
+    list.unshift({
+      createdAt:snap.createdAt,
+      reason:'Manual + Download',
+      signature,
+      snapshot:snap
+    });
+    if(list.length>BACKUP_MAX)list.length=BACKUP_MAX;
+    safeSet(BACKUP_KEY,list);
+    renderBackupPanel();
+
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Manual_Backup_'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+
+    if($('backupMsg'))$('backupMsg').textContent='✅ Backup saved + JSON file downloaded.';
+    alert('Backup saved and downloaded successfully.');
+  }catch(e){
+    console.error('Manual backup failed',e);
+    if($('backupMsg'))$('backupMsg').textContent='❌ Backup failed: '+(e.message||e);
+    alert('Backup failed: '+(e.message||e));
+  }
+}
+if($('backupNowBtn'))$('backupNowBtn').onclick=manualBackupNow;
 if($('downloadBackupBtn'))$('downloadBackupBtn').onclick=downloadBackup;
-if($('restoreBackupFile'))$('restoreBackupFile').onchange=e=>{restoreBackupFile(e.target.files&&e.target.files[0]);e.target.value=''};
+if($('restoreBackupFile'))$('restoreBackupFile').onchange=e=>{
+  restoreBackupFile(e.target.files&&e.target.files[0]);
+  e.target.value='';
+};
+if($('settingsBackupNow'))$('settingsBackupNow').onclick=manualBackupNow;
+if($('settingsOpenBackup'))$('settingsOpenBackup').onclick=()=>goTab('backup');
+
+window.__bbbmBackupNow=manualBackupNow;
+window.__bbbmDownloadBackup=downloadBackup;
+
+// Once per calendar day, automatically download one JSON backup after the POS is opened.
+// Browser security may block automatic downloads in some environments; manual Download Backup File remains available.
+const DAILY_DOWNLOAD_KEY='bbbm_last_daily_backup_download_v1';
+function localDateKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dailyAutoDownloadBackup(){
+  try{
+    if(!currentUser)return;
+    const today=localDateKey();
+    if(localStorage.getItem(DAILY_DOWNLOAD_KEY)===today)return;
+    const snap=makeBackupSnapshot();
+    const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.href=url;
+    a.download='Bhai_Bhai_Daily_Backup_'+today+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    localStorage.setItem(DAILY_DOWNLOAD_KEY,today);
+    saveAutoBackup('Daily Auto Download');
+    if($('backupMsg'))$('backupMsg').textContent='✅ Today’s automatic backup file downloaded.';
+  }catch(e){
+    console.warn('Daily automatic backup download was blocked or failed',e);
+  }
+}
+// Give login/cloud loading time to finish, then attempt today's one-time download.
+setTimeout(dailyAutoDownloadBackup,8000);
+
 renderBackupPanel();
 
-// Keep a snapshot automatically when cloud data is refreshed, and periodically while POS stays open.
+// Keep automatic backups after cloud refresh and every 30 minutes.
 const _loadCloudDataForBackup=loadCloudData;
-loadCloudData=async function(){await _loadCloudDataForBackup();saveAutoBackup('Auto')};
-setInterval(()=>saveAutoBackup('Auto'),30*60*1000);
-window.addEventListener('beforeunload',()=>saveAutoBackup('Auto'));
+loadCloudData=async function(){
+  await _loadCloudDataForBackup();
+  saveAutoBackup('Auto');
+};
+setInterval(()=>{if(currentUser)saveAutoBackup('Auto')},30*60*1000);
+window.addEventListener('beforeunload',()=>{try{saveAutoBackup('Auto')}catch(e){}});
 
+})();
 
 // ===== Touch numeric keypad for Sale Price =====
 window.addEventListener('DOMContentLoaded', function(){
@@ -1744,5 +3469,831 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 </script>
+
+<script id="bbbm-safe-ui-js">
+(function(){
+  const cats=[
+    ['রড',/rod|rebar|steel bar|রড/i],
+    ['পাইপ',/pipe|pvc|gi pipe|পাইপ/i],
+    ['রশি\/তার',/rope|wire|cable|রশি|দড়ি|তার/i],
+    ['প্লাস্টিক',/plastic|polythene|প্লাস্টিক|পলিথিন/i],
+    ['শিট\/জালি',/sheet|mesh|net|jali|শিট|জালি/i],
+    ['সিমেন্ট',/cement|সিমেন্ট/i],
+    ['অন্যান্য',/.*/i]
+  ];
+  function byId(x){return document.getElementById(x)}
+  function makeSelector(mode){
+    const section=byId(mode==='sale'?'sales':'purchase');
+    if(!section) return;
+    const heading=section.querySelector('.section-heading');
+    if(!heading) return;
+    const wrap=document.createElement('div');
+    wrap.className='bbbm-nb-wrap';
+    wrap.innerHTML=
+      '<button type="button" class="bbbm-nb-btn">বারকোড ছাড়া পণ্য</button>'+
+      '<div class="bbbm-nb-panel">'+
+      '<input class="bbbm-nb-search" placeholder="পণ্যের নাম লিখে খুঁজুন…">'+
+      '<div class="bbbm-nb-cats"></div><div class="bbbm-nb-items"></div></div>';
+    heading.appendChild(wrap);
+    const btn=wrap.querySelector('.bbbm-nb-btn'), panel=wrap.querySelector('.bbbm-nb-panel');
+    const search=wrap.querySelector('.bbbm-nb-search'), catbox=wrap.querySelector('.bbbm-nb-cats'), items=wrap.querySelector('.bbbm-nb-items');
+    let active='রড';
+    cats.forEach(([name])=>{
+      const b=document.createElement('button'); b.type='button'; b.className='bbbm-nb-cat'; b.textContent=name;
+      if(name===active)b.classList.add('active');
+      b.onclick=()=>{active=name;catbox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()};
+      catbox.appendChild(b);
+    });
+    function render(){
+      let map={}; try{map=stockMap()}catch(e){}
+      const q=(search.value||'').trim().toLowerCase();
+      const rx=(cats.find(x=>x[0]===active)||cats[cats.length-1])[1];
+      let rows=Object.values(map).filter(x=>x && x.barcode && Number(x.current)>0);
+      rows=rows.filter(x=>{
+        const n=String(x.item||'');
+        const categoryOK=active==='অন্যান্য'
+          ? !cats.slice(0,5).some(c=>c[1].test(n))
+          : rx.test(n);
+        return categoryOK && (!q || n.toLowerCase().includes(q) || String(x.barcode).toLowerCase().includes(q));
+      });
+      items.innerHTML='';
+      if(!rows.length){items.innerHTML='<div class="bbbm-nb-empty">এই ক্যাটাগরিতে স্টকে কোনো পণ্য পাওয়া যায়নি</div>';return}
+      rows.slice(0,80).forEach(x=>{
+        const b=document.createElement('button');b.type='button';b.className='bbbm-nb-item';
+        b.innerHTML='<b></b><small></small>'; b.querySelector('b').textContent=x.item||'Item';
+        b.querySelector('small').textContent='Stock: '+(Math.round(Number(x.current)*1000)/1000)+' '+(x.unit||'PCS');
+        b.onclick=()=>{
+          if(mode==='sale'){
+            byId('sBarcode').value=x.barcode; fillSaleFromBarcode();
+            byId('sQty').value='1'; if(typeof calcS==='function')calcS();
+          }else{
+            byId('pBarcode').value=x.barcode;
+            if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode();
+            setTimeout(()=>byId('pQty')&&byId('pQty').focus(),30);
+          }
+          panel.classList.remove('open');
+        };
+        items.appendChild(b);
+      });
+    }
+    btn.onclick=(e)=>{e.stopPropagation();panel.classList.toggle('open');if(panel.classList.contains('open')){render();setTimeout(()=>search.focus(),20)}};
+    search.oninput=render;
+    panel.onclick=e=>e.stopPropagation();
+    document.addEventListener('click',()=>panel.classList.remove('open'));
+  }
+  function init(){
+    const app=byId('appView'), topbar=document.querySelector('#appView .topbar');
+    if(app && topbar && !byId('bbbmMenuBtn')){
+      app.classList.add('bbbm-menu-closed');
+      const left=topbar.firstElementChild;
+      if(left){
+        left.classList.add('bbbm-top-left');
+        const btn=document.createElement('button');btn.type='button';btn.id='bbbmMenuBtn';btn.textContent='☰';btn.title='Menu';
+        left.insertBefore(btn,left.firstChild);
+        btn.onclick=(e)=>{e.stopPropagation();app.classList.toggle('bbbm-menu-closed')};
+      }
+      const side=app.querySelector('.side-nav');
+      if(side)side.addEventListener('click',e=>{if(e.target.closest('[data-tab]'))setTimeout(()=>app.classList.add('bbbm-menu-closed'),50)});
+    }
+    makeSelector('sale'); makeSelector('purchase');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
+
+<script id="bbbm-rod-mm-direct-js">
+(function(){
+  const MM=['6','8','10','12','16','20','25','32'];
+
+  function el(id){ return document.getElementById(id); }
+
+  function rodMM(name){
+    const s=String(name||'');
+    for(const mm of MM){
+      const r=new RegExp('(^|[^0-9])'+mm+'\\s*(mm|মিমি|মি\\.মি)?([^0-9]|$)','i');
+      if(r.test(s)) return mm;
+    }
+    return '';
+  }
+
+  function isRodName(name){
+    return /(^|[^a-z])rod([^a-z]|$)|rebar|steel\s*bar|রড/i.test(String(name||''));
+  }
+
+  function findRod(mm, saleOnly){
+    let map={};
+    try{ map=stockMap()||{}; }catch(e){ return null; }
+
+    const rows=Object.values(map).filter(x=>{
+      if(!x || !isRodName(x.item) || rodMM(x.item)!==mm) return false;
+      return saleOnly ? Number(x.current||0)>0 : true;
+    });
+
+    // Prefer an item that still has stock.
+    rows.sort((a,b)=>Number(b.current||0)-Number(a.current||0));
+    return rows[0]||null;
+  }
+
+  function usePurchaseMM(mm, panel){
+    const x=findRod(mm,false);
+
+    if(x){
+      el('pBarcode').value=String(x.barcode||'');
+      if(typeof fillPurchaseFromBarcode==='function') fillPurchaseFromBarcode();
+      // Ensure fields visibly change even if old price data is missing.
+      el('pItem').value=x.item||('রড '+mm+'mm');
+      el('pUnit').value=x.unit||'PCS';
+    }else{
+      // New size not previously purchased: prepare a new purchase.
+      el('pBarcode').value='';
+      el('pItem').value='রড '+mm+'mm';
+      el('pUnit').value='PCS';
+      el('pQty').value='1';
+      el('pPrice').value='';
+      el('pSellPrice').value='';
+      if(el('pTotal')) el('pTotal').value='0.00';
+    }
+
+    panel.classList.remove('open');
+    setTimeout(()=>{
+      if(el('pQty')) el('pQty').focus();
+    },30);
+  }
+
+  function useSaleMM(mm, panel){
+    const x=findRod(mm,true);
+    if(!x){
+      alert(mm+' mm রড বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ এই রড যোগ করুন।');
+      return;
+    }
+
+    el('sBarcode').value=String(x.barcode||'');
+    if(typeof fillSaleFromBarcode==='function') fillSaleFromBarcode();
+    el('sQty').value='1';
+    if(typeof calcS==='function') calcS();
+
+    panel.classList.remove('open');
+    setTimeout(()=>{
+      if(el('sQty')) el('sQty').focus();
+    },30);
+  }
+
+  function enhance(panel){
+    if(!panel || panel.dataset.mmDirect==='1') return;
+    const cats=panel.querySelector('.bbbm-nb-cats');
+    if(!cats) return;
+    panel.dataset.mmDirect='1';
+
+    const section=panel.closest('#sales,#purchase');
+    const mode=section && section.id==='purchase' ? 'purchase' : 'sale';
+
+    const box=document.createElement('div');
+    box.className='bbbm-rod-mm-direct';
+
+    const note=document.createElement('div');
+    note.className='bbbm-rod-mm-note';
+    note.textContent = mode==='purchase'
+      ? 'MM চাপলেই Purchase box-এ রডটি বসবে।'
+      : 'MM চাপলেই Sale box-এ স্টকে থাকা রডটি বসবে।';
+
+    MM.forEach(mm=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=mm+' mm';
+      b.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(mode==='purchase') usePurchaseMM(mm,panel);
+        else useSaleMM(mm,panel);
+      });
+      box.appendChild(b);
+    });
+
+    cats.insertAdjacentElement('afterend',note);
+    note.insertAdjacentElement('afterend',box);
+
+    function sync(){
+      const active=cats.querySelector('.bbbm-nb-cat.active');
+      const show=!!active && active.textContent.trim()==='রড';
+      box.classList.toggle('open',show);
+      note.classList.toggle('show',show);
+    }
+
+    cats.querySelectorAll('.bbbm-nb-cat').forEach(btn=>{
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+
+    // If Rod is already the default active category, show sizes immediately.
+    setTimeout(sync,0);
+  }
+
+  function init(){
+    document.querySelectorAll('.bbbm-nb-panel').forEach(enhance);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(init,80));
+  }else{
+    setTimeout(init,80);
+  }
+})();
+</script>
+
+
+<script id="bbbm-cement-js">
+(function(){
+ const brands=['Seven Ring Special','Shah Special','Crown Cement','Bashundhara Cement','Premier Cement','Akij Cement','Aman Cement','Anwar Cement','Confidence Cement','Diamond Cement','Mir Cement','Metrocem Cement','Royal Cement','Bengal Cement','Deshbandhu Cement','Aramit Cement','S. Alam Cement','ScanCement','RubyCement','Holcim Cement','Meghna Cement','Olympic Cement','Nowapara Cement','Mongla Cement','Eastern Cement'];
+ const $=id=>document.getElementById(id);
+ function findBrand(name,sale){
+   let m={}; try{m=stockMap()||{}}catch(e){}
+   let a=Object.values(m).filter(x=>x&&String(x.item||'').toLowerCase().includes(name.toLowerCase()));
+   if(sale)a=a.filter(x=>Number(x.current||0)>0);
+   a.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
+   return a[0]||null;
+ }
+ function enhance(panel){
+   if(!panel||panel.dataset.cementReady==='1')return;
+   const cats=panel.querySelector('.bbbm-nb-cats'); if(!cats)return;
+   const cementBtn=[...cats.querySelectorAll('.bbbm-nb-cat')].find(b=>b.textContent.trim()==='সিমেন্ট');
+   if(!cementBtn)return;
+   panel.dataset.cementReady='1';
+   const mode=panel.closest('#purchase')?'purchase':'sale';
+   const box=document.createElement('div');box.className='bbbm-cement-brands';
+   brands.forEach(name=>{
+     const b=document.createElement('button');b.type='button';b.textContent=name;
+     b.addEventListener('click',e=>{
+       e.preventDefault();e.stopPropagation();
+       const x=findBrand(name,mode==='sale');
+       if(mode==='sale'){
+         if(!x){alert(name+' বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');return}
+         $('sBarcode').value=x.barcode||''; if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
+         $('sQty').value='1'; if(typeof calcS==='function')calcS();
+       }else{
+         if(x){
+           $('pBarcode').value=x.barcode||''; if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode();
+           $('pItem').value=x.item||name; $('pUnit').value=x.unit||'Bag';
+         }else{
+           $('pBarcode').value=''; $('pItem').value=name; $('pUnit').value='Bag'; $('pQty').value='1';
+           if($('pPrice'))$('pPrice').value=''; if($('pSellPrice'))$('pSellPrice').value='';
+           if($('pTotal'))$('pTotal').value='0.00';
+         }
+       }
+       panel.classList.remove('open');
+     });
+     box.appendChild(b);
+   });
+   cats.insertAdjacentElement('afterend',box);
+   function sync(){
+     const a=cats.querySelector('.bbbm-nb-cat.active');
+     box.classList.toggle('open',!!a&&a.textContent.trim()==='সিমেন্ট');
+   }
+   cats.querySelectorAll('.bbbm-nb-cat').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,0)));
+ }
+ function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,100));else setTimeout(init,100);
+})();
+</script>
+
+
+<script id="bbbm-rod-company-js">
+(function(){
+  /* User's 5 companies first; additional common brands after them */
+  const companies=['BSRM','BZS (বাংলা)','Anwar','AKS','KSML','KSRM','GPH Ispat','RSRM','Rahim Steel','Baizid Steel','SARM'];
+  const sizes=['6','8','10','12','16','20','25','32'];
+  const $=id=>document.getElementById(id);
+
+  function norm(s){return String(s||'').toLowerCase()}
+  function companyMatch(item,company){
+    const s=norm(item);
+    if(company==='BZS (বাংলা)') return /bzs|বাংলা/.test(s);
+    return s.includes(norm(company));
+  }
+  function mmMatch(item,mm){
+    return new RegExp('(^|[^0-9])'+mm+'\\s*(mm|মিমি|মি\\.মি)?([^0-9]|$)','i').test(String(item||''));
+  }
+  function findRod(company,mm,saleOnly){
+    let map={}; try{map=stockMap()||{}}catch(e){}
+    let rows=Object.values(map).filter(x=>x&&companyMatch(x.item,company)&&mmMatch(x.item,mm));
+    if(saleOnly) rows=rows.filter(x=>Number(x.current||0)>0);
+    rows.sort((a,b)=>Number(b.current||0)-Number(a.current||0));
+    return rows[0]||null;
+  }
+  function prepare(mode,company,mm,panel){
+    const x=findRod(company,mm,mode==='sale');
+    const itemName=company+' '+mm+'mm Rod';
+
+    if(mode==='sale'){
+      if(!x){
+        alert(company+' '+mm+'mm রড বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');
+        return;
+      }
+      $('sBarcode').value=x.barcode||'';
+      if(typeof fillSaleFromBarcode==='function') fillSaleFromBarcode();
+      $('sQty').value='1';
+      if(typeof calcS==='function') calcS();
+    }else{
+      if(x){
+        $('pBarcode').value=x.barcode||'';
+        if(typeof fillPurchaseFromBarcode==='function') fillPurchaseFromBarcode();
+        $('pItem').value=x.item||itemName;
+        $('pUnit').value=x.unit||'PCS';
+      }else{
+        $('pBarcode').value='';
+        $('pItem').value=itemName;
+        $('pUnit').value='PCS';
+        $('pQty').value='1';
+        if($('pPrice')) $('pPrice').value='';
+        if($('pSellPrice')) $('pSellPrice').value='';
+        if($('pTotal')) $('pTotal').value='0.00';
+      }
+    }
+    panel.classList.remove('open');
+  }
+
+  function enhance(panel){
+    if(!panel||panel.dataset.rodCompanyReady==='1') return;
+    const cats=panel.querySelector('.bbbm-nb-cats');
+    if(!cats) return;
+    panel.dataset.rodCompanyReady='1';
+
+    const mode=panel.closest('#purchase')?'purchase':'sale';
+    const title=document.createElement('div');
+    title.className='bbbm-rod-title';
+    title.textContent='রড কোম্পানি নির্বাচন করুন';
+
+    const companyBox=document.createElement('div');
+    companyBox.className='bbbm-rod-companies';
+
+    const mmTitle=document.createElement('div');
+    mmTitle.className='bbbm-rod-title';
+    mmTitle.textContent='রডের MM নির্বাচন করুন';
+
+    const mmBox=document.createElement('div');
+    mmBox.className='bbbm-rod-mm-company';
+
+    let selectedCompany='';
+
+    companies.forEach(company=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=company;
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        selectedCompany=company;
+        companyBox.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+        mmTitle.classList.add('show');
+        mmBox.classList.add('open');
+      });
+      companyBox.appendChild(b);
+    });
+
+    sizes.forEach(mm=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=mm+' mm';
+      b.addEventListener('click',function(e){
+        e.preventDefault(); e.stopPropagation();
+        if(!selectedCompany){alert('আগে রড কোম্পানি নির্বাচন করুন।');return}
+        prepare(mode,selectedCompany,mm,panel);
+      });
+      mmBox.appendChild(b);
+    });
+
+    cats.insertAdjacentElement('afterend',title);
+    title.insertAdjacentElement('afterend',companyBox);
+    companyBox.insertAdjacentElement('afterend',mmTitle);
+    mmTitle.insertAdjacentElement('afterend',mmBox);
+
+    function sync(){
+      const active=cats.querySelector('.bbbm-nb-cat.active');
+      const isRod=!!active && active.textContent.trim()==='রড';
+      title.classList.toggle('show',isRod);
+      companyBox.classList.toggle('open',isRod);
+      if(!isRod){
+        selectedCompany='';
+        companyBox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+        mmTitle.classList.remove('show');
+        mmBox.classList.remove('open');
+      }
+    }
+    cats.querySelectorAll('.bbbm-nb-cat').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,0)));
+    setTimeout(sync,0);
+  }
+
+  function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(init,120));
+  else setTimeout(init,120);
+})();
+</script>
+
+
+<script id="purchase-side-pad-js">
+(function(){
+ const pad=document.getElementById('purchaseSidePad'),display=document.getElementById('purchasePadDisplay');
+ const num=document.getElementById('purchaseNumKeys'),text=document.getElementById('purchaseTextKeys');
+ if(!pad||!display||!num||!text)return;
+ const fields=['pItem','pBarcode','pQty','pPrice','pSellPrice'];
+ let active=document.getElementById('pQty'),raw=active?String(active.value||''):'';
+ function label(el){return !el?'Select a field':({pItem:'Item Name',pBarcode:'Barcode',pQty:'Quantity',pPrice:'Purchase Price',pSellPrice:'Selling Price'}[el.id]||'Field')}
+ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+ function refresh(){display.innerHTML=active?'<small>'+label(active)+'</small>'+esc(raw||'0'):'Select a field'}
+ function mode(m){num.classList.toggle('hidden',m!=='num');text.classList.toggle('hidden',m!=='text');pad.querySelectorAll('[data-ppadmode]').forEach(b=>b.classList.toggle('active',b.dataset.ppadmode===m))}
+ function select(el){if(!el||!fields.includes(el.id))return;fields.forEach(id=>{const x=document.getElementById(id);if(x)x.classList.remove('ppad-active')});active=el;active.classList.add('ppad-active');raw=String(active.value||'');mode(active.id==='pItem'?'text':'num');refresh()}
+ function write(){if(!active)return;active.value=raw;active.dispatchEvent(new Event('input',{bubbles:true}));if(['pQty','pPrice','pSellPrice'].includes(active.id)){try{if(typeof calcP==='function')calcP()}catch(e){}}}
+ 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').forEach(ch=>{const b=document.createElement('button');b.type='button';b.textContent=ch;b.dataset.tkey=ch;text.appendChild(b)});
+ [['Space',' ','space'],['⌫','back',''],['Clear','clear',''],['OK','ok','wide']].forEach(a=>{const b=document.createElement('button');b.type='button';b.textContent=a[0];b.dataset.tkey=a[1];if(a[2])b.className=a[2];text.appendChild(b)});
+ fields.forEach(id=>{const el=document.getElementById(id);if(el){['click','focus','pointerdown'].forEach(ev=>el.addEventListener(ev,()=>select(el)))}}); 
+ pad.querySelectorAll('[data-ppadmode]').forEach(b=>b.addEventListener('click',()=>mode(b.dataset.ppadmode)));
+ num.addEventListener('click',e=>{const b=e.target.closest('[data-pkey]');if(!b||!active)return;e.preventDefault();const k=b.dataset.pkey;if(k==='clear')raw='';else if(k==='back')raw=raw.slice(0,-1);else if(k==='ok'){write();active.dispatchEvent(new Event('change',{bubbles:true}));if(active.id==='pBarcode'){try{if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode()}catch(e){}}refresh();return}else if(k==='.'){if(active.id!=='pBarcode'&&!raw.includes('.'))raw=(raw||'0')+'.'}else if(/^\d$/.test(k)){raw=raw==='0'?k:raw+k}write();refresh()});
+ text.addEventListener('click',e=>{const b=e.target.closest('[data-tkey]');if(!b||!active)return;e.preventDefault();const k=b.dataset.tkey;if(k==='clear')raw='';else if(k==='back')raw=raw.slice(0,-1);else if(k==='ok'){write();active.dispatchEvent(new Event('change',{bubbles:true}));refresh();return}else raw+=k;write();refresh()});
+ if(active)select(active);
+})();
+</script>
+
+
+<script id="credit-customer-keyboard-js">
+(function(){
+  const nameInput=document.getElementById('creditName');
+  const phoneInput=document.getElementById('creditPhone');
+  const kb=document.getElementById('creditCustomerKeyboard');
+  const display=document.getElementById('creditKbDisplay');
+  const textBox=document.getElementById('creditTextKeys');
+  const numBox=document.getElementById('creditNumKeys');
+  if(!nameInput||!phoneInput||!kb||!display||!textBox||!numBox)return;
+
+  let active=nameInput;
+  let raw=String(active.value||'');
+
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function fieldLabel(){return active===phoneInput?'Mobile Number':'Customer Name'}
+  function refresh(){display.innerHTML='<small>'+fieldLabel()+'</small>'+esc(raw||'')}
+  function setMode(m){
+    textBox.classList.toggle('hidden',m!=='text');
+    numBox.classList.toggle('hidden',m!=='num');
+    kb.querySelectorAll('[data-ckbmode]').forEach(b=>b.classList.toggle('active',b.dataset.ckbmode===m));
+  }
+  function select(el){
+    active=el;
+    nameInput.classList.remove('ckb-active'); phoneInput.classList.remove('ckb-active');
+    active.classList.add('ckb-active');
+    raw=String(active.value||'');
+    setMode(active===phoneInput?'num':'text');
+    refresh();
+  }
+  function write(){
+    active.value=raw;
+    active.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+
+  'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').forEach(ch=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=ch; b.dataset.ctkey=ch; textBox.appendChild(b);
+  });
+  [['Space',' ','space'],['⌫','back',''],['Clear','clear','wide'],['OK','ok','wide']].forEach(a=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=a[0]; b.dataset.ctkey=a[1]; if(a[2])b.className=a[2]; textBox.appendChild(b);
+  });
+
+  [nameInput,phoneInput].forEach(el=>{
+    ['click','focus','pointerdown'].forEach(ev=>el.addEventListener(ev,()=>select(el)));
+  });
+
+  kb.querySelectorAll('[data-ckbmode]').forEach(b=>b.addEventListener('click',()=>{
+    setMode(b.dataset.ckbmode);
+  }));
+
+  textBox.addEventListener('click',e=>{
+    const b=e.target.closest('[data-ctkey]'); if(!b)return;
+    e.preventDefault();
+    const k=b.dataset.ctkey;
+    if(k==='clear') raw='';
+    else if(k==='back') raw=raw.slice(0,-1);
+    else if(k==='ok'){write(); active.dispatchEvent(new Event('change',{bubbles:true})); refresh(); return;}
+    else raw+=k;
+    write(); refresh();
+  });
+
+  numBox.addEventListener('click',e=>{
+    const b=e.target.closest('[data-ckey]'); if(!b)return;
+    e.preventDefault();
+    const k=b.dataset.ckey;
+    if(k==='clear') raw='';
+    else if(k==='back') raw=raw.slice(0,-1);
+    else if(k==='ok'){write(); active.dispatchEvent(new Event('change',{bubbles:true})); refresh(); return;}
+    else if(/^\d$/.test(k)) raw+=k;
+    write(); refresh();
+  });
+
+  select(nameInput);
+})();
+</script>
+
+<script id="all-settings-js">
+(function(){
+const K='bbbm_settings_v1',$=id=>document.getElementById(id);
+const D={shopName:'Bhai Bhai Building Materials Trading LLC',shopAddress:'',shopPhone:'',receiptHeader:'Bhai Bhai Building Materials',receiptFooter:'Thank you',paperSize:'80',receiptAddress:true,receiptPhone:true,defaultUnit:'PCS',lowStock:5,autoBarcode:true,saleQty:1,defaultPayment:'Cash',salePriceEdit:true,purchaseQty:1,showPurchaseSellPrice:true,saleKeypad:true,purchaseKeypad:true,creditKeyboard:true,keyboardSize:'normal',autoBackup:true,billPrinter:'',barcodePrinter:'EZPOS LP002',receiptCopies:1,autoPrint:false,currency:'৳',dateFormat:'DD-MM-YYYY',confirmDelete:true,confirmReturn:true,lastBackup:''};
+function load(){try{return Object.assign({},D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return {...D}}}function save(s){localStorage.setItem(K,JSON.stringify(s));apply(s)}
+function v(id){return $(id)?$(id).value:''}function c(id){return !!($(id)&&$(id).checked)}function sv(id,x){if($(id))$(id).value=x??''}function sc(id,x){if($(id))$(id).checked=!!x}function msg(x){try{alert(x)}catch(e){}}
+function fill(){let s=load();[['setShopName','shopName'],['setShopAddress','shopAddress'],['setShopPhone','shopPhone'],['setReceiptHeader','receiptHeader'],['setReceiptFooter','receiptFooter'],['setPaperSize','paperSize'],['setDefaultUnit','defaultUnit'],['setLowStock','lowStock'],['setSaleQty','saleQty'],['setDefaultPayment','defaultPayment'],['setPurchaseQty','purchaseQty'],['setKeyboardSize','keyboardSize'],['setBillPrinter','billPrinter'],['setBarcodePrinter','barcodePrinter'],['setReceiptCopies','receiptCopies'],['setCurrency','currency'],['setDateFormat','dateFormat']].forEach(a=>sv(a[0],s[a[1]]));[['setReceiptAddress','receiptAddress'],['setReceiptPhone','receiptPhone'],['setAutoBarcode','autoBarcode'],['setSalePriceEdit','salePriceEdit'],['setShowPurchaseSellPrice','showPurchaseSellPrice'],['setSaleKeypad','saleKeypad'],['setPurchaseKeypad','purchaseKeypad'],['setCreditKeyboard','creditKeyboard'],['setAutoBackup','autoBackup'],['setAutoPrint','autoPrint'],['setConfirmDelete','confirmDelete'],['setConfirmReturn','confirmReturn']].forEach(a=>sc(a[0],s[a[1]]));if($('settingsLastBackup'))$('settingsLastBackup').textContent=s.lastBackup||'—';if($('settingsAboutBackup'))$('settingsAboutBackup').textContent=s.lastBackup||'—';let w=$('who');if($('settingsCurrentUser'))$('settingsCurrentUser').textContent=w?w.textContent:'—';if($('setUserDisplayName')&&w)$('setUserDisplayName').value=w.textContent}
+function apply(s){if($('sideNumberPad'))$('sideNumberPad').style.display=s.saleKeypad?'':'none';if($('purchaseSidePad'))$('purchaseSidePad').style.display=s.purchaseKeypad?'':'none';if($('creditCustomerKeyboard'))$('creditCustomerKeyboard').style.display=s.creditKeyboard?'':'none';document.body.classList.remove('kb-small','kb-large');if(s.keyboardSize==='small')document.body.classList.add('kb-small');if(s.keyboardSize==='large')document.body.classList.add('kb-large');if($('sPrice'))$('sPrice').readOnly=!s.salePriceEdit;let p=$('pSellPrice');if(p){let l=p.closest('label')||p.parentElement;if(l)l.style.display=s.showPurchaseSellPrice?'':'none'}}
+function collect(g){let s=load();if(g==='shop'){s.shopName=v('setShopName');s.shopAddress=v('setShopAddress');s.shopPhone=v('setShopPhone')}if(g==='receipt'){s.receiptHeader=v('setReceiptHeader');s.receiptFooter=v('setReceiptFooter');s.paperSize=v('setPaperSize');s.receiptAddress=c('setReceiptAddress');s.receiptPhone=c('setReceiptPhone')}if(g==='product'){s.defaultUnit=v('setDefaultUnit');s.lowStock=+v('setLowStock')||0;s.autoBarcode=c('setAutoBarcode')}if(g==='sales'){s.saleQty=+v('setSaleQty')||1;s.defaultPayment=v('setDefaultPayment');s.salePriceEdit=c('setSalePriceEdit')}if(g==='purchase'){s.purchaseQty=+v('setPurchaseQty')||1;s.showPurchaseSellPrice=c('setShowPurchaseSellPrice')}if(g==='keyboard'){s.saleKeypad=c('setSaleKeypad');s.purchaseKeypad=c('setPurchaseKeypad');s.creditKeyboard=c('setCreditKeyboard');s.keyboardSize=v('setKeyboardSize')}if(g==='printer'){s.billPrinter=v('setBillPrinter');s.barcodePrinter=v('setBarcodePrinter');s.receiptCopies=Math.max(1,+v('setReceiptCopies')||1);s.autoPrint=c('setAutoPrint')}if(g==='system'){s.currency=v('setCurrency');s.dateFormat=v('setDateFormat');s.confirmDelete=c('setConfirmDelete');s.confirmReturn=c('setConfirmReturn')}save(s);msg('Settings saved')}
+document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>collect(b.dataset.save));if($('setAutoBackup'))$('setAutoBackup').onchange=()=>{let s=load();s.autoBackup=c('setAutoBackup');save(s)};
+if($('settingsOpenBackup'))$('settingsOpenBackup').onclick=()=>{let b=document.querySelector('.nav button[data-tab="backup"]');if(b)b.click()};
+if($('settingsBackupNow'))$('settingsBackupNow').onclick=()=>{try{if(typeof makeBackupSnapshot==='function'){let snap=makeBackupSnapshot(),blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Bhai_Bhai_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();let s=load();s.lastBackup=new Date().toLocaleString();save(s);fill()}else msg('Backup function not available')}catch(e){msg('Backup failed')}};
+if($('setUserSave'))$('setUserSave').onclick=()=>{let n=v('setUserDisplayName').trim(),p=v('setNewPassword'),q=v('setConfirmPassword');if(p!==q){msg('Password does not match');return}if(n&&$('who'))$('who').textContent=n;sv('setNewPassword','');sv('setConfirmPassword','');msg(p?'Display name saved. Login password remains protected by existing account authentication.':'Display name saved');fill()};
+fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]').forEach(b=>b.addEventListener('click',()=>setTimeout(fill,0)));
+})();
+</script>
+<script id="inventory-search-js">
+(function(){
+ const qEl=document.getElementById('inventorySearch');
+ const clearBtn=document.getElementById('inventorySearchClear');
+ const countEl=document.getElementById('inventorySearchCount');
+
+ function esc(v){return String(v==null?'':v).toLowerCase().trim()}
+ function rowHtml(x){
+   let sr='';
+   try{
+     const allMeta=JSON.parse(localStorage.getItem('bbbm_product_meta_v2')||'{}');
+     const rec=(allMeta&&allMeta[String(x.barcode||'')])||{};
+     sr=rec.sellPrice!=null?rec.sellPrice:'';
+   }catch(_){sr='';}
+   const moneyFn=(typeof money==='function'?money:n=>'৳'+Number(n||0).toLocaleString());
+   const fmtFn=(typeof fmtQty==='function'?fmtQty:n=>Number(n||0).toLocaleString());
+   const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+   return `<tr>
+<td>${x.item}</td>
+<td>${x.barcode}</td>
+<td><span class="unit-badge">${x.unit||'PCS'}</span></td>
+<td>${fmtFn(x.purchased)} ${x.unit||'PCS'}</td>
+<td>${fmtFn(x.sold)} ${x.unit||'PCS'}</td>
+<td><b>${fmtFn(x.current)} ${x.unit||'PCS'}</b></td>
+<td><div class="stock-rate-cell"><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${itemSafe}">✏️ Edit</button><small class="current-selling-rate">Current: ${sr!=null&&sr!==''?moneyFn(sr):'Not set'}</small></div></td>
+<td><b>${moneyFn(x.value)}</b><small class="stock-value-qty">${fmtFn(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-purchase-rate">Purchase Rate: ${moneyFn(x.avg)} / ${x.unit||'PCS'}</small><small class="stock-bought-qty">Bought: ${fmtFn(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtFn(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
+</tr>`;
+ }
+
+ function apply(){
+   const body=document.getElementById('stockRows');
+   if(!body)return;
+   const vals=Array.isArray(window.__bbbmStockVals)?window.__bbbmStockVals:[];
+   const q=esc(qEl?qEl.value:'');
+   const filtered=!q?vals:vals.filter(x=>{
+     const item=esc(x.item), code=esc(x.barcode);
+     return item.includes(q)||code.includes(q);
+   });
+   body.innerHTML=filtered.length?filtered.map(rowHtml).join(''):'<tr><td colspan="8" class="inventory-no-result">কোনো item পাওয়া যায়নি</td></tr>';
+   body.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>{
+     if(typeof editStockSellingRate==='function')editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem);
+   });
+   if(countEl){
+     countEl.textContent=q ? `${filtered.length} টি item পাওয়া গেছে` : `সব ${vals.length} টি item দেখানো হচ্ছে`;
+   }
+ }
+ window.__bbbmApplyInventorySearch=apply;
+ if(qEl){
+   qEl.addEventListener('input',apply);
+   qEl.addEventListener('search',apply);
+ }
+ if(clearBtn)clearBtn.addEventListener('click',()=>{
+   if(qEl){qEl.value='';qEl.focus()}
+   apply();
+ });
+ document.querySelectorAll('.nav button[data-tab="stock"]').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{
+   if(qEl)qEl.focus();
+   apply();
+ },0)));
+ setTimeout(apply,0);
+})();
+</script>
+
+
+<script id="inventory-floating-keyboard-js">
+(function(){
+ let target=null, mode='text', drag=false, offX=0, offY=0, saveRateCb=null;
+ const kb=document.createElement('div');
+ kb.id='bbbmFloatingKeyboard';
+ kb.innerHTML='<div id="bbbmKbHandle"><span class="drag-text">↔ Move Keyboard</span><button type="button" id="bbbmKbClose">✕</button></div><div id="bbbmKbKeys"></div>';
+ document.body.appendChild(kb);
+ const handle=kb.querySelector('#bbbmKbHandle'), keys=kb.querySelector('#bbbmKbKeys'), close=kb.querySelector('#bbbmKbClose');
+
+ const rateBox=document.createElement('div');
+ rateBox.id='bbbmRateEditor';
+ rateBox.innerHTML='<h4>✏️ Selling Rate</h4><p id="bbbmRateItem"></p><input id="bbbmRateInput" type="text" inputmode="none" autocomplete="off"><div id="bbbmRateActions"><button type="button" class="btn gray" id="bbbmRateCancel">Cancel</button><button type="button" class="btn primary" id="bbbmRateSave">Save</button></div>';
+ document.body.appendChild(rateBox);
+ const rateInput=rateBox.querySelector('#bbbmRateInput');
+
+ function textKeys(){
+   return [
+    ['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['0','0'],
+    ['Q','Q'],['W','W'],['E','E'],['R','R'],['T','T'],['Y','Y'],['U','U'],['I','I'],['O','O'],['P','P'],
+    ['A','A'],['S','S'],['D','D'],['F','F'],['G','G'],['H','H'],['J','J'],['K','K'],['L','L'],['⌫','BACK'],
+    ['Z','Z'],['X','X'],['C','C'],['V','V'],['B','B'],['N','N'],['M','M'],['-','-'],['/','/'],['Clear','CLEAR'],
+    ['Space','SPACE','wide3'],['Close','CLOSE','wide3'],['OK','OK','wide3']
+   ];
+ }
+ function numKeys(){
+   return [['7','7'],['8','8'],['9','9'],['4','4'],['5','5'],['6','6'],['1','1'],['2','2'],['3','3'],['C','CLEAR','clear'],['0','0'],['.','.'],['⌫','BACK','action'],['OK','OK','ok','wide2']];
+ }
+ function renderKeys(){
+   kb.className=mode;
+   keys.innerHTML='';
+   const arr=mode==='numeric'?numKeys():textKeys();
+   arr.forEach(x=>{
+     const b=document.createElement('button'); b.type='button'; b.className='bbbm-kb-key';
+     if(x[2])b.classList.add(x[2]); if(x[3])b.classList.add(x[3]);
+     if(x[0]==='OK')b.classList.add('ok'); if(x[0]==='Clear'||x[0]==='C')b.classList.add('clear');
+     b.textContent=x[0]; b.dataset.k=x[1];
+     b.addEventListener('pointerdown',e=>{e.preventDefault(); press(x[1])});
+     keys.appendChild(b);
+   });
+ }
+ function setValue(v){
+   if(!target)return; target.value=v; target.dispatchEvent(new Event('input',{bubbles:true}));
+ }
+ function press(k){
+   if(!target)return;
+   let v=String(target.value||'');
+   if(k==='BACK')setValue(v.slice(0,-1));
+   else if(k==='CLEAR')setValue('');
+   else if(k==='SPACE')setValue(v+' ');
+   else if(k==='CLOSE')hide();
+   else if(k==='OK'){
+     if(target===rateInput){saveRate()}
+     else {target.dispatchEvent(new Event('change',{bubbles:true})); hide()}
+   } else setValue(v+k);
+   try{target.focus({preventScroll:true})}catch(e){target.focus()}
+ }
+ function placeNear(el){
+   const r=el.getBoundingClientRect(), w=(mode==='numeric'?220:330), vh=window.innerHeight, vw=window.innerWidth;
+   let left=Math.max(8,Math.min(vw-w-8,r.left));
+   let top=r.bottom+8;
+   if(top+260>vh)top=Math.max(8,r.top-250);
+   kb.style.left=left+'px'; kb.style.top=top+'px';
+ }
+ function show(el,m){
+   target=el; mode=m||'text'; renderKeys(); kb.style.display='block'; placeNear(el);
+ }
+ function hide(){kb.style.display='none'; if(target!==rateInput)target=null}
+ window.__bbbmOpenFloatingKeyboard=show;
+
+ function saveRate(){
+   if(!saveRateCb)return;
+   const ok=saveRateCb(rateInput.value);
+   if(ok!==false){rateBox.style.display='none';kb.style.display='none';saveRateCb=null;target=null}
+ }
+ window.__bbbmOpenRateEditor=function(opts){
+   saveRateCb=opts&&opts.onSave;
+   rateBox.querySelector('#bbbmRateItem').textContent=(opts&&opts.item)||'';
+   rateInput.value=(opts&&opts.oldRate)||'';
+   const vw=window.innerWidth,vh=window.innerHeight;
+   rateBox.style.left=Math.max(10,(vw-270)/2)+'px';
+   rateBox.style.top=Math.max(10,Math.min(vh-170,110))+'px';
+   rateBox.style.display='block';
+   target=rateInput; mode='numeric'; renderKeys(); kb.style.display='block';
+   kb.style.left=Math.max(8,Math.min(vw-228,rateBox.offsetLeft+25))+'px';
+   kb.style.top=Math.min(vh-265,rateBox.offsetTop+155)+'px';
+   setTimeout(()=>rateInput.focus(),0);
+ };
+
+ rateBox.querySelector('#bbbmRateCancel').onclick=()=>{rateBox.style.display='none';kb.style.display='none';saveRateCb=null;target=null};
+ rateBox.querySelector('#bbbmRateSave').onclick=saveRate;
+ rateInput.addEventListener('focus',()=>show(rateInput,'numeric'));
+ rateInput.addEventListener('click',()=>show(rateInput,'numeric'));
+
+ // Search keyboard opens on tap/focus.
+
+ // Selling Rate Edit: delegated handler so the floating numeric keyboard
+ // always opens even after Inventory rows are re-rendered by search/render().
+ document.addEventListener('click',function(e){
+   const btn=e.target.closest && e.target.closest('.stock-rate-edit');
+   if(!btn)return;
+   e.preventDefault();
+   e.stopPropagation();
+   const code=String(btn.dataset.rateCode||'').trim();
+   const item=btn.dataset.rateItem||code;
+   if(!code || !window.__bbbmOpenRateEditor)return;
+
+   let oldRate='';
+   try{
+     const meta=JSON.parse(localStorage.getItem('bbbm_product_meta_v2')||'{}');
+     const rec=(meta&&meta[code])||{};
+     if(rec.sellPrice!=null&&rec.sellPrice!=='')oldRate=String(rec.sellPrice);
+   }catch(_){}
+
+   window.__bbbmOpenRateEditor({
+     code:code,item:item,oldRate:oldRate,
+     onSave:function(entered){
+       const clean=String(entered||'').trim();
+       if(clean===''||isNaN(Number(clean))||Number(clean)<0){
+         alert('Please enter a valid selling rate.');
+         return false;
+       }
+       window.dispatchEvent(new CustomEvent('bbbm-save-selling-rate',{
+         detail:{code:code,rate:Number(clean)}
+       }));
+       return true;
+     }
+   });
+ },true);
+
+ const search=document.getElementById('inventorySearch');
+ if(search){
+   search.setAttribute('inputmode','none');
+   // Do not auto-open keyboard just by entering Inventory or focusing search.
+   // Open only when the user taps/clicks inside the search box.
+   search.addEventListener('click',()=>show(search,'text'));
+ }
+
+ // Draggable keyboard via handle.
+ function startDrag(e){
+   if(e.target===close)return;
+   drag=true; const r=kb.getBoundingClientRect(); offX=e.clientX-r.left; offY=e.clientY-r.top;
+   try{handle.setPointerCapture(e.pointerId)}catch(_){}
+   e.preventDefault();
+ }
+ function moveDrag(e){
+   if(!drag)return;
+   const maxX=Math.max(0,window.innerWidth-kb.offsetWidth),maxY=Math.max(0,window.innerHeight-kb.offsetHeight);
+   kb.style.left=Math.max(0,Math.min(maxX,e.clientX-offX))+'px';
+   kb.style.top=Math.max(0,Math.min(maxY,e.clientY-offY))+'px';
+   e.preventDefault();
+ }
+ function endDrag(){drag=false}
+ handle.addEventListener('pointerdown',startDrag);
+ handle.addEventListener('pointermove',moveDrag);
+ handle.addEventListener('pointerup',endDrag);
+ handle.addEventListener('pointercancel',endDrag);
+ close.onclick=hide;
+
+ document.addEventListener('click',function(e){
+   const nav=e.target.closest&&e.target.closest('[data-tab="inventory"]');
+   if(nav){hide();rateBox.style.display='none';}
+ });
+ document.addEventListener('keydown',e=>{
+   if(e.key==='Escape'){hide();rateBox.style.display='none'}
+ });
+})();
+</script>
+
+
+
+<script id="dashboard-5sec-hide-js">
+(function(){
+ const dashboard=document.getElementById('dashboard');
+ const btn=document.getElementById('dashShowValuesBtn');
+ const hint=document.getElementById('dashPrivacyHint');
+ if(!dashboard||!btn)return;
+ let timer=null,tick=null,left=0;
+ function hideValues(){
+   if(timer){clearTimeout(timer);timer=null}
+   if(tick){clearInterval(tick);tick=null}
+   dashboard.classList.add('dashboard-values-hidden');
+   btn.textContent='👁 Show Values (5s)';
+   if(hint)hint.textContent='Dashboard values hidden';
+ }
+ function showValues(){
+   if(timer)clearTimeout(timer);
+   if(tick)clearInterval(tick);
+   dashboard.classList.remove('dashboard-values-hidden');
+   left=5;
+   btn.textContent='🙈 Hide Now';
+   if(hint)hint.textContent='Auto hide in 5s';
+   tick=setInterval(function(){left--;if(left>0&&hint)hint.textContent='Auto hide in '+left+'s'},1000);
+   timer=setTimeout(hideValues,5000);
+ }
+ btn.addEventListener('click',function(){
+   dashboard.classList.contains('dashboard-values-hidden')?showValues():hideValues();
+ });
+ hideValues();
+ document.addEventListener('click',function(e){
+   const nav=e.target.closest&&e.target.closest('[data-tab="dashboard"]');
+   if(nav)setTimeout(hideValues,0);
+ });
+})();
+</script>
+
+
+<script id="full-system-dark-mode-js">
+(function(){
+  const btn=document.getElementById('dashDarkModeBtn');
+  if(!btn)return;
+  const KEY='bbbm_full_dark_v1';
+
+  function apply(on){
+    document.body.classList.toggle('bbbm-dark-mode',!!on);
+    btn.textContent=on?'☀️ Light Mode':'🌙 Dark Mode';
+    try{localStorage.setItem(KEY,on?'1':'0')}catch(e){}
+  }
+
+  let saved=false;
+  try{saved=localStorage.getItem(KEY)==='1'}catch(e){}
+  apply(saved);
+
+  btn.addEventListener('click',function(){
+    apply(!document.body.classList.contains('bbbm-dark-mode'));
+  });
+})();
+</script>
+
 </body>
 </html>
