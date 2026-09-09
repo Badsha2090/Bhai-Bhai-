@@ -1074,7 +1074,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.9</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.10</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1401,8 +1401,8 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 </label>
                 <div class="full">
                   <button type="button" class="btn primary" id="checkoutSaleBtn">Continue to Complete Sale →</button>
-                  <button type="button" class="btn gray" id="customerDisplayConnectBtn" style="margin-left:8px">🔌 Connect Rear Display</button>
-                  <span id="customerDisplayStatus" class="muted" style="margin-left:8px;font-weight:800">Not connected</span>
+                  <button type="button" class="btn gray" id="customerDisplayConnectBtn" style="display:none!important">🔌 Connect Rear Display</button>
+                  <span id="customerDisplayStatus" class="muted" style="display:none!important">Not connected</span>
                 </div>
                 <div class="full payment-help">সব item Bill-এ যোগ করার পর Payment Method select করে Continue চাপুন। Rear display connect থাকলে Continue চাপার পরই শুধু Final Total দেখাবে।</div>
               </form>
@@ -1822,7 +1822,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.9: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.10: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2432,7 +2432,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.9: Opening Stock =====
+// ===== POS Safe v7.10: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2806,7 +2806,7 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.9: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.10: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -2850,8 +2850,14 @@ async function autoReconnectCustomerDisplay(){
 async function showRearDisplayTotal(amount){
  try{
    if(!customerDisplayPort)await autoReconnectCustomerDisplay();
+   // Normally the previously paired COM2 reconnects silently. If browser permission was reset,
+   // Continue to Complete Sale is a user gesture, so this can reopen the serial chooser once.
+   if(!customerDisplayPort){
+     const connected=await connectCustomerDisplay();
+     if(!connected)return false;
+   }
    if(!customerDisplayPort||!customerDisplayPort.writable){
-     setCustomerDisplayStatus('⚠️ Connect Rear Display');
+     setCustomerDisplayStatus('Rear display unavailable');
      return false;
    }
    const value=Number(amount||0).toFixed(2);
@@ -3209,8 +3215,8 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  }
 };
 $('saleBackBtn').onclick=function(){$('saleFinishBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null};
-$('salePrintBtn').onclick=()=>completeSale(true);
-$('saleNoPrintBtn').onclick=()=>completeSale(false);
+$('salePrintBtn').onclick=async()=>{await showRearDisplayTotal(0);completeSale(true)};
+$('saleNoPrintBtn').onclick=async()=>{await showRearDisplayTotal(0);completeSale(false)};
 
 // ===== PIN-Protected Settings + Purchase Return =====
 const SECURE_ACCESS_CODE='3698';
@@ -4731,7 +4737,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.9';
+  const POS_VERSION='POS Safe v7.10';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
