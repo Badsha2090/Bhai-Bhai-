@@ -682,6 +682,32 @@ section#sales label, section#pos label{
 </style>
 
 
+<style id="secure-stock-summary-css">
+#secureStockSummaryCard{border:1px solid #fdba74;background:linear-gradient(145deg,#fff7ed,#ffedd5);padding:0;overflow:hidden;text-align:left;cursor:pointer;min-height:118px;grid-column:span 2;color:#7c2d12}
+#secureStockSummaryCard .secure-summary-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid rgba(234,88,12,.18);font-size:11px;font-weight:900;letter-spacing:.35px}
+#secureStockSummaryCard .secure-summary-head>div{display:flex;align-items:center;gap:7px}.secure-summary-icon{font-size:16px}
+.secure-summary-state{font-size:9px;padding:4px 7px;border-radius:999px;background:#9a3412;color:#fff;letter-spacing:.5px}
+.secure-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.secure-summary-cell{padding:11px 12px;border-right:1px solid rgba(234,88,12,.14)}.secure-summary-cell:last-child{border-right:0}
+.secure-summary-cell span{display:block;font-size:9px;font-weight:900;color:#9a3412;margin-bottom:5px}.secure-summary-cell b{display:block;font-size:17px;font-weight:950;color:#7c2d12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.secure-summary-hint{padding:0 12px 10px;font-size:9px;font-weight:800;color:#c2410c}
+#secureStockSummaryCard.locked .secure-value{font-size:0!important}
+#secureStockSummaryCard.locked .secure-value::after{content:'••••••';font-size:18px;letter-spacing:2px;color:#7c2d12}
+#secureStockSummaryCard.unlocked{background:linear-gradient(145deg,#ecfdf5,#d1fae5);border-color:#86efac;color:#14532d}
+#secureStockSummaryCard.unlocked .secure-summary-head{border-color:rgba(22,163,74,.18)}#secureStockSummaryCard.unlocked .secure-summary-state{background:#15803d}
+#secureStockSummaryCard.unlocked .secure-summary-cell{border-color:rgba(22,163,74,.14)}#secureStockSummaryCard.unlocked .secure-summary-cell span{color:#166534}#secureStockSummaryCard.unlocked .secure-summary-cell b{color:#14532d}#secureStockSummaryCard.unlocked .secure-summary-hint{color:#15803d}
+body.bbbm-dark-mode #secureStockSummaryCard{background:linear-gradient(145deg,#431407,#1f2937);border-color:#9a3412;color:#ffedd5}body.bbbm-dark-mode #secureStockSummaryCard .secure-summary-cell span,body.bbbm-dark-mode #secureStockSummaryCard .secure-summary-hint{color:#fdba74}body.bbbm-dark-mode #secureStockSummaryCard .secure-summary-cell b{color:#fff7ed}
+body.bbbm-dark-mode #secureStockSummaryCard.unlocked{background:linear-gradient(145deg,#052e16,#1f2937);border-color:#166534}body.bbbm-dark-mode #secureStockSummaryCard.unlocked .secure-summary-cell span,body.bbbm-dark-mode #secureStockSummaryCard.unlocked .secure-summary-hint{color:#86efac}body.bbbm-dark-mode #secureStockSummaryCard.unlocked .secure-summary-cell b{color:#ecfdf5}
+#secureSummaryPinModal{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:10020;display:none;align-items:flex-start;justify-content:center;padding-top:90px}
+#secureSummaryPinBox{width:min(330px,calc(100vw - 24px));background:#fff;border-radius:16px;box-shadow:0 22px 60px rgba(15,23,42,.35);padding:16px;border:1px solid #cbd5e1}
+#secureSummaryPinBox h3{margin:0 0 5px;font-size:17px}#secureSummaryPinBox p{margin:0 0 12px;font-size:11px;color:#64748b}
+#secureSummaryPinInput{width:100%;height:50px;border:2px solid #94a3b8;border-radius:10px;font-size:26px;letter-spacing:7px;text-align:center;font-weight:900;padding:8px;background:#f8fafc}
+#secureSummaryPinMsg{min-height:20px;margin-top:8px;font-size:11px;font-weight:800;color:#b91c1c}
+#secureSummaryPinActions{display:flex;gap:8px;margin-top:6px}#secureSummaryPinActions button{flex:1}
+body.bbbm-dark-mode #secureSummaryPinBox{background:#0f172a;border-color:#334155;color:#f8fafc}body.bbbm-dark-mode #secureSummaryPinBox p{color:#94a3b8}body.bbbm-dark-mode #secureSummaryPinInput{background:#111827;color:#fff;border-color:#475569}
+@media(max-width:760px){#secureStockSummaryCard{grid-column:span 2}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
+</style>
+
 <style id="dashboard-quick-actions-colorful-css">
 #dashboard .dashboard-quick-actions{
   padding:18px!important;
@@ -1047,7 +1073,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.5</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.6</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1056,12 +1082,22 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 <div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
-              <div class="card metric metric-orange"><div class="metric-icon">🔥</div><div><div class="l">TOTAL PROFIT</div><div id="mProfit" class="v">৳0.00</div><div class="metric-note">Sales minus stock cost</div></div></div>
+              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Locked profit and stock summary">
+                <div class="secure-summary-head">
+                  <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK</span></div>
+                  <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
+                </div>
+                <div class="secure-summary-grid">
+                  <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
+                </div>
+                <div id="secureSummaryHint" class="secure-summary-hint">Tap and enter Admin PIN to view</div>
+              </button>
               <div class="card metric metric-purple"><div class="metric-icon">৳</div><div><div class="l">TOTAL SALES</div><div id="mSales" class="v">৳0.00</div><div class="metric-note">All-time sales</div></div></div>
               <div class="card metric metric-gold"><div class="metric-icon">🪙</div><div><div class="l">TOTAL PURCHASE</div><div id="mPurchase" class="v">৳0.00</div><div class="metric-note">All-time purchase</div></div></div>
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
-              <div class="card metric metric-cyan"><div class="metric-icon">▣</div><div><div class="l">CURRENT STOCK</div><div id="mStock" class="v">0</div><div class="metric-note">Across all units</div></div></div>
-              <div class="card metric metric-teal"><div class="metric-icon">💰</div><div><div class="l">STOCK VALUE</div><div id="mStockValue" class="v">৳0.00</div><div class="metric-note">At average purchase cost</div></div></div>
+
               <button type="button" id="dashCreditMetric" class="card metric metric-credit dash-credit-metric">
                 <div class="metric-icon">💳</div>
                 <div>
@@ -1764,7 +1800,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.5: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.6: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -4519,9 +4555,57 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 </script>
 
 
+<script id="secure-stock-summary-js">
+(function(){
+  const PIN='3698';
+  const card=document.getElementById('secureStockSummaryCard');
+  if(!card)return;
+  let unlocked=false;
+  const modal=document.createElement('div');
+  modal.id='secureSummaryPinModal';
+  modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
+  document.body.appendChild(modal);
+  const input=document.getElementById('secureSummaryPinInput');
+  const msg=document.getElementById('secureSummaryPinMsg');
+  const state=document.getElementById('secureSummaryState');
+  const hint=document.getElementById('secureSummaryHint');
+  function setLocked(on){
+    unlocked=!on; card.classList.toggle('locked',on); card.classList.toggle('unlocked',!on);
+    if(state)state.textContent=on?'LOCKED':'OPEN';
+    if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Tap again to lock';
+  }
+  function closeModal(){modal.style.display='none'; input.value=''; msg.textContent='';}
+  function verify(){
+    const v=String(input.value||'').replace(/\D/g,'').slice(0,4); input.value=v;
+    if(v===PIN){setLocked(false);closeModal();return true}
+    msg.textContent='❌ Wrong PIN'; input.value='';
+    if(window.__bbbmOpenFloatingKeyboard)setTimeout(()=>window.__bbbmOpenFloatingKeyboard(input,'numeric'),0);
+    return false;
+  }
+  function openModal(){
+    modal.style.display='flex'; input.value=''; msg.textContent='';
+    setTimeout(()=>{try{input.focus()}catch(e){}; if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric')},30);
+  }
+  card.addEventListener('click',function(){if(unlocked){setLocked(true);return}openModal()});
+  input.addEventListener('input',function(){
+    const clean=String(this.value||'').replace(/\D/g,'').slice(0,4); if(this.value!==clean)this.value=clean;
+    if(clean.length===4)setTimeout(verify,60);
+  });
+  input.addEventListener('change',function(){if(String(this.value||'').length)verify()});
+  document.getElementById('secureSummaryOpen').onclick=verify;
+  document.getElementById('secureSummaryCancel').onclick=closeModal;
+  modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+  document.addEventListener('click',function(e){
+    const nav=e.target.closest&&e.target.closest('[data-tab]');
+    if(nav && nav.dataset.tab && nav.dataset.tab!=='dashboard')setLocked(true);
+  });
+  setLocked(true);
+})();
+</script>
+
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.5';
+  const POS_VERSION='POS Safe v7.6';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
