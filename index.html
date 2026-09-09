@@ -1041,7 +1041,7 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.3</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.4</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1758,7 +1758,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.3: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.4: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2464,24 +2464,57 @@ function renderBillSearchResult(no){
   const pb=$('billSearchPrintBtn');
   if(pb)pb.onclick=()=>printBillSearchRows(rows);
 }
+// ===== v7.4 Popup-free invoice printing =====
+function directPrintHtml(html){
+  try{
+    const old=document.getElementById('bbbmDirectPrintFrame');
+    if(old)old.remove();
+    const f=document.createElement('iframe');
+    f.id='bbbmDirectPrintFrame';
+    f.setAttribute('aria-hidden','true');
+    f.style.position='fixed';
+    f.style.right='0';
+    f.style.bottom='0';
+    f.style.width='1px';
+    f.style.height='1px';
+    f.style.border='0';
+    f.style.opacity='0';
+    f.style.pointerEvents='none';
+    document.body.appendChild(f);
+    let cleaned=false;
+    const cleanup=()=>{if(cleaned)return;cleaned=true;setTimeout(()=>{try{f.remove()}catch(e){}},300)};
+    f.onload=function(){
+      try{
+        const w=f.contentWindow;
+        if(!w)throw new Error('Print frame unavailable');
+        try{w.addEventListener('afterprint',cleanup,{once:true})}catch(e){}
+        setTimeout(()=>{try{w.focus();w.print()}catch(e){cleanup();alert('Invoice print could not start: '+(e.message||e))}},120);
+        setTimeout(cleanup,30000);
+      }catch(e){cleanup();alert('Invoice print could not start: '+(e.message||e))}
+    };
+    f.srcdoc=String(html||'');
+    return true;
+  }catch(e){
+    alert('Invoice print could not start: '+(e.message||e));
+    return false;
+  }
+}
+
 function printBillSearchRows(rows){
   if(!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
   const items=rows.map(x=>`<tr><td>${x.item||''}</td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
-  const w=window.open('','_blank','width=420,height=700');
-  if(!w)return alert('Popup blocked. Please allow popups to print.');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
-  body{font-family:Arial,sans-serif;padding:12px;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
-  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
-  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}</style></head><body>
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
+  @page{margin:2.5mm}body{font-family:Arial,sans-serif;padding:0;margin:0;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
+  .receipt{width:100%;max-width:76mm;margin:auto}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
+  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}@media print{.receipt{max-width:none}}</style></head><body><div class="receipt">
   <h3>Bhai Bhai Building Materials</h3>
   <p>Bill: ${billNoLabel(rows)}</p><p>Date: ${first.date||''} ${first.saleTime||''}</p>
   ${first.creditName?`<p>Customer: ${first.creditName}${first.creditPhone?' - '+first.creditPhone:''}</p>`:''}
   <p>Payment: ${first.paymentMethod||'Cash'}</p>
   <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${items}</tbody></table>
-  <div class="tot">Total: ${money(total)}</div>
-  <script>window.onload=function(){window.print()}<\/script></body></html>`);
-  w.document.close();
+  <div class="tot">Total: ${money(total)}</div></div></body></html>`;
+  directPrintHtml(html);
 }
 (function bindBillSearch(){
   const inp=$('billSearchInput'),btn=$('billSearchBtn'),clear=$('billSearchClear');
@@ -2801,7 +2834,8 @@ function receiptHtml(sale){
 }
 async function completeSale(printAfter){
  if(!pendingSale)return;
- let printWin=null;if(printAfter){printWin=window.open('','_blank','width=420,height=650');if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>')}
+ // v7.4: no popup window; receipt is printed from an off-screen same-page frame after save.
+ let printWin=null;
  const sale=pendingSale;$('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
  let invoiceNo=0;
  try{
@@ -2820,7 +2854,7 @@ async function completeSale(printAfter){
    if(saved.error)throw saved.error;
    const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
    sale.billNo=invoiceNo;sale.displayBill='BBBM-'+String(invoiceNo).padStart(6,'0');
-   if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}
+   if(printAfter)directPrintHtml(receiptHtml(sale));
    await loadCloudData();resetSaleForm();render();
    alert(printAfter?'Sale saved. All items have one Bill No.':'Sale saved without print. All items have one Bill No.');
  }catch(err){
@@ -2836,7 +2870,7 @@ async function completeSale(printAfter){
    addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
    db.sales.push(...localRecords);safeSet(DB,db);
    sale.saleTime=saleTime;sale.billNo=tempBill;sale.displayBill=invoiceNo?('BBBM-'+String(invoiceNo).padStart(6,'0')):('OFFLINE-'+String(tempBill).replace('OFF-',''));
-   if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}else if(printWin){printWin.close()}
+   if(printAfter)directPrintHtml(receiptHtml(sale));
    resetSaleForm();render();
    alert('📴 Network নেই/Cloud পাওয়া যাচ্ছে না। Sale local-এ নিরাপদে save হয়েছে। Internet এলে auto sync হবে.');
  }
@@ -4465,7 +4499,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.3';
+  const POS_VERSION='POS Safe v7.4';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
