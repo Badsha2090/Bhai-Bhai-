@@ -939,6 +939,12 @@ body.bbbm-dark-mode .pos-update-btn{
 body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;color:#e0f2fe}
 </style>
 
+
+<style id="inventory-serial-total-css">
+.inventory-total-types{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;font-size:12px;font-weight:900;white-space:nowrap}
+#stockRows td:first-child,#stockRows+*{text-align:center}
+body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e7490;color:#cffafe}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -1041,7 +1047,7 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.4</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.5</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1726,7 +1732,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 </section>
 
 <section id="stock" class="section">
-            <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div></div>
+            <div class="section-heading"><div><h2>Inventory / Stock</h2><p>Live stock calculated from cloud purchase minus sales.</p></div><div id="inventoryTotalTypes" class="inventory-total-types">Total Items: 0 Types</div></div>
             <div class="card inventory-search-card">
               <div class="inventory-search-wrap">
                 <span class="inventory-search-icon">🔎</span>
@@ -1735,7 +1741,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
               </div>
               <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
             </div>
-            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
       </main>
@@ -1758,7 +1764,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.4: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.5: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2308,7 +2314,8 @@ function render(){
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
- window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map(x=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
+ window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map((x,i)=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
+<td><b>${i+1}</b></td>
 <td>${x.item}</td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
@@ -2317,7 +2324,7 @@ function render(){
 <td><b>${fmtQty(x.current)} ${x.unit||'PCS'}</b></td>
 <td><div class="stock-rate-cell"><button type="button" class="stock-rate-edit" data-rate-code="${x.barcode}" data-rate-item="${String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✏️ Edit</button><small class="current-selling-rate">Current: ${sr!=null&&sr!==''?money(sr):'Not set'}</small></div></td>
 <td><b>${money(x.value)}</b><small class="stock-value-qty">${fmtQty(x.current)} ${x.unit||'PCS'} in stock</small><small class="stock-purchase-rate">Purchase Rate: ${money(x.avg)} / ${x.unit||'PCS'}</small><small class="stock-bought-qty">Bought: ${fmtQty(x.purchased)} ${x.unit||'PCS'}</small><small class="stock-batch-qty">${(x.purchaseBatches||[]).length?'Purchase qty: '+(x.purchaseBatches||[]).slice(-4).map(b=>fmtQty(b.qty)+' '+(b.unit||x.unit||'PCS')).join(' • '):''}</small></td>
-</tr>`}).join(''):'<tr><td colspan="8">No stock yet.</td></tr>';
+</tr>`}).join(''):'<tr><td colspan="9">No stock yet.</td></tr>';
 document.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem));
 if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInventorySearch();
 
@@ -2507,7 +2514,13 @@ function printBillSearchRows(rows){
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
   @page{margin:2.5mm}body{font-family:Arial,sans-serif;padding:0;margin:0;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
   .receipt{width:100%;max-width:76mm;margin:auto}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
-  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}@media print{.receipt{max-width:none}}</style></head><body><div class="receipt">
+  .tot{text-align:right;font-weight:700;font-size:14px;margin-top:10px}@media print{.receipt{max-width:none}}</style>
+<style id="inventory-serial-total-css">
+.inventory-total-types{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;font-size:12px;font-weight:900;white-space:nowrap}
+#stockRows td:first-child,#stockRows+*{text-align:center}
+body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e7490;color:#cffafe}
+</style>
+</head><body><div class="receipt">
   <h3>Bhai Bhai Building Materials</h3>
   <p>Bill: ${billNoLabel(rows)}</p><p>Date: ${first.date||''} ${first.saleTime||''}</p>
   ${first.creditName?`<p>Customer: ${first.creditName}${first.creditPhone?' - '+first.creditPhone:''}</p>`:''}
@@ -2805,7 +2818,13 @@ function receiptHtml(sale){
  th:nth-child(2),td:nth-child(2){text-align:center}th:nth-child(3),td:nth-child(3),th:nth-child(4),td:nth-child(4){text-align:right}
  .total{font-size:12px;font-weight:900;text-align:right;margin:4px 0}.pay{font-size:9px;margin:2px 0}
  .thanks{text-align:center;font-weight:800;font-size:9px;margin-top:5px}@media print{body{padding:0}.receipt{max-width:none}}
- </style></head><body><div class="receipt">
+ </style>
+<style id="inventory-serial-total-css">
+.inventory-total-types{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;font-size:12px;font-weight:900;white-space:nowrap}
+#stockRows td:first-child,#stockRows+*{text-align:center}
+body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e7490;color:#cffafe}
+</style>
+</head><body><div class="receipt">
  <div class="bn">ভাই ভাই বিল্ডিং মেটেরিয়াল</div><div class="en">BHAI BHAI BUILDING MATERIALS</div>
  <div class="center small">প্রোঃ মোঃ মনির হোসেন &nbsp; | &nbsp; ম্যানেজারঃ মিরান হোসেন</div>
  <div class="center small">01338-226242 | 01303-334709</div><div class="center tiny">জামালপুর চৌরাস্তা, মির্জাপুর রোড, কালিয়াকৈর, গাজীপুর</div>
@@ -4211,7 +4230,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  const countEl=document.getElementById('inventorySearchCount');
 
  function esc(v){return String(v==null?'':v).toLowerCase().trim()}
- function rowHtml(x){
+ function rowHtml(x,idx){
    let sr='';
    try{
      const allMeta=JSON.parse(localStorage.getItem('bbbm_product_meta_v2')||'{}');
@@ -4222,6 +4241,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    const fmtFn=(typeof fmtQty==='function'?fmtQty:n=>Number(n||0).toLocaleString());
    const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
    return `<tr>
+<td><b>${idx+1}</b></td>
 <td>${x.item}</td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
@@ -4242,7 +4262,9 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
      const item=esc(x.item), code=esc(x.barcode);
      return item.includes(q)||code.includes(q);
    });
-   body.innerHTML=filtered.length?filtered.map(rowHtml).join(''):'<tr><td colspan="8" class="inventory-no-result">কোনো item পাওয়া যায়নি</td></tr>';
+   const totalTypes=document.getElementById('inventoryTotalTypes');
+   if(totalTypes) totalTypes.textContent=`Total Items: ${vals.length} Types`;
+   body.innerHTML=filtered.length?filtered.map(rowHtml).join(''):'<tr><td colspan="9" class="inventory-no-result">কোনো item পাওয়া যায়নি</td></tr>';
    body.querySelectorAll('.stock-rate-edit').forEach(btn=>btn.onclick=()=>{
      if(typeof editStockSellingRate==='function')editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem);
    });
@@ -4499,7 +4521,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.4';
+  const POS_VERSION='POS Safe v7.5';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
