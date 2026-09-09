@@ -725,6 +725,11 @@ section#sales label, section#pos label{
 
 <style id="full-system-dark-mode-css">
 /* Square Quick Actions */
+
+.offline-sync-badge{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:8px;background:#dcfce7;color:#166534;font-size:11px;font-weight:900;white-space:nowrap}
+.offline-sync-badge.pending{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.offline-sync-badge.offline{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+body.bbbm-dark-mode .offline-sync-badge{border-color:#475569}
 #dashboard .dashboard-quick-actions{border-radius:14px!important}
 #dashboard .dashboard-quick-actions .btn,
 #dashboard .dashboard-quick-actions button{
@@ -1036,7 +1041,8 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v6.9</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.0</span>
+  <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
   <span id="dashPrivacyHint">Dashboard values hidden</span>
@@ -1724,6 +1730,72 @@ const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slic
 let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_product_meta_v2',{});
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+
+// ===== POS Safe v7.0: Offline-safe Sale/Purchase queue =====
+const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
+let syncRunning=false;
+function pendingQueue(){
+  const q=safeGet(PENDING_SYNC_KEY,[]);return Array.isArray(q)?q:[];
+}
+function writePendingQueue(q){safeSet(PENDING_SYNC_KEY,q||[]);updateOfflineSyncBadge()}
+function pendingSyncCount(){return pendingQueue().length}
+function updateOfflineSyncBadge(){
+  const el=$('offlineSyncBadge');if(!el)return;
+  const n=pendingSyncCount(),online=navigator.onLine!==false;
+  el.classList.toggle('pending',n>0&&online);
+  el.classList.toggle('offline',!online);
+  if(!online)el.textContent='📴 Offline • Pending '+n;
+  else if(n>0)el.textContent='⏳ Pending Sync '+n;
+  else el.textContent='✅ Synced';
+}
+function pendingLocalRecords(){
+  const out={purchases:[],sales:[]};
+  for(const x of pendingQueue()){
+    if(x.type==='purchase'&&x.localRecord)out.purchases.push(x.localRecord);
+    if(x.type==='sale'&&Array.isArray(x.localRecords))out.sales.push(...x.localRecords);
+  }
+  return out;
+}
+function addPending(item){const q=pendingQueue();q.push(item);writePendingQueue(q);return item}
+function removePending(id){writePendingQueue(pendingQueue().filter(x=>x.id!==id))}
+async function syncPendingNow(){
+  if(syncRunning||!currentUser||navigator.onLine===false){updateOfflineSyncBadge();return false}
+  const q=pendingQueue();if(!q.length){updateOfflineSyncBadge();return true}
+  syncRunning=true;let changed=false;
+  try{
+    for(const item of q.slice()){
+      try{
+        if(item.type==='purchase'){
+          const payload={...(item.payload||{}),user_id:currentUser.id};
+          const r=await cloud.from('bbbm_purchases').insert(payload);
+          if(r.error)throw r.error;
+          removePending(item.id);changed=true;
+        }else if(item.type==='sale'){
+          let invoiceNo=Number(item.invoiceNo||0);
+          if(invoiceNo){
+            const chk=await cloud.from('bbbm_sales').select('invoice_no').eq('invoice_no',invoiceNo).limit(1);
+            if(!chk.error&&chk.data&&chk.data.length){removePending(item.id);changed=true;continue}
+          }else{
+            const inv=await cloud.rpc('next_bbbm_invoice_no');
+            if(inv.error)throw inv.error;invoiceNo=Number(inv.data);
+            if(!invoiceNo)throw new Error('Invoice number could not be generated');
+          }
+          const rows=(item.rows||[]).map(r=>({...r,user_id:currentUser.id,invoice_no:invoiceNo}));
+          const saved=await cloud.from('bbbm_sales').insert(rows);
+          if(saved.error)throw saved.error;
+          removePending(item.id);changed=true;
+        }
+      }catch(err){console.warn('Pending sync failed',item&&item.id,err);break}
+    }
+    if(changed){try{await loadCloudData()}catch(e){console.warn('Reload after sync failed',e)};try{render()}catch(e){}}
+    return pendingSyncCount()===0;
+  }finally{syncRunning=false;updateOfflineSyncBadge()}
+}
+window.__bbbmSyncPending=syncPendingNow;
+window.addEventListener('online',()=>{updateOfflineSyncBadge();setTimeout(syncPendingNow,300)});
+window.addEventListener('offline',updateOfflineSyncBadge);
+setTimeout(updateOfflineSyncBadge,0);
+
 function metaFor(code){return productMeta[String(code||'')]||{}}
 function saveMeta(code,data){code=String(code||'');if(!code)return;productMeta[code]={...metaFor(code),...data};safeSet(META,productMeta)}
 function unitFor(code){return metaFor(code).unit||'PCS'}
@@ -1769,7 +1841,11 @@ async function loadCloudData(){
       saveMeta(code,{sellPrice:latestPurchaseSell[code]});
     }
   });
-  safeSet(DB,db);
+  // Never let a cloud refresh erase unsynced local Sale/Purchase records.
+  const pendingLocal=pendingLocalRecords();
+  if(pendingLocal.purchases.length)db.purchases.push(...pendingLocal.purchases);
+  if(pendingLocal.sales.length)db.sales.push(...pendingLocal.sales);
+  safeSet(DB,db);updateOfflineSyncBadge();
 }
 async function ensureCloudUser(u){
   const email=await usernameEmail(u.username);
@@ -2243,10 +2319,19 @@ $('purchaseForm').onsubmit=async function(e){
  if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}
  saveMeta(code,sp==null?{unit,item}:{unit,item,sellPrice:sp});
  const btn=this.querySelector('[type=submit]');btn.disabled=true;
+ const payload={user_id:currentUser.id,item,barcode:code,qty:q,price:p,total:q*p,unit,selling_price:sp,purchase_date:$('pDate').value,by_name:currentUser.name};
  try{
-  const saved=await cloud.from('bbbm_purchases').insert({user_id:currentUser.id,item,barcode:code,qty:q,price:p,total:q*p,unit,selling_price:sp,purchase_date:$('pDate').value,by_name:currentUser.name});
-  if(saved.error)throw saved.error;await loadCloudData();this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();alert('Purchase saved to cloud. Barcode: '+code+' • Unit: '+unit);
- }catch(err){alert('Purchase could not be saved: '+(err.message||err))}finally{btn.disabled=false}
+  const saved=await cloud.from('bbbm_purchases').insert(payload);
+  if(saved.error)throw saved.error;
+  await loadCloudData();this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();
+  alert('Purchase saved to cloud. Barcode: '+code+' • Unit: '+unit);
+ }catch(err){
+  const localRecord={item,barcode:code,qty:q,price:p,total:q*p,date:$('pDate').value,by:currentUser.name,unit,sellingPrice:sp,_pending:true};
+  addPending({id:'PUR-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'purchase',createdAt:new Date().toISOString(),payload,localRecord});
+  db.purchases.push(localRecord);safeSet(DB,db);
+  this.reset();$('pDate').value=today();$('pUnit').value='PCS';render();
+  alert('📴 Network নেই/Cloud পাওয়া যাচ্ছে না। Purchase local-এ নিরাপদে save হয়েছে। Internet এলে auto sync হবে.');
+ }finally{btn.disabled=false;updateOfflineSyncBadge()}
 };
 
 
@@ -2673,11 +2758,12 @@ async function completeSale(printAfter){
  if(!pendingSale)return;
  let printWin=null;if(printAfter){printWin=window.open('','_blank','width=420,height=650');if(printWin)printWin.document.write('<p style="font-family:Arial;padding:20px">Preparing receipt...</p>')}
  const sale=pendingSale;$('salePrintBtn').disabled=true;$('saleNoPrintBtn').disabled=true;$('saleBackBtn').disabled=true;
+ let invoiceNo=0;
  try{
    const saleTime=new Date().toTimeString().slice(0,8);
    const inv=await cloud.rpc('next_bbbm_invoice_no');
    if(inv.error)throw new Error('Invoice number error: '+inv.error.message);
-   const invoiceNo=Number(inv.data);
+   invoiceNo=Number(inv.data);
    if(!invoiceNo)throw new Error('Invoice number could not be generated.');
    const rows=sale.items.map(x=>({
      user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
@@ -2688,13 +2774,28 @@ async function completeSale(printAfter){
    const saved=await cloud.from('bbbm_sales').insert(rows).select('bill_no,invoice_no,sale_time,barcode');
    if(saved.error)throw saved.error;
    const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
-   sale.billNo=invoiceNo;
-   sale.displayBill='BBBM-'+String(invoiceNo).padStart(6,'0');
+   sale.billNo=invoiceNo;sale.displayBill='BBBM-'+String(invoiceNo).padStart(6,'0');
    if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}
    await loadCloudData();resetSaleForm();render();
    alert(printAfter?'Sale saved. All items have one Bill No.':'Sale saved without print. All items have one Bill No.');
- }catch(err){if(printWin)printWin.close();alert('Sale could not be saved: '+(err.message||err))}
- finally{$('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false}
+ }catch(err){
+   const saleTime=new Date().toTimeString().slice(0,8);
+   const tempBill=invoiceNo||('OFF-'+Date.now());
+   const syncRows=sale.items.map(x=>({
+     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
+     payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
+     sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name
+   }));
+   const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.price,total:+x.total,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
+   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
+   addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
+   db.sales.push(...localRecords);safeSet(DB,db);
+   sale.saleTime=saleTime;sale.billNo=tempBill;sale.displayBill=invoiceNo?('BBBM-'+String(invoiceNo).padStart(6,'0')):('OFFLINE-'+String(tempBill).replace('OFF-',''));
+   if(printAfter&&printWin){printWin.document.open();printWin.document.write(receiptHtml(sale));printWin.document.close();printWin.focus();setTimeout(()=>printWin.print(),250)}else if(printWin){printWin.close()}
+   resetSaleForm();render();
+   alert('📴 Network নেই/Cloud পাওয়া যাচ্ছে না। Sale local-এ নিরাপদে save হয়েছে। Internet এলে auto sync হবে.');
+ }
+ finally{$('salePrintBtn').disabled=false;$('saleNoPrintBtn').disabled=false;$('saleBackBtn').disabled=false;updateOfflineSyncBadge()}
 }
 $('saleForm').onsubmit=function(e){e.preventDefault()};
 $('addSaleItemBtn').onclick=addCurrentItemToCart;
@@ -2986,8 +3087,8 @@ if($('billHistorySearchClear'))$('billHistorySearchClear').onclick=function(){
 
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
 document.querySelectorAll('.coming').forEach(b=>b.onclick=()=>alert('This feature will be added in the next update.'));
-document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await loadCloudData();render()}catch(e){}}});
-setInterval(async()=>{if(currentUser&&!document.hidden){try{await loadCloudData();render()}catch(e){}}},20000);
+document.addEventListener('visibilitychange',async()=>{if(!document.hidden&&currentUser){try{await syncPendingNow();await loadCloudData();render()}catch(e){updateOfflineSyncBadge()}}});
+setInterval(async()=>{if(currentUser&&!document.hidden){try{await syncPendingNow();await loadCloudData();render()}catch(e){updateOfflineSyncBadge()}}},20000);
 bootstrap();
 
 
@@ -4313,7 +4414,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v6.9';
+  const POS_VERSION='POS Safe v7.0';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
