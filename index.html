@@ -1074,7 +1074,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.8</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.9</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1401,8 +1401,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 </label>
                 <div class="full">
                   <button type="button" class="btn primary" id="checkoutSaleBtn">Continue to Complete Sale →</button>
+                  <button type="button" class="btn gray" id="customerDisplayConnectBtn" style="margin-left:8px">🔌 Connect Rear Display</button>
+                  <span id="customerDisplayStatus" class="muted" style="margin-left:8px;font-weight:800">Not connected</span>
                 </div>
-                <div class="full payment-help">সব item Bill-এ যোগ করার পর Payment Method select করে Continue চাপুন।</div>
+                <div class="full payment-help">সব item Bill-এ যোগ করার পর Payment Method select করে Continue চাপুন। Rear display connect থাকলে Continue চাপার পরই শুধু Final Total দেখাবে।</div>
               </form>
               <div id="saleCartBox" class="sale-cart">
                 <div class="sale-cart-head"><strong>🛒 Current Bill Items</strong><span id="saleCartCount">0 items</span></div>
@@ -1820,7 +1822,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.8: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.9: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2430,7 +2432,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.8: Opening Stock =====
+// ===== POS Safe v7.9: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2804,6 +2806,73 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
+// ===== POS Safe v7.9: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+let customerDisplayPort=null;
+let customerDisplayWriter=null;
+function setCustomerDisplayStatus(text,ok=false){
+ const el=$('customerDisplayStatus');if(!el)return;
+ el.textContent=text;el.style.color=ok?'#15803d':'#64748b';
+}
+async function openCustomerDisplayPort(port){
+ if(!port)throw new Error('No serial port selected');
+ if(!port.readable&&!port.writable){
+   await port.open({baudRate:2400,dataBits:8,stopBits:1,parity:'none',flowControl:'none'});
+ }
+ customerDisplayPort=port;
+ setCustomerDisplayStatus('✅ Rear Display Connected',true);
+ return port;
+}
+async function connectCustomerDisplay(){
+ if(!('serial' in navigator)){
+   alert('Rear display connection needs Google Chrome or Microsoft Edge with Web Serial support.');
+   return false;
+ }
+ try{
+   // User must choose Communications Port (COM2) in the browser chooser.
+   const port=await navigator.serial.requestPort();
+   await openCustomerDisplayPort(port);
+   return true;
+ }catch(err){
+   if(err&&err.name==='NotFoundError')setCustomerDisplayStatus('Not connected');
+   else{console.error('Rear display connect failed',err);setCustomerDisplayStatus('❌ Display connection failed');}
+   return false;
+ }
+}
+async function autoReconnectCustomerDisplay(){
+ if(!('serial' in navigator)||customerDisplayPort)return false;
+ try{
+   const ports=await navigator.serial.getPorts();
+   // If only one serial port has been granted to this site, it is the saved rear display permission.
+   if(ports.length===1){await openCustomerDisplayPort(ports[0]);return true;}
+ }catch(err){console.warn('Rear display auto reconnect skipped',err)}
+ return false;
+}
+async function showRearDisplayTotal(amount){
+ try{
+   if(!customerDisplayPort)await autoReconnectCustomerDisplay();
+   if(!customerDisplayPort||!customerDisplayPort.writable){
+     setCustomerDisplayStatus('⚠️ Connect Rear Display');
+     return false;
+   }
+   const value=Number(amount||0).toFixed(2);
+   // Working EZPOS 8-LED command confirmed on this machine: ESC Q A + ASCII amount + CR.
+   const prefix=[27,81,65], suffix=[13];
+   const ascii=Array.from(value).map(ch=>ch.charCodeAt(0));
+   const data=new Uint8Array([...prefix,...ascii,...suffix]);
+   const writer=customerDisplayPort.writable.getWriter();
+   customerDisplayWriter=writer;
+   try{await writer.write(data)}finally{writer.releaseLock();customerDisplayWriter=null}
+   setCustomerDisplayStatus('✅ Total: '+value,true);
+   return true;
+ }catch(err){
+   console.error('Rear display write failed',err);
+   setCustomerDisplayStatus('❌ Display write failed');
+   try{if(customerDisplayWriter)customerDisplayWriter.releaseLock()}catch(_e){}
+   customerDisplayWriter=null;customerDisplayPort=null;
+   return false;
+ }
+}
+
 let pendingSale=null, saleCart=[], editingCartIndex=null;
 function selectedPaymentMethod(){
  const el=document.querySelector('input[name="paymentMethod"]:checked');
@@ -2984,8 +3053,10 @@ async function completeSale(printAfter){
 }
 $('saleForm').onsubmit=function(e){e.preventDefault()};
 $('addSaleItemBtn').onclick=addCurrentItemToCart;
-$('checkoutSaleBtn').onclick=function(){
+$('checkoutSaleBtn').onclick=async function(){
  const sale=buildPendingSale();if(!sale)return;
+ // Only now, after all item/rate edits are final, send the confirmed Grand Total to the rear display.
+ await showRearDisplayTotal(sale.total);
  if(sale.paymentMethod==='Credit'){
    pendingSale=sale;$('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');$('creditCustomerBox').classList.remove('hidden');
    setTimeout(()=>$('creditName').focus(),50);return;
@@ -2995,6 +3066,10 @@ $('checkoutSaleBtn').onclick=function(){
 document.querySelectorAll('.pay-option').forEach(label=>{
  label.addEventListener('click',function(){const r=this.querySelector('input[name="paymentMethod"]');if(r)r.checked=true})
 });
+const customerDisplayConnectBtn=$('customerDisplayConnectBtn');
+if(customerDisplayConnectBtn)customerDisplayConnectBtn.onclick=connectCustomerDisplay;
+setTimeout(autoReconnectCustomerDisplay,700);
+if('serial' in navigator){navigator.serial.addEventListener('disconnect',()=>{customerDisplayPort=null;setCustomerDisplayStatus('Rear Display disconnected')})}
 $('creditBackBtn').onclick=function(){
  $('creditCustomerBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null;
 };
@@ -4656,7 +4731,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.8';
+  const POS_VERSION='POS Safe v7.9';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
