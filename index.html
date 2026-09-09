@@ -1041,7 +1041,7 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.2</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.3</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1758,7 +1758,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.2: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.3: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2971,14 +2971,15 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
        #barcodeDirectPrintArea{display:none}
        @media print{
          @page{size:50mm 25mm;margin:0}
-         body *{visibility:hidden!important}
-         #barcodeDirectPrintArea,#barcodeDirectPrintArea *{visibility:visible!important}
-         #barcodeDirectPrintArea{display:block!important;position:absolute;left:0;top:0;width:50mm;font-family:Arial,sans-serif}
-         .barcode-direct-label{width:50mm;height:25mm;padding:1mm 2mm;text-align:center;box-sizing:border-box;overflow:hidden;break-inside:avoid;page-break-inside:avoid;page-break-after:always}
-         .barcode-direct-shop{font-size:9px;font-weight:900;line-height:1;white-space:nowrap;margin-bottom:.35mm}
-         .barcode-direct-name{font-size:9px;font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.25mm}
-         .barcode-direct-price{font-size:12px;font-weight:900;line-height:1;margin-top:.25mm}
-         .barcode-direct-label svg{width:46mm!important;height:12mm!important;display:block;margin:0 auto}
+         html,body{margin:0!important;padding:0!important;width:50mm!important;min-width:50mm!important;background:#fff!important}
+         body > *:not(#barcodeDirectPrintArea){display:none!important}
+         #barcodeDirectPrintArea{display:block!important;position:static!important;width:50mm!important;margin:0!important;padding:0!important;font-family:Arial,sans-serif;background:#fff!important}
+         .barcode-direct-label{display:block!important;width:50mm!important;height:25mm!important;min-height:25mm!important;max-height:25mm!important;margin:0!important;padding:.8mm 2mm!important;text-align:center;box-sizing:border-box;overflow:hidden!important;break-inside:avoid!important;page-break-inside:avoid!important;break-after:page;page-break-after:always;background:#fff!important}
+         .barcode-direct-label:last-child{break-after:auto!important;page-break-after:auto!important}
+         .barcode-direct-shop{font-size:8.5px;font-weight:900;line-height:1;white-space:nowrap;margin:0 0 .25mm 0}
+         .barcode-direct-name{font-size:8.5px;font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 0 .15mm 0}
+         .barcode-direct-price{font-size:11px;font-weight:900;line-height:1;margin:.15mm 0 0 0}
+         .barcode-direct-label svg{width:46mm!important;height:12mm!important;display:block!important;margin:0 auto!important}
        }`;
      document.head.appendChild(st);
    }
@@ -4464,7 +4465,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.2';
+  const POS_VERSION='POS Safe v7.3';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
