@@ -1041,7 +1041,7 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.0</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.1</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1731,7 +1731,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.0: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.1: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2897,10 +2897,14 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
    for(let i=0;i<count;i++){
      const label=document.createElement('div');
      label.className='barcode-direct-label';
+     const shop=document.createElement('div');
+     shop.className='barcode-direct-shop';
+     shop.textContent='BHAI BHAI BUILDING MATERIALS';
      const name=document.createElement('div');
      name.className='barcode-direct-name';
      name.textContent=item;
      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+     label.appendChild(shop);
      label.appendChild(name);
      label.appendChild(svg);
      JsBarcode(svg,String(code),{format:'CODE128',displayValue:true,fontSize:11,height:42,margin:0});
@@ -2925,10 +2929,11 @@ if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
          body *{visibility:hidden!important}
          #barcodeDirectPrintArea,#barcodeDirectPrintArea *{visibility:visible!important}
          #barcodeDirectPrintArea{display:flex!important;position:absolute;left:0;top:0;width:100%;flex-wrap:wrap;gap:2mm;font-family:Arial,sans-serif}
-         .barcode-direct-label{width:48mm;min-height:25mm;padding:2mm;text-align:center;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
-         .barcode-direct-name{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-         .barcode-direct-price{font-size:11px;font-weight:800;margin-top:1mm}
-         .barcode-direct-label svg{width:100%;height:14mm}
+         .barcode-direct-label{width:48mm;min-height:25mm;padding:1.5mm 2mm;text-align:center;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+         .barcode-direct-shop{font-size:8px;font-weight:900;line-height:1.1;white-space:nowrap;margin-bottom:.5mm}
+         .barcode-direct-name{font-size:9px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.4mm}
+         .barcode-direct-price{font-size:11px;font-weight:800;margin-top:.6mm}
+         .barcode-direct-label svg{width:100%;height:13mm}
        }`;
      document.head.appendChild(st);
    }
@@ -4414,7 +4419,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.0';
+  const POS_VERSION='POS Safe v7.1';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
