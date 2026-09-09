@@ -971,6 +971,17 @@ body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;c
 #stockRows td:first-child,#stockRows+*{text-align:center}
 body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e7490;color:#cffafe}
 </style>
+
+<style id="barcode-side-keyboard-css">
+#barcode .form-card{position:relative!important;padding-right:330px!important;min-height:480px!important}
+#barcodeSideKeyboard{position:absolute;right:18px;top:18px;width:290px;background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 12px 35px rgba(15,23,42,.18);padding:12px;z-index:20}
+#barcodeSideKeyboard .bkb-head{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:8px}.bkb-head strong{font-size:13px}.bkb-modes{display:flex;gap:5px}.bkb-modes button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-weight:900;cursor:pointer}.bkb-modes button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+#barcodeKbDisplay{min-height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;padding:7px 9px;font-size:18px;font-weight:900;margin-bottom:8px;overflow:hidden;word-break:break-all}#barcodeKbDisplay small{display:block;font-size:10px;color:#64748b;font-weight:700}
+#barcodeKbKeys{display:grid;gap:5px}.barcode-kb-text{grid-template-columns:repeat(6,1fr)}.barcode-kb-num{grid-template-columns:repeat(3,1fr)}
+#barcodeKbKeys button{min-height:40px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;font-size:13px;font-weight:900;cursor:pointer}.barcode-kb-num button{min-height:50px;font-size:20px}.barcode-kb-clear{background:#fee2e2!important;color:#991b1b}.barcode-kb-ok{background:#1769e0!important;color:#fff!important;border-color:#1769e0!important}.barcode-kb-space{grid-column:span 3}
+#barcode input.barcode-kb-active{outline:3px solid #1769e0!important;outline-offset:1px!important}
+@media(max-width:900px){#barcode .form-card{padding-right:16px!important}#barcodeSideKeyboard{position:static;width:100%;margin-top:14px}}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -1074,7 +1085,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.10</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.11</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1712,6 +1723,11 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
       <label>Show Price<select id="bShowPrice"><option value="yes">Yes</option><option value="no">No</option></select></label>
       <div class="full"><button type="submit" class="btn primary">🖨️ Print Barcode</button></div>
     </form>
+    <div id="barcodeSideKeyboard">
+      <div class="bkb-head"><strong>⌨️ Barcode Keyboard</strong><div class="bkb-modes"><button type="button" id="barcodeKbABC" class="active">ABC</button><button type="button" id="barcodeKb123">123</button></div></div>
+      <div id="barcodeKbDisplay"><small>Tap Item, Barcode or Labels</small>—</div>
+      <div id="barcodeKbKeys" class="barcode-kb-text"></div>
+    </div>
   </div>
 </section>
 
@@ -1822,7 +1838,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.10: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.11: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2432,7 +2448,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.10: Opening Stock =====
+// ===== POS Safe v7.11: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2615,7 +2631,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   ${first.creditName?`<p>Customer: ${first.creditName}${first.creditPhone?' - '+first.creditPhone:''}</p>`:''}
   <p>Payment: ${first.paymentMethod||'Cash'}</p>
   <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${items}</tbody></table>
-  <div class="tot">Total: ${money(total)}</div></div></body></html>`;
+  <div class="tot">Total: ${money(total)}</div></div>\n\n</body></html>`;
   directPrintHtml(html);
 }
 (function bindBillSearch(){
@@ -2806,7 +2822,7 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.10: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.11: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -4737,7 +4753,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.10';
+  const POS_VERSION='POS Safe v7.11';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -4800,6 +4816,20 @@ body.bbbm-dark-mode #openingSetupPinBox{background:#0f172a;color:#fff}body.bbbm-
  }
  function init(){ensureBars();ensureModal();try{locked=localStorage.getItem(KEY)==='1'}catch(e){};apply();guard();['openingSetupLockBtn','accountOpeningLockBtn'].forEach(id=>{const b=el(id);if(b)b.onclick=open})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<script id="barcode-side-keyboard-js">
+(function(){
+ const $=id=>document.getElementById(id), targets=['bSearch','bCode','bCount']; let active=null,mode='text';
+ const box=$('barcodeKbKeys'),disp=$('barcodeKbDisplay'),abc=$('barcodeKbABC'),num=$('barcodeKb123'); if(!box)return;
+ function title(){return active?({bSearch:'Item Name',bCode:'Barcode',bCount:'Labels'}[active.id]||'Field'):'Tap Item, Barcode or Labels'}
+ function refresh(){disp.innerHTML='<small>'+title()+'</small>'+(active?(active.value||'—'):'—'); targets.forEach(id=>$(id)?.classList.toggle('barcode-kb-active',$(id)===active));}
+ function setMode(m){mode=m;abc.classList.toggle('active',m==='text');num.classList.toggle('active',m==='num');box.className=m==='text'?'barcode-kb-text':'barcode-kb-num';render();}
+ function key(label,val,cls=''){let b=document.createElement('button');b.type='button';b.textContent=label;b.className=cls;b.onclick=()=>press(val);box.appendChild(b)}
+ function render(){box.innerHTML='';if(mode==='num'){['1','2','3','4','5','6','7','8','9','C','0','⌫'].forEach(x=>key(x,x,x==='C'?'barcode-kb-clear':''));key('OK','OK','barcode-kb-ok')}else{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(x=>key(x,x));['-','/','.'].forEach(x=>key(x,x));key('SPACE',' ','barcode-kb-space');key('C','C','barcode-kb-clear');key('⌫','⌫');key('OK','OK','barcode-kb-ok')}}
+ function press(k){if(!active)return;if(k==='C')active.value='';else if(k==='⌫')active.value=active.value.slice(0,-1);else if(k==='OK'){active.dispatchEvent(new Event('change',{bubbles:true}));active.blur()}else active.value+=k;active.dispatchEvent(new Event('input',{bubbles:true}));refresh()}
+ targets.forEach(id=>{let el=$(id);if(!el)return;['focus','click'].forEach(ev=>el.addEventListener(ev,()=>{active=el;setMode(id==='bSearch'?'text':'num');refresh()}));el.addEventListener('input',refresh)});
+ abc.onclick=()=>setMode('text');num.onclick=()=>setMode('num');render();refresh();
 })();
 </script>
 </body>
