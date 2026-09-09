@@ -930,6 +930,8 @@ body.bbbm-dark-mode .pr-lock-badge{background:#431407;border-color:#7c2d12;color
 body.bbbm-dark-mode .pos-update-btn{
   background:#0f766e!important;color:#fff!important;border-color:#0f766e!important;
 }
+.pos-version-badge{display:inline-flex;align-items:center;min-height:36px;padding:7px 11px;border-radius:8px;background:#e0f2fe;border:1px solid #7dd3fc;color:#075985;font-size:11px;font-weight:900;white-space:nowrap}
+body.bbbm-dark-mode .pos-version-badge{background:#0c4a6e;border-color:#0369a1;color:#e0f2fe}
 </style>
 
 </head>
@@ -1033,8 +1035,8 @@ body.bbbm-dark-mode .pos-update-btn{
               </div>
 
             <div class="dashboard-privacy-bar">
-  <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">⬆️ POS Update</button>
-  <input type="file" id="posUpdateFile" accept=".html,text/html" style="display:none">
+  <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v6.9</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
   <span id="dashPrivacyHint">Dashboard values hidden</span>
@@ -4311,55 +4313,20 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
+  const POS_VERSION='POS Safe v6.9';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
-    const input=document.getElementById('posUpdateFile');
-    if(!btn||!input)return;
-
+    const badge=document.getElementById('posVersionBadge');
+    if(badge) badge.textContent=POS_VERSION;
+    if(!btn)return;
     btn.addEventListener('click',function(){
-      input.value='';
-      input.click();
-    });
-
-    input.addEventListener('change',function(){
-      const file=input.files&&input.files[0];
-      if(!file)return;
-
-      if(!/\.html?$/i.test(file.name)){
-        alert('Please select the new Bhai Bhai POS HTML file.');
-        return;
-      }
-
-      const reader=new FileReader();
-      reader.onload=function(e){
-        const html=String(e.target.result||'');
-        if(!/<html[\s>]/i.test(html) || !/Bhai Bhai/i.test(html)){
-          alert('এটি Bhai Bhai POS HTML file মনে হচ্ছে না।');
-          return;
-        }
-
-        if(!confirm('নতুন POS version এখন এই একই page-এ চালু করবেন?')) return;
-
-        try{
-          document.open('text/html','replace');
-          document.write(html);
-          document.close();
-        }catch(err){
-          alert('POS Update করা যায়নি: '+err.message);
-        }
-      };
-      reader.onerror=function(){
-        alert('Update file read করা যায়নি।');
-      };
-      reader.readAsText(file);
+      btn.disabled=true;
+      btn.textContent='🔄 Reloading...';
+      setTimeout(function(){ window.location.reload(); },120);
     });
   }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',initPosUpdate);
-  }else{
-    initPosUpdate();
-  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initPosUpdate);
+  else initPosUpdate();
 })();
 </script>
 
