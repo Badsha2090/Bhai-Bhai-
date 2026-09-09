@@ -1074,7 +1074,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.7</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.8</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1820,7 +1820,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.7: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.8: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2430,7 +2430,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.7: Opening Stock =====
+// ===== POS Safe v7.8: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -4656,7 +4656,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.7';
+  const POS_VERSION='POS Safe v7.8';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -4673,5 +4673,53 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 })();
 </script>
 
+<style id="opening-setup-lock-css">
+.opening-lock-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:13px 15px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb}
+.opening-lock-copy b{display:block;font-size:14px}.opening-lock-copy span{display:block;margin-top:3px;font-size:10px;color:#64748b}
+.opening-lock-btn{background:#b45309;color:#fff}.opening-lock-btn.unlocked{background:#15803d}
+.opening-setup-locked #openingStockForm input,.opening-setup-locked #openingStockForm select,.opening-setup-locked #openingStockForm button,.opening-cash-locked #accOpeningCashInput,.opening-cash-locked #accSaveOpeningCash{pointer-events:none!important;opacity:.55!important}
+#openingSetupPinModal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2147483647;display:none;align-items:center;justify-content:center;padding:12px}
+#openingSetupPinBox{width:min(330px,96vw);background:#fff;border-radius:16px;padding:16px;box-shadow:0 22px 60px rgba(0,0,0,.35)}
+#openingSetupPinBox h3{margin:0 0 4px}#openingSetupPinBox p{font-size:11px;color:#64748b;margin:0 0 10px}
+#openingSetupPinDisplay{height:48px;border:2px solid #94a3b8;border-radius:10px;background:#f8fafc;text-align:center;font-size:26px;font-weight:900;letter-spacing:8px;padding:7px;margin-bottom:8px}
+.opening-pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.opening-pin-grid button{min-height:50px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;font-size:20px;font-weight:900}.opening-pin-grid .clear{background:#fee2e2;color:#991b1b}.opening-pin-grid .ok{background:#1769e0;color:#fff;grid-column:span 2}
+#openingSetupPinMsg{min-height:20px;color:#b91c1c;font-size:11px;font-weight:800;margin-top:7px}.opening-pin-cancel{width:100%;margin-top:8px}
+body.bbbm-dark-mode #openingSetupPinBox{background:#0f172a;color:#fff}body.bbbm-dark-mode .opening-lock-bar{background:#292313;border-color:#a16207;color:#fff}
+</style>
+<script id="opening-setup-lock-js">
+(function(){
+ const KEY='bbbm_opening_setup_locked_v1', PIN='3698';
+ let locked=false, pin='', action='lock';
+ function el(id){return document.getElementById(id)}
+ function ensureBars(){
+  const os=el('openingstock'); if(os&&!el('openingSetupLockBar')){
+   const bar=document.createElement('div');bar.id='openingSetupLockBar';bar.className='opening-lock-bar';bar.innerHTML='<div class="opening-lock-copy"><b id="openingLockTitle">🔓 Opening Setup Active</b><span id="openingLockText">Opening Stock ও Opening Cash দেওয়া শেষ হলে Finish করুন।</span></div><button type="button" class="btn opening-lock-btn unlocked" id="openingSetupLockBtn">🔒 Finish Opening Setup</button>';
+   const heading=os.querySelector('.section-heading'); if(heading)heading.insertAdjacentElement('afterend',bar);
+  }
+  const acc=el('accounts'); if(acc&&!el('accountOpeningLockBar')){
+   const form=el('accOpeningCashInput')?.closest('.card'); if(form){const bar=document.createElement('div');bar.id='accountOpeningLockBar';bar.className='opening-lock-bar';bar.innerHTML='<div class="opening-lock-copy"><b id="accountOpeningLockTitle">🔓 Opening Cash Active</b><span id="accountOpeningLockText">Opening Setup শেষ হলে এটি একই সাথে lock হবে।</span></div><button type="button" class="btn opening-lock-btn unlocked" id="accountOpeningLockBtn">🔒 Finish Opening Setup</button>';form.insertAdjacentElement('beforebegin',bar)}
+  }
+ }
+ function ensureModal(){if(el('openingSetupPinModal'))return;const m=document.createElement('div');m.id='openingSetupPinModal';m.innerHTML='<div id="openingSetupPinBox"><h3 id="openingSetupPinTitle">🔐 Finish Opening Setup</h3><p>Admin PIN 3698 দিন</p><div id="openingSetupPinDisplay">••••</div><div class="opening-pin-grid"><button data-opin="1">1</button><button data-opin="2">2</button><button data-opin="3">3</button><button data-opin="4">4</button><button data-opin="5">5</button><button data-opin="6">6</button><button data-opin="7">7</button><button data-opin="8">8</button><button data-opin="9">9</button><button class="clear" data-opin="clear">C</button><button data-opin="0">0</button><button data-opin="back">⌫</button><button class="ok" data-opin="ok">OK</button></div><div id="openingSetupPinMsg"></div><button type="button" class="btn gray opening-pin-cancel" id="openingSetupPinCancel">Cancel</button></div>';document.body.appendChild(m);
+  m.querySelectorAll('[data-opin]').forEach(b=>b.onclick=()=>key(b.dataset.opin));el('openingSetupPinCancel').onclick=close;m.onclick=e=>{if(e.target===m)close()};
+ }
+ function updateDisplay(){el('openingSetupPinDisplay').textContent=pin?'•'.repeat(pin.length):'••••'}
+ function key(k){if(k==='clear')pin='';else if(k==='back')pin=pin.slice(0,-1);else if(k==='ok')verify();else if(pin.length<4)pin+=k;updateDisplay();if(pin.length===4&&k!=='ok')setTimeout(verify,80)}
+ function open(){action=locked?'unlock':'lock';pin='';el('openingSetupPinMsg').textContent='';el('openingSetupPinTitle').textContent=locked?'🔓 Unlock Opening Setup':'🔐 Finish Opening Setup';updateDisplay();el('openingSetupPinModal').style.display='flex'}
+ function close(){el('openingSetupPinModal').style.display='none';pin=''}
+ function verify(){if(pin!==PIN){el('openingSetupPinMsg').textContent='❌ Wrong PIN';pin='';updateDisplay();return}setLocked(action==='lock');close();alert(locked?'🔒 Opening Stock + Opening Cash locked.':'🔓 Opening Setup unlocked. You can edit/add again.')}
+ function setLocked(v){locked=!!v;try{localStorage.setItem(KEY,locked?'1':'0')}catch(e){};apply()}
+ function apply(){
+  const os=el('openingstock'),acc=el('accounts');if(os)os.classList.toggle('opening-setup-locked',locked);if(acc)acc.classList.toggle('opening-cash-locked',locked);
+  [['openingLockTitle','openingLockText','openingSetupLockBtn'],['accountOpeningLockTitle','accountOpeningLockText','accountOpeningLockBtn']].forEach(ids=>{const t=el(ids[0]),x=el(ids[1]),b=el(ids[2]);if(t)t.textContent=locked?'🔒 Opening Setup Finished':'🔓 Opening Setup Active';if(x)x.textContent=locked?'Opening Stock ও Opening Cash PIN ছাড়া পরিবর্তন করা যাবে না।':'Opening Stock ও Opening Cash দেওয়া শেষ হলে Finish করুন।';if(b){b.textContent=locked?'🔓 Unlock with PIN':'🔒 Finish Opening Setup';b.classList.toggle('unlocked',!locked)}});
+ }
+ function guard(){
+  const f=el('openingStockForm');if(f)f.addEventListener('submit',e=>{if(locked){e.preventDefault();e.stopImmediatePropagation();alert('🔒 Opening Setup locked. 3698 দিয়ে Unlock করুন।')}},true);
+  const c=el('accSaveOpeningCash');if(c)c.addEventListener('click',e=>{if(locked){e.preventDefault();e.stopImmediatePropagation();alert('🔒 Opening Cash locked. 3698 দিয়ে Unlock করুন।')}},true);
+ }
+ function init(){ensureBars();ensureModal();try{locked=localStorage.getItem(KEY)==='1'}catch(e){};apply();guard();['openingSetupLockBtn','accountOpeningLockBtn'].forEach(id=>{const b=el(id);if(b)b.onclick=open})}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
 </body>
 </html>
