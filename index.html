@@ -1085,7 +1085,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.11</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.12</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1838,7 +1838,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.11: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.12: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2448,7 +2448,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.11: Opening Stock =====
+// ===== POS Safe v7.12: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2822,7 +2822,7 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.11: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.12: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3879,7 +3879,12 @@ window.addEventListener('DOMContentLoaded', function(){
   const cats=[
     ['রড',/rod|rebar|steel bar|রড/i],
     ['পাইপ',/pipe|pvc|gi pipe|পাইপ/i],
-    ['রশি\/তার',/rope|wire|cable|রশি|দড়ি|তার/i],
+    ['পেরেক',/nail|perak|perek|পেরেক/i],
+    ['তার',/wire|cable|তার/i],
+    ['নাট-বোল্ট',/nut[ -]?bolt|nut|bolt|নাট|বোল্ট/i],
+    ['জিআই তার',/gi[ -]?wire|g\.i\.?[ -]?wire|জিআই[ -]?তার|জি আই[ -]?তার/i],
+    ['ব্র্যাকেট',/bracket|braket|ব্র্যাকেট/i],
+    ['রশি',/rope|রশি|দড়ি/i],
     ['প্লাস্টিক',/plastic|polythene|প্লাস্টিক|পলিথিন/i],
     ['শিট\/জালি',/sheet|mesh|net|jali|শিট|জালি/i],
     ['সিমেন্ট',/cement|সিমেন্ট/i],
@@ -3916,7 +3921,7 @@ window.addEventListener('DOMContentLoaded', function(){
       rows=rows.filter(x=>{
         const n=String(x.item||'');
         const categoryOK=active==='অন্যান্য'
-          ? !cats.slice(0,5).some(c=>c[1].test(n))
+          ? !cats.slice(0,-1).some(c=>c[1].test(n))
           : rx.test(n);
         return categoryOK && (!q || n.toLowerCase().includes(q) || String(x.barcode).toLowerCase().includes(q));
       });
@@ -4753,7 +4758,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.11';
+  const POS_VERSION='POS Safe v7.12';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
