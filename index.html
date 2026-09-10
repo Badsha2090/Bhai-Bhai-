@@ -380,6 +380,19 @@ section#sales label, section#pos label{
 </style>
 
 
+
+<style id="bbbm-pipe-type-size-css">
+.bbbm-pipe-title{display:none;font-size:11px;color:#64748b;margin:5px 0;font-weight:800}
+.bbbm-pipe-title.show{display:block}
+.bbbm-pipe-types,.bbbm-pipe-sizes{display:none;gap:7px;margin:7px 0;padding:8px;border:1px solid #dbe4ee;border-radius:9px;background:#f8fbff}
+.bbbm-pipe-types{grid-template-columns:repeat(4,minmax(0,1fr))}
+.bbbm-pipe-sizes{grid-template-columns:repeat(4,minmax(0,1fr));background:#fff}
+.bbbm-pipe-types.open,.bbbm-pipe-sizes.open{display:grid}
+.bbbm-pipe-types button,.bbbm-pipe-sizes button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:39px;padding:7px 5px;font-size:11px;font-weight:900;cursor:pointer}
+.bbbm-pipe-types button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+@media(max-width:520px){.bbbm-pipe-types,.bbbm-pipe-sizes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
 <style id="purchase-side-pad-css">
 #purchase .form-card{position:relative!important;padding-right:315px!important;min-height:500px!important}
 #purchase input,#purchase select{min-height:36px!important;height:36px!important;padding:6px 9px!important;font-size:14px!important}
@@ -1085,7 +1098,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.12</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.13</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1838,7 +1851,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.12: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.13: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2448,7 +2461,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.12: Opening Stock =====
+// ===== POS Safe v7.13: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2822,7 +2835,7 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.12: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.13: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -4297,6 +4310,117 @@ window.addEventListener('DOMContentLoaded', function(){
 </script>
 
 
+
+<script id="bbbm-pipe-type-size-js">
+(function(){
+  const TYPES=['PVC/uPVC','PPR','HDPE','GI','MS','CPVC','Conduit'];
+  const SIZES=['1/2','3/4','1','1-1/4','1-1/2','2','3','4'];
+  const $=id=>document.getElementById(id);
+  function norm(v){return String(v||'').toLowerCase().replace(/\s+/g,' ').trim()}
+  function typeMatch(item,type){
+    const s=norm(item);
+    if(type==='PVC/uPVC') return /(^|[^a-z])(upvc|u-pvc|pvc)([^a-z]|$)/i.test(s) && !/cpvc/i.test(s);
+    if(type==='PPR') return /(^|[^a-z])ppr([^a-z]|$)/i.test(s);
+    if(type==='HDPE') return /(^|[^a-z])hdpe([^a-z]|$)/i.test(s);
+    if(type==='GI') return /(^|[^a-z])g\.?\s*i\.?([^a-z]|$)|galvanized\s*iron/i.test(s);
+    if(type==='MS') return /(^|[^a-z])m\.?\s*s\.?([^a-z]|$)|mild\s*steel/i.test(s);
+    if(type==='CPVC') return /(^|[^a-z])cpvc([^a-z]|$)/i.test(s);
+    if(type==='Conduit') return /conduit|electrical\s*pipe/i.test(s);
+    return false;
+  }
+  function sizeMatch(item,size){
+    const s=String(item||'').toLowerCase();
+    const esc=size.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&');
+    const compact=s.replace(/\s+/g,'');
+    const variants=[size+'"',size+'in',size+'inch',size+'inches'].map(x=>x.replace(/\s+/g,''));
+    if(variants.some(v=>compact.includes(v))) return true;
+    // Accept bare fractional/inch number when separated from other digits.
+    return new RegExp('(^|[^0-9])'+esc.replace(/-/g,'[- ]?')+'\\s*(?:"|in|inch|inches)?([^0-9]|$)','i').test(s);
+  }
+  function findPipe(type,size,saleOnly){
+    let map={}; try{map=stockMap()||{}}catch(e){}
+    let rows=Object.values(map).filter(x=>x&&typeMatch(x.item,type)&&sizeMatch(x.item,size));
+    if(saleOnly) rows=rows.filter(x=>Number(x.current||0)>0);
+    rows.sort((a,b)=>Number(b.current||0)-Number(a.current||0));
+    return rows[0]||null;
+  }
+  function itemName(type,size){return type+' Pipe '+size+' inch'}
+  function prepare(mode,type,size,panel){
+    const x=findPipe(type,size,mode==='sale');
+    const name=itemName(type,size);
+    if(mode==='sale'){
+      if(!x){alert(name+' বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');return}
+      $('sBarcode').value=x.barcode||'';
+      if(typeof fillSaleFromBarcode==='function') fillSaleFromBarcode();
+      $('sQty').value='1';
+      if(typeof calcS==='function') calcS();
+      setTimeout(()=>$('sQty')&&$('sQty').focus(),30);
+    }else{
+      if(x){
+        $('pBarcode').value=x.barcode||'';
+        if(typeof fillPurchaseFromBarcode==='function') fillPurchaseFromBarcode();
+        $('pItem').value=x.item||name;
+        $('pUnit').value=x.unit||'PCS';
+      }else{
+        $('pBarcode').value='';
+        $('pItem').value=name;
+        $('pUnit').value='PCS';
+        $('pQty').value='1';
+        if($('pPrice')) $('pPrice').value='';
+        if($('pSellPrice')) $('pSellPrice').value='';
+        if($('pTotal')) $('pTotal').value='0.00';
+      }
+      setTimeout(()=>$('pQty')&&$('pQty').focus(),30);
+    }
+    panel.classList.remove('open');
+  }
+  function enhance(panel){
+    if(!panel||panel.dataset.pipeReady==='1') return;
+    const cats=panel.querySelector('.bbbm-nb-cats'); if(!cats)return;
+    const pipeBtn=[...cats.querySelectorAll('.bbbm-nb-cat')].find(b=>b.textContent.trim()==='পাইপ');
+    if(!pipeBtn)return;
+    panel.dataset.pipeReady='1';
+    const mode=panel.closest('#purchase')?'purchase':'sale';
+    const typeTitle=document.createElement('div'); typeTitle.className='bbbm-pipe-title'; typeTitle.textContent='পাইপের ধরন নির্বাচন করুন';
+    const typeBox=document.createElement('div'); typeBox.className='bbbm-pipe-types';
+    const sizeTitle=document.createElement('div'); sizeTitle.className='bbbm-pipe-title'; sizeTitle.textContent='পাইপের সাইজ নির্বাচন করুন';
+    const sizeBox=document.createElement('div'); sizeBox.className='bbbm-pipe-sizes';
+    let selectedType='';
+    TYPES.forEach(type=>{
+      const b=document.createElement('button'); b.type='button'; b.textContent=type;
+      b.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation(); selectedType=type;
+        typeBox.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+        sizeTitle.classList.add('show'); sizeBox.classList.add('open');
+      });
+      typeBox.appendChild(b);
+    });
+    SIZES.forEach(size=>{
+      const b=document.createElement('button'); b.type='button'; b.textContent=size+'"';
+      b.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation();
+        if(!selectedType){alert('আগে পাইপের ধরন নির্বাচন করুন।');return}
+        prepare(mode,selectedType,size,panel);
+      });
+      sizeBox.appendChild(b);
+    });
+    cats.insertAdjacentElement('afterend',typeTitle);
+    typeTitle.insertAdjacentElement('afterend',typeBox);
+    typeBox.insertAdjacentElement('afterend',sizeTitle);
+    sizeTitle.insertAdjacentElement('afterend',sizeBox);
+    function sync(){
+      const a=cats.querySelector('.bbbm-nb-cat.active');
+      const show=!!a&&a.textContent.trim()==='পাইপ';
+      typeTitle.classList.toggle('show',show); typeBox.classList.toggle('open',show);
+      if(!show){selectedType='';typeBox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));sizeTitle.classList.remove('show');sizeBox.classList.remove('open')}
+    }
+    cats.querySelectorAll('.bbbm-nb-cat').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,0)));
+    setTimeout(sync,0);
+  }
+  function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(init,140)); else setTimeout(init,140);
+})();
+</script>\n
 <script id="purchase-side-pad-js">
 (function(){
  const pad=document.getElementById('purchaseSidePad'),display=document.getElementById('purchasePadDisplay');
@@ -4758,7 +4882,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.12';
+  const POS_VERSION='POS Safe v7.13';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
