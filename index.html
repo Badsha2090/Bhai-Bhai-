@@ -1156,7 +1156,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.22</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.23</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1745,7 +1745,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 <div class="card settings-card"><h3>⌨️ Keyboard Settings</h3><label class="check"><input id="setSaleKeypad" type="checkbox"> Sale keypad</label><label class="check"><input id="setPurchaseKeypad" type="checkbox"> Purchase keypad</label><label class="check"><input id="setCreditKeyboard" type="checkbox"> Credit customer keyboard</label><label>Size<select id="setKeyboardSize"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label><button type="button" class="btn primary set-save" data-save="keyboard">Save</button></div>
 <div class="card settings-card"><h3>💾 Backup & Restore</h3><label class="check"><input id="setAutoBackup" type="checkbox"> Automatic backup preference</label><div class="set-actions"><button type="button" class="btn primary" id="settingsBackupNow">Backup Now</button><button type="button" class="btn gray" id="settingsOpenBackup">Backup & Sync</button></div><p class="set-note">Last backup: <b id="settingsLastBackup">—</b></p></div>
 <div class="card settings-card"><h3>🖨️ Printer Settings</h3><label>Bill Printer<input id="setBillPrinter"></label><label>Barcode Printer<input id="setBarcodePrinter"></label><label>Receipt Copies<input id="setReceiptCopies" type="number" min="1" max="5"></label><label class="check"><input id="setAutoPrint" type="checkbox"> Auto print after sale</label><button type="button" class="btn primary set-save" data-save="printer">Save</button></div>
-<div class="card settings-card"><h3>💵 Cash Drawer</h3><p class="set-note">Printer Drawer Port mode — COM1/COM2 ব্যবহার করবে না। Cash sale হলে drawer trigger হবে; Credit / bKash / Nagad / Rocket হলে হবে না। Receipt printer driver-এ Cash Drawer / Drawer Kick enabled থাকতে হবে।</p><p class="set-note">Status: <b id="cashDrawerStatus">Printer drawer mode</b></p></div>
+<div class="card settings-card"><h3>💵 Cash Drawer</h3><p class="set-note">Cash + Print: POS-80C printer driver drawer kick ব্যবহার করবে। Cash + Without Print: Bhai Bhai Windows Drawer Helper দিয়ে শুধু drawer খুলবে, কোনো bill/paper print হবে না। Credit / bKash / Nagad / Rocket-এ drawer খুলবে না। COM1/COM2 ব্যবহার করবে না।</p><div class="set-actions"><button type="button" class="btn gray" id="cashDrawerHelperTest">Test Without Print Drawer</button></div><p class="set-note">Status: <b id="cashDrawerStatus">Checking Windows helper…</b></p></div>
 <div class="card settings-card"><h3>🛠️ System Settings</h3><label>Currency<select id="setCurrency"><option value="৳">৳ BDT</option><option value="AED">AED</option></select></label><label>Date Format<select id="setDateFormat"><option>DD-MM-YYYY</option><option>YYYY-MM-DD</option></select></label><label class="check"><input id="setConfirmDelete" type="checkbox"> Confirm before delete</label><label class="check"><input id="setConfirmReturn" type="checkbox"> Confirm before return</label><button type="button" class="btn primary set-save" data-save="system">Save</button></div>
 
 <div class="card settings-card demo-reset-card">
@@ -1917,7 +1917,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.22: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.23: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2527,7 +2527,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.22: Opening Stock =====
+// ===== POS Safe v7.23: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2901,7 +2901,7 @@ $('returnForm').onsubmit=async function(e){
  if(r.error){alert(r.error.message);return}await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.22: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.23: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -2975,26 +2975,56 @@ async function showRearDisplayTotal(amount){
 }
 
 
-// ===== v7.22 Cash drawer: receipt-printer mode (NO COM/Serial) =====
-// IMPORTANT: COM2 is reserved for the rear customer display and is never requested here.
-// A normal browser cannot send raw ESC/POS bytes to a USB Windows printer. The actual
-// drawer pulse is therefore supplied by the receipt-printer driver (Drawer Kick setting).
+// ===== v7.23 Cash drawer: printer driver + Windows helper (NO COM/Serial) =====
+// COM2 remains reserved for the rear customer display.
+// Cash + Print: Windows POS-80C driver opens drawer after print.
+// Cash + Without Print: local helper sends ESC/POS drawer pulse without printing paper.
+const CASH_DRAWER_HELPER_URL='http://127.0.0.1:8765';
 function setCashDrawerStatus(text,ok=false){
  const el=$('cashDrawerStatus');if(!el)return;
- el.textContent=text;el.style.color=ok?'#15803d':'#64748b';
+ el.textContent=text;el.style.color=ok?'#15803d':'#b45309';
 }
 function isCashPayment(method){return String(method||'').trim().toLowerCase()==='cash'}
-async function prepareCashDrawerForSale(){
- // Never request a serial port. This prevents accidental selection of rear display COM2.
- return true;
+async function drawerHelperRequest(path,timeoutMs=1800){
+ const ctl=new AbortController();
+ const timer=setTimeout(()=>ctl.abort(),timeoutMs);
+ try{
+   const r=await fetch(CASH_DRAWER_HELPER_URL+path,{method:path==='/open'?'POST':'GET',mode:'cors',cache:'no-store',signal:ctl.signal});
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   return await r.text();
+ }finally{clearTimeout(timer)}
 }
-async function kickCashDrawer(paymentMethod){
- // Payment gate only. For Cash + Print the Windows receipt-printer driver opens the drawer.
- // Non-cash payments intentionally do nothing.
+async function prepareCashDrawerForSale(){return true}
+async function kickCashDrawer(paymentMethod,printAfter=false){
  if(!isCashPayment(paymentMethod))return true;
- setCashDrawerStatus('Cash sale • printer drawer trigger enabled',true);
- return true;
+ if(printAfter){
+   setCashDrawerStatus('Cash + Print • POS-80C driver will open drawer',true);
+   return true;
+ }
+ try{
+   await drawerHelperRequest('/open',2200);
+   setCashDrawerStatus('Cash + Without Print • drawer opened',true);
+   return true;
+ }catch(err){
+   console.error('Cash drawer helper failed',err);
+   setCashDrawerStatus('Windows Drawer Helper not running — run INSTALL_AND_START_DRAWER_HELPER.bat',false);
+   return false;
+ }
 }
+async function checkCashDrawerHelper(){
+ try{await drawerHelperRequest('/health',1200);setCashDrawerStatus('Windows Drawer Helper connected',true);return true}
+ catch(e){setCashDrawerStatus('Windows Drawer Helper not running',false);return false}
+}
+setTimeout(checkCashDrawerHelper,900);
+setTimeout(()=>{
+ const b=$('cashDrawerHelperTest');
+ if(b)b.onclick=async()=>{
+   b.disabled=true;
+   try{await drawerHelperRequest('/open',2200);setCashDrawerStatus('Test successful • drawer opened',true)}
+   catch(e){setCashDrawerStatus('Test failed • start Windows Drawer Helper',false);alert('Drawer Helper চলছে না। INSTALL_AND_START_DRAWER_HELPER.bat একবার চালান।')}
+   finally{b.disabled=false}
+ };
+},700);
 
 let pendingSale=null, saleCart=[], editingCartIndex=null;
 function selectedPaymentMethod(){
@@ -3152,7 +3182,7 @@ async function completeSale(printAfter){
    if(saved.error)throw saved.error;
    const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
    sale.billNo=invoiceNo;sale.displayBill='BBBM-'+String(invoiceNo).padStart(6,'0');
-   if(String(sale.paymentMethod||'').toLowerCase()==='cash')await kickCashDrawer(sale.paymentMethod,false);
+   if(String(sale.paymentMethod||'').toLowerCase()==='cash')await kickCashDrawer(sale.paymentMethod,printAfter);
    if(printAfter)directPrintHtml(receiptHtml(sale));
    await loadCloudData();resetSaleForm();render();
    alert(printAfter?'Sale saved. All items have one Bill No.':'Sale saved without print. All items have one Bill No.');
@@ -3169,7 +3199,7 @@ async function completeSale(printAfter){
    addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
    db.sales.push(...localRecords);safeSet(DB,db);
    sale.saleTime=saleTime;sale.billNo=tempBill;sale.displayBill=invoiceNo?('BBBM-'+String(invoiceNo).padStart(6,'0')):('OFFLINE-'+String(tempBill).replace('OFF-',''));
-   if(String(sale.paymentMethod||'').toLowerCase()==='cash')await kickCashDrawer(sale.paymentMethod,false);
+   if(String(sale.paymentMethod||'').toLowerCase()==='cash')await kickCashDrawer(sale.paymentMethod,printAfter);
    if(printAfter)directPrintHtml(receiptHtml(sale));
    resetSaleForm();render();
    alert('📴 Network নেই/Cloud পাওয়া যাচ্ছে না। Sale local-এ নিরাপদে save হয়েছে। Internet এলে auto sync হবে.');
@@ -5014,7 +5044,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.22';
+  const POS_VERSION='POS Safe v7.23';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
