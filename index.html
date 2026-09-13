@@ -1156,7 +1156,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.24</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.25</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1573,6 +1573,22 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
             </div>
           </section>
 
+<style id="sale-return-bills-keyboard-css">
+#returns .form-card{position:relative;padding-right:315px;min-height:430px}
+.return-recent-card{margin-top:14px;overflow:hidden}
+.return-bill-list{display:flex;flex-direction:column;gap:8px;padding:12px}
+.return-bill-row{display:grid;grid-template-columns:minmax(120px,.9fr) minmax(150px,1.2fr) minmax(110px,.8fr) auto;gap:10px;align-items:center;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;background:#fff;cursor:pointer;text-align:left}
+.return-bill-row:hover{background:#f8fbff;border-color:#93c5fd}
+.return-bill-row .rb-no{font-weight:900;font-size:13px;color:#0f4f8a}.return-bill-row .rb-meta{font-size:10px;color:#64748b;margin-top:2px}.return-bill-row .rb-pay{font-size:11px;font-weight:800}.return-bill-row .rb-total{font-weight:900;text-align:right;white-space:nowrap}.return-bill-row.all-returned{opacity:.55}.return-bill-row .rb-status{display:block;font-size:9px;color:#0f766e;margin-top:2px}.return-bill-row.all-returned .rb-status{color:#991b1b}
+.return-list-empty{padding:18px;text-align:center;color:#64748b;font-size:12px}
+#returnSideKeyboard{position:absolute;right:18px;top:74px;width:275px;background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 12px 35px rgba(15,23,42,.16);padding:12px;z-index:20}
+.rkb-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.rkb-head strong{font-size:13px}.rkb-modes{display:flex;gap:5px}.rkb-modes button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:900;cursor:pointer}.rkb-modes button.active{background:#1769e0;color:#fff;border-color:#1769e0}
+#returnKbDisplay{min-height:43px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;padding:7px 9px;text-align:right;font-size:18px;font-weight:900;margin-bottom:8px;overflow:hidden}#returnKbDisplay small{display:block;font-size:9px;color:#64748b;text-align:left;font-weight:700}
+.return-kb-grid{display:grid;gap:6px}.return-kb-grid.num{grid-template-columns:repeat(3,1fr)}.return-kb-grid.abc{grid-template-columns:repeat(6,1fr)}.return-kb-grid button{min-height:40px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;font-size:15px;font-weight:900;cursor:pointer}.return-kb-grid.num button{min-height:48px;font-size:19px}.return-kb-grid .rkb-clear{background:#fee2e2;color:#991b1b}.return-kb-grid .rkb-ok{background:#1769e0;color:#fff;border-color:#1769e0}.return-kb-grid .wide2{grid-column:span 2}.return-kb-grid .wide3{grid-column:span 3}
+#returns input.rkb-active{outline:3px solid #1769e0!important;outline-offset:1px!important}
+@media(max-width:900px){#returns .form-card{padding-right:16px;min-height:0}#returnSideKeyboard{position:static;width:100%;margin-top:14px}.return-bill-row{grid-template-columns:1fr auto}.return-bill-row .rb-pay{grid-column:1/2}.return-bill-row .rb-total{grid-row:1/3;grid-column:2}}
+</style>
+
           <section id="returns" class="section">
  <div class="section-heading"><div><h2>↩️ Sales Return</h2><p>Bill No or Barcode দিয়ে sold item return করুন।</p></div></div>
  <div class="card form-card">
@@ -1588,6 +1604,15 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
    <label>Reason<select id="rReason"><option>Wrong Item</option><option>Damaged Item</option><option>Extra Quantity</option><option>Customer Changed Mind</option><option>Other</option></select></label>
    <div class="full"><button type="submit" class="btn primary">Confirm Return</button></div>
   </form>
+  <div id="returnSideKeyboard">
+   <div class="rkb-head"><strong>⌨️ Return Keyboard</strong><div class="rkb-modes"><button type="button" id="returnKbABC">ABC</button><button type="button" id="returnKb123" class="active">123</button></div></div>
+   <div id="returnKbDisplay"><small>Tap Bill/Barcode or Return Qty</small>—</div>
+   <div id="returnKbKeys" class="return-kb-grid num"></div>
+  </div>
+ </div>
+ <div class="card return-recent-card">
+   <div class="panel-head"><h3>🧾 Recent Bills — Click a bill to Return</h3><span class="soft-label" id="returnRecentCount">0 bills</span></div>
+   <div id="returnRecentBills" class="return-bill-list"></div>
  </div>
  <div class="card history-card"><div class="panel-head"><h3>Return History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Qty</th><th>Refund</th><th>Payment</th><th>Reason</th><th>By</th></tr></thead><tbody id="returnRows"></tbody></table></div></div>
 </section>
@@ -1917,7 +1942,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.24: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.25: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2472,6 +2497,7 @@ function render(){
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
+ if(typeof renderReturnRecentBills==='function')renderReturnRecentBills();
  window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map((x,i)=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
 <td><b>${i+1}</b></td>
 <td>${x.item}</td>
@@ -2527,7 +2553,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.24: Opening Stock =====
+// ===== POS Safe v7.25: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2877,21 +2903,78 @@ function loadReturnSale(x){
  selectedReturnSale=x;$('rItem').value=x.item;$('rSoldQty').value=fmtQty(left)+' '+x.unit;$('rQty').value='';$('rUnit').value=x.unit;$('rRate').value=x.price;$('rRefund').value='';$('rPayment').value=x.paymentMethod;
  $('returnSaleInfo').innerHTML=`<b>${x.item}</b> · Bill: ${x.billNo?'BBBM-'+String(x.billNo).padStart(6,'0'):'-'} · Return available: ${fmtQty(left)} ${x.unit}`;
  $('returnSaleInfo').classList.remove('hidden');$('returnForm').classList.remove('hidden');
+ setTimeout(()=>{try{$('rQty').focus()}catch(e){}},50);
 }
-$('rFindBtn').onclick=function(){
- const q=$('rSearch').value.trim();if(!q){alert('Bill No or Barcode দিন।');return}
- const b=returnBill(q);
- let matches=b!==null?(db.sales||[]).filter(z=>+z.billNo===b):(db.sales||[]).filter(z=>z.barcode===q);
- matches=matches.filter(x=>(+x.qty||0)-returnedQty(x)>0);
- if(!matches.length){alert('Sold item পাওয়া যায়নি অথবা সব return হয়ে গেছে।');return}
+function loadReturnMatches(matches){
+ matches=(matches||[]).filter(x=>(+x.qty||0)-returnedQty(x)>0);
+ if(!matches.length){alert('এই Bill-এর সব item return হয়ে গেছে।');return false}
  const wrap=$('rItemSelectWrap'),sel=$('rItemSelect');
  if(matches.length>1){
    wrap.classList.remove('hidden');
    sel.innerHTML=matches.map((x,i)=>`<option value="${i}">${x.item} · ${fmtQty((+x.qty||0)-returnedQty(x))} ${x.unit}</option>`).join('');
    sel.onchange=()=>loadReturnSale(matches[+sel.value]);
  }else{wrap.classList.add('hidden');sel.innerHTML=''}
- loadReturnSale(matches[0]);
+ loadReturnSale(matches[0]);return true;
+}
+function openReturnBill(billNo){
+ const matches=(db.sales||[]).filter(z=>String(z.billNo)===String(billNo));
+ if(!matches.length){alert('Bill পাওয়া যায়নি।');return}
+ $('rSearch').value='BBBM-'+String(billNo).padStart(6,'0');
+ loadReturnMatches(matches);
+}
+function renderReturnRecentBills(){
+ const box=$('returnRecentBills'),count=$('returnRecentCount');if(!box)return;
+ const groups=new Map();
+ (db.sales||[]).forEach((x,idx)=>{
+   const key=String(x.billNo||'');if(!key)return;
+   if(!groups.has(key))groups.set(key,{billNo:x.billNo,date:x.date||'',time:x.saleTime||'',payment:x.paymentMethod||'Cash',rows:[],idx});
+   const g=groups.get(key);g.rows.push(x);g.idx=Math.max(g.idx,idx);if(x.saleTime)g.time=x.saleTime;
+ });
+ const bills=[...groups.values()].sort((a,b)=>{
+   const an=Number(a.billNo),bn=Number(b.billNo);if(Number.isFinite(an)&&Number.isFinite(bn)&&an!==bn)return bn-an;return b.idx-a.idx;
+ }).slice(0,20);
+ if(count)count.textContent=bills.length+' bills';
+ if(!bills.length){box.innerHTML='<div class="return-list-empty">No sales bill yet.</div>';return}
+ box.innerHTML=bills.map(g=>{
+   const total=g.rows.reduce((a,x)=>a+(+x.total||0),0);
+   const available=g.rows.reduce((a,x)=>a+Math.max(0,(+x.qty||0)-returnedQty(x)),0);
+   const allReturned=available<=0;
+   const label=/^\d+$/.test(String(g.billNo))?'BBBM-'+String(g.billNo).padStart(6,'0'):String(g.billNo);
+   return `<button type="button" class="return-bill-row ${allReturned?'all-returned':''}" data-return-bill="${String(g.billNo).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
+    <div><div class="rb-no">${label}</div><span class="rb-status">${allReturned?'Fully Returned':'Return available'}</span></div>
+    <div><b>${g.date||'-'}${g.time?' · '+g.time:''}</b><div class="rb-meta">${g.rows.length} item${g.rows.length===1?'':'s'}</div></div>
+    <div class="rb-pay">${g.payment}</div><div class="rb-total">${money(total)}</div>
+   </button>`;
+ }).join('');
+ box.querySelectorAll('[data-return-bill]').forEach(btn=>btn.onclick=()=>openReturnBill(btn.dataset.returnBill));
+}
+$('rFindBtn').onclick=function(){
+ const q=$('rSearch').value.trim();if(!q){alert('Bill No or Barcode দিন।');return}
+ const b=returnBill(q);
+ let matches=b!==null?(db.sales||[]).filter(z=>+z.billNo===b):(db.sales||[]).filter(z=>String(z.barcode||'').toUpperCase()===q.toUpperCase());
+ if(!matches.length){alert('Sold item পাওয়া যায়নি।');return}
+ loadReturnMatches(matches);
 };
+
+// v7.25 Sales Return on-screen keyboard (Bill/Barcode + Return Qty)
+(function initReturnKeyboard(){
+ const box=$('returnKbKeys'),disp=$('returnKbDisplay'),abc=$('returnKbABC'),num=$('returnKb123');
+ const search=$('rSearch'),qty=$('rQty');if(!box||!disp||!search||!qty)return;
+ let target=search,mode='num';
+ function targetName(){return target===qty?'Return Qty':'Bill No / Barcode'}
+ function update(){disp.innerHTML='<small>'+targetName()+'</small>'+String(target.value||'—')}
+ function setTarget(el){target=el;document.querySelectorAll('#returns input.rkb-active').forEach(x=>x.classList.remove('rkb-active'));el.classList.add('rkb-active');if(el===qty)setMode('num');else update()}
+ function key(label,val,cls=''){const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.onclick=()=>press(val);box.appendChild(b)}
+ function render(){box.innerHTML='';box.className='return-kb-grid '+(mode==='num'?'num':'abc');abc.classList.toggle('active',mode==='abc');num.classList.toggle('active',mode==='num');if(mode==='num'){
+  ['1','2','3','4','5','6','7','8','9'].forEach(x=>key(x,x));key('C','clear','rkb-clear');key('0','0');key('⌫','back');key('.','.');key('Find / OK','ok','rkb-ok wide2');
+ }else{
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(x=>key(x,x));['-','/','.'].forEach(x=>key(x,x));key('SPACE',' ','wide3');key('C','clear','rkb-clear');key('⌫','back');key('123','mode','wide2');key('Find / OK','ok','rkb-ok wide2');
+ }update()}
+ function setMode(m){mode=m;render()}
+ function press(k){let v=String(target.value||'');if(k==='clear')v='';else if(k==='back')v=v.slice(0,-1);else if(k==='mode'){setMode('num');return}else if(k==='ok'){if(target===search)$('rFindBtn').click();else $('rReason').focus();update();return}else if(k==='.'&&target===qty&&v.includes('.'))return;else v+=k;target.value=v;target.dispatchEvent(new Event('input',{bubbles:true}));update()}
+ search.addEventListener('focus',()=>setTarget(search));search.addEventListener('click',()=>setTarget(search));qty.addEventListener('focus',()=>setTarget(qty));qty.addEventListener('click',()=>setTarget(qty));
+ abc.onclick=()=>setMode('abc');num.onclick=()=>setMode('num');setTarget(search);render();
+})();
 $('rQty').oninput=function(){if(selectedReturnSale)$('rRefund').value=money((+this.value||0)*selectedReturnSale.price)};
 $('returnForm').onsubmit=async function(e){
  e.preventDefault();const x=selectedReturnSale;if(!x)return;const left=(+x.qty||0)-returnedQty(x),q=+$('rQty').value;
@@ -2899,13 +2982,17 @@ $('returnForm').onsubmit=async function(e){
  const refund=q*x.price;if(!confirm(`Confirm Return?\n${x.item}\n${fmtQty(q)} ${x.unit}\nRefund: ${money(refund)}\nStock will increase automatically.`))return;
  const r=await cloud.from('bbbm_sales_returns').insert({user_id:currentUser.id,sale_bill_no:x.billNo||null,item:x.item,barcode:x.barcode,qty:q,unit:x.unit,rate:x.price,refund_amount:refund,payment_method:x.paymentMethod,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,reason:$('rReason').value,return_date:today(),by_name:currentUser.name});
  if(r.error){alert(r.error.message);return}
- // v7.24: Cash sale return refunds cash from the drawer, so open it even though no receipt is printed.
- // Non-cash returns (Credit / bKash / Nagad / Rocket) must never open the drawer.
- if(isCashPayment(x.paymentMethod))await kickCashDrawer(x.paymentMethod,false);
+ // Cash sale return = cash is going out from the drawer, so open it even though no receipt is printed.
+ if(isCashPayment(x.paymentMethod)){
+   const drawerOpened=await kickCashDrawer('Cash',false);
+   if(!drawerOpened){
+     console.warn('Cash sale return saved, but drawer helper could not open the drawer.');
+   }
+ }
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.24: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.25: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5048,7 +5135,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.24';
+  const POS_VERSION='POS Safe v7.25';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
