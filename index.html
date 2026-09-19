@@ -763,7 +763,25 @@ body.bbbm-dark-mode #secureStockSummaryCard.unlocked{background:linear-gradient(
 #secureSummaryPinMsg{min-height:20px;margin-top:8px;font-size:11px;font-weight:800;color:#b91c1c}
 #secureSummaryPinActions{display:flex;gap:8px;margin-top:6px}#secureSummaryPinActions button{flex:1}
 body.bbbm-dark-mode #secureSummaryPinBox{background:#0f172a;border-color:#334155;color:#f8fafc}body.bbbm-dark-mode #secureSummaryPinBox p{color:#94a3b8}body.bbbm-dark-mode #secureSummaryPinInput{background:#111827;color:#fff;border-color:#475569}
-@media(max-width:760px){#secureStockSummaryCard{grid-column:span 2}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
+@media(max-width:760px){#secureStockSummaryCard{grid-column:span 1}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
+/* v7.30: small dashboard entry; private totals appear only in a separate PIN-protected details panel. */
+#secureStockSummaryCard{grid-column:span 1!important;min-height:94px!important;padding:12px!important;display:flex!important;align-items:center;gap:10px;justify-content:flex-start;border-radius:10px!important}
+#secureStockSummaryCard .secure-summary-icon{font-size:23px;flex-shrink:0}
+.secure-summary-compact-text{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.secure-summary-compact-text strong{font-size:11px;line-height:1.2;white-space:normal}
+.secure-summary-compact-text small{font-size:10px;font-weight:700;opacity:.75}
+#secureStockSummaryCard .secure-summary-state{flex-shrink:0;font-size:8px;padding:4px 5px}
+#secureSummaryDetailModal{position:fixed;inset:0;z-index:10019;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;padding:75px 12px 20px;overflow:auto}
+#secureSummaryDetailBox{width:min(540px,100%);background:#fff;border:1px solid #cbd5e1;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.secure-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid #e2e8f0;font-size:15px}
+#secureSummaryDetailBox .secure-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#secureSummaryDetailBox .secure-summary-cell{padding:15px;border-bottom:1px solid #e2e8f0}
+#secureSummaryDetailBox .secure-summary-cell span{display:block;color:#64748b;font-size:10px;font-weight:900;margin-bottom:7px}
+#secureSummaryDetailBox .secure-summary-cell b{display:block;color:#0f172a;font-size:20px;overflow-wrap:anywhere}
+body.bbbm-dark-mode #secureSummaryDetailBox{background:#172033;color:#fff;border-color:#475569}
+body.bbbm-dark-mode #secureSummaryDetailBox .secure-summary-cell{border-color:#475569}
+body.bbbm-dark-mode #secureSummaryDetailBox .secure-summary-cell b{color:#fff}
+@media(max-width:760px){#secureStockSummaryCard{min-height:94px!important;padding:9px!important;gap:6px}.secure-summary-compact-text strong{font-size:10px}#secureStockSummaryCard .secure-summary-state{font-size:7px}#secureSummaryDetailModal{padding-top:65px}}
 </style>
 
 <style id="dashboard-quick-actions-colorful-css">
@@ -1156,7 +1174,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.29</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.30</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1165,19 +1183,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 <div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
-              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Locked profit, stock, purchase and sales summary">
-                <div class="secure-summary-head">
-                  <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK & PURCHASE & SALES</span></div>
-                  <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
-                </div>
-                <div class="secure-summary-grid">
-                  <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
-                  <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
-                  <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
-                  <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mPurchase" class="secure-value">••••••</b></div>
-                  <div class="secure-summary-cell"><span>TOTAL SALES</span><b id="mSales" class="secure-value">••••••</b></div>
-                </div>
-                <div id="secureSummaryHint" class="secure-summary-hint">Tap and enter Admin PIN to view</div>
+              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Open locked profit and stock details">
+                <span class="secure-summary-icon">🔐</span>
+                <span class="secure-summary-compact-text"><strong>PROFIT &amp; STOCK</strong><small>Tap to open details</small></span>
+                <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
               </button>
 
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
@@ -1943,7 +1952,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.29: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.30: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2554,7 +2563,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.29: Opening Stock =====
+// ===== POS Safe v7.30: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2993,7 +3002,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.29: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.30: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5090,6 +5099,19 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   const card=document.getElementById('secureStockSummaryCard');
   if(!card)return;
   let unlocked=false;
+  const detail=document.createElement('div');
+  detail.id='secureSummaryDetailModal';
+  detail.innerHTML=`<div id="secureSummaryDetailBox" role="dialog" aria-modal="true" aria-label="Profit and stock details">
+    <div class="secure-detail-head"><strong>🔓 Profit &amp; Stock Details</strong><button type="button" id="secureSummaryDetailClose" class="btn gray">✕ Close &amp; Lock</button></div>
+    <div class="secure-summary-grid">
+      <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
+      <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
+      <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
+      <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mPurchase" class="secure-value">••••••</b></div>
+      <div class="secure-summary-cell"><span>TOTAL SALES</span><b id="mSales" class="secure-value">••••••</b></div>
+    </div>
+  </div>`;
+  document.body.appendChild(detail);
   const modal=document.createElement('div');
   modal.id='secureSummaryPinModal';
   modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock & Purchase & Sales</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
@@ -5097,16 +5119,15 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   const input=document.getElementById('secureSummaryPinInput');
   const msg=document.getElementById('secureSummaryPinMsg');
   const state=document.getElementById('secureSummaryState');
-  const hint=document.getElementById('secureSummaryHint');
   function setLocked(on){
     unlocked=!on; card.classList.toggle('locked',on); card.classList.toggle('unlocked',!on);
     if(state)state.textContent=on?'LOCKED':'OPEN';
-    if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Tap again to lock';
+    if(on)detail.style.display='none';
   }
   function closeModal(){modal.style.display='none'; input.value=''; msg.textContent='';}
   function verify(){
     const v=String(input.value||'').replace(/\D/g,'').slice(0,4); input.value=v;
-    if(v===PIN){setLocked(false);closeModal();return true}
+    if(v===PIN){setLocked(false);closeModal();detail.style.display='flex';return true}
     msg.textContent='❌ Wrong PIN'; input.value='';
     if(window.__bbbmOpenFloatingKeyboard)setTimeout(()=>window.__bbbmOpenFloatingKeyboard(input,'numeric'),0);
     return false;
@@ -5115,7 +5136,9 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
     modal.style.display='flex'; input.value=''; msg.textContent='';
     setTimeout(()=>{try{input.focus()}catch(e){}; if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric')},30);
   }
-  card.addEventListener('click',function(){if(unlocked){setLocked(true);return}openModal()});
+  card.addEventListener('click',function(){if(unlocked){detail.style.display='flex';return}openModal()});
+  document.getElementById('secureSummaryDetailClose').onclick=()=>setLocked(true);
+  detail.addEventListener('click',e=>{if(e.target===detail)setLocked(true)});
   input.addEventListener('input',function(){
     const clean=String(this.value||'').replace(/\D/g,'').slice(0,4); if(this.value!==clean)this.value=clean;
     if(clean.length===4)setTimeout(verify,60);
@@ -5134,7 +5157,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.29';
+  const POS_VERSION='POS Safe v7.30';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
