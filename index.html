@@ -1174,7 +1174,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.31</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.32</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1954,7 +1954,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.31: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.32: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2565,7 +2565,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.31: Opening Stock =====
+// ===== POS Safe v7.32: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2853,26 +2853,27 @@ function renderReport(){
  $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
  $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
  $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
- // Cash-balance estimate: cash receipts less cash refunds, purchases and expenses.
- // The selected day shows cumulative cash through that day; the monthly card shows
- // cumulative cash through the last day of the selected month (not a sum of daily balances).
- const selectedDay=$('reportType').value==='daily'?$('reportDate').value:today();
- const selectedMonth=$('reportType').value==='monthly'?$('reportMonth').value:(selectedDay||today()).slice(0,7);
- function cashThrough(endDate){
-   const through=(arr,field,pred)=> (arr||[]).reduce((sum,x)=>{
+ // Period-only cash movement: do not carry forward transactions from previous days/months.
+ // Purchase amounts are treated as cash outflows, consistent with the existing report.
+ const selectedDay=$('reportType').value==='daily'?($('reportDate').value||today()):today();
+ const selectedMonth=$('reportType').value==='monthly'?($('reportMonth').value||today().slice(0,7)):selectedDay.slice(0,7);
+ function cashForPeriod(startDate,endDate){
+   const within=(arr,field,pred)=> (arr||[]).reduce((sum,x)=>{
      const d=String(x.date||'').slice(0,10);
-     return d&&d<=endDate&&(!pred||pred(x))?sum+(+x[field]||0):sum;
+     return d&&d>=startDate&&d<=endDate&&(!pred||pred(x))?sum+(+x[field]||0):sum;
    },0);
-   return through(db.sales,'total',x=>(x.paymentMethod||'Cash')==='Cash')
-     +through(db.collections,'amount',x=>(x.paymentMethod||'Cash')==='Cash')
-     -through(db.returns,'refund',x=>(x.paymentMethod||'Cash')==='Cash')
-     -through(realPurchases(),'total')-through(db.expenses,'amount');
+   return within(db.sales,'total',x=>(x.paymentMethod||'Cash')==='Cash')
+     +within(db.collections,'amount',x=>(x.paymentMethod||'Cash')==='Cash')
+     -within(db.returns,'refund',x=>(x.paymentMethod||'Cash')==='Cash')
+     -within(realPurchases(),'total')-within(db.expenses,'amount');
  }
- const monthEnd=selectedMonth?selectedMonth+'-'+String(new Date(+selectedMonth.slice(0,4),+selectedMonth.slice(5,7),0).getDate()).padStart(2,'0'):today();
- if($('repTodayCashBalance'))$('repTodayCashBalance').textContent=money(cashThrough(selectedDay||today()));
- if($('repTodayCashDate'))$('repTodayCashDate').textContent='Balance through '+(selectedDay||today());
- if($('repMonthCashBalance'))$('repMonthCashBalance').textContent=money(cashThrough(monthEnd));
- if($('repMonthCashRange'))$('repMonthCashRange').textContent='Balance through '+monthEnd;
+ const monthStart=selectedMonth+'-01';
+ const monthEnd=selectedMonth+'-'+String(new Date(+selectedMonth.slice(0,4),+selectedMonth.slice(5,7),0).getDate()).padStart(2,'0');
+ const monthThrough=selectedMonth===today().slice(0,7)?today():monthEnd;
+ if($('repTodayCashBalance'))$('repTodayCashBalance').textContent=money(cashForPeriod(selectedDay,selectedDay));
+ if($('repTodayCashDate'))$('repTodayCashDate').textContent='Cash movement on '+selectedDay+' (no previous-day balance)';
+ if($('repMonthCashBalance'))$('repMonthCashBalance').textContent=money(cashForPeriod(monthStart,monthThrough));
+ if($('repMonthCashRange'))$('repMonthCashRange').textContent='Cash movement '+monthStart+' to '+monthThrough+' (no previous-month balance)';
 
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
@@ -3025,7 +3026,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.31: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.32: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5180,7 +5181,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.31';
+  const POS_VERSION='POS Safe v7.32';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
