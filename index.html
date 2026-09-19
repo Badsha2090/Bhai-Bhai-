@@ -1156,7 +1156,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.28</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.29</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1165,9 +1165,9 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 <div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
-              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Locked profit, stock and purchase summary">
+              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Locked profit, stock, purchase and sales summary">
                 <div class="secure-summary-head">
-                  <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK & PURCHASE</span></div>
+                  <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK & PURCHASE & SALES</span></div>
                   <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
                 </div>
                 <div class="secure-summary-grid">
@@ -1175,10 +1175,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
                   <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
                   <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mPurchase" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>TOTAL SALES</span><b id="mSales" class="secure-value">••••••</b></div>
                 </div>
                 <div id="secureSummaryHint" class="secure-summary-hint">Tap and enter Admin PIN to view</div>
               </button>
-              <div class="card metric metric-purple"><div class="metric-icon">৳</div><div><div class="l">TOTAL SALES</div><div id="mSales" class="v">৳0.00</div><div class="metric-note">All-time sales</div></div></div>
 
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
 
@@ -1943,7 +1943,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.28: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.29: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2554,7 +2554,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.28: Opening Stock =====
+// ===== POS Safe v7.29: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2993,7 +2993,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.28: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.29: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5092,7 +5092,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   let unlocked=false;
   const modal=document.createElement('div');
   modal.id='secureSummaryPinModal';
-  modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock & Purchase</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
+  modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock & Purchase & Sales</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
   document.body.appendChild(modal);
   const input=document.getElementById('secureSummaryPinInput');
   const msg=document.getElementById('secureSummaryPinMsg');
@@ -5134,7 +5134,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.28';
+  const POS_VERSION='POS Safe v7.29';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
