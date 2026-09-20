@@ -1174,7 +1174,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.33</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.34</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1954,7 +1954,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.33: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.34: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2565,7 +2565,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.33: Opening Stock =====
+// ===== POS Safe v7.34: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -3026,7 +3026,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.33: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.34: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3685,7 +3685,35 @@ function changeDemoResetPin(){
 }
 if($('changeDemoPinBtn'))$('changeDemoPinBtn').onclick=changeDemoResetPin;
 
+// Reset is deliberately fail-closed: a successful API response alone does not
+// prove that RLS allowed any rows to be deleted.
+let demoResetRunning=false;
+async function demoCloudCount(table){
+  const r=await cloud.from(table).select('id',{count:'exact',head:true});
+  if(r.error)throw new Error(table+' count: '+r.error.message);
+  if(r.count==null)throw new Error(table+': cloud row count unavailable');
+  return r.count;
+}
+async function demoDeleteCloudTable(table){
+  // Delete in small batches; PostgREST may limit large result sets.
+  for(let attempt=0;attempt<1000;attempt++){
+    const before=await demoCloudCount(table);
+    if(before===0)return;
+    const found=await cloud.from(table).select('id').limit(200);
+    if(found.error)throw new Error(table+' select: '+found.error.message);
+    const ids=(found.data||[]).map(x=>x.id);
+    if(!ids.length)throw new Error(table+': '+before+' records remain but cannot be selected');
+    const deleted=await cloud.from(table).delete().in('id',ids).select('id');
+    if(deleted.error)throw new Error(table+' delete: '+deleted.error.message);
+    const after=await demoCloudCount(table);
+    if(after>=before)throw new Error(table+': '+after+' records remain. Cloud DELETE permission/RLS may be blocking reset. No success was reported.');
+  }
+  throw new Error(table+': reset exceeded batch limit');
+}
 async function clearDemoDataForLiveStart(){
+  if(demoResetRunning)return;
+  if(!currentUser){alert('Please log in and connect to cloud before clearing demo data.');return}
+  if(navigator.onLine===false){alert('Internet connection is required for demo reset.');return}
   if(!verifyDemoResetPin())return;
   const phrase=prompt('Demo data মুছতে CLEAR DEMO লিখুন।\n\nএতে Sale, Purchase, Return, Expense, Credit Collection ও Accounts Opening Cash মুছে যাবে। Product settings/barcode/selling rate/Settings থাকবে।');
   if(String(phrase||'').trim().toUpperCase()!=='CLEAR DEMO'){
@@ -3693,43 +3721,40 @@ async function clearDemoDataForLiveStart(){
     return;
   }
   if(!confirm('Final confirmation: সব Demo transaction data permanently delete করবেন?'))return;
-
+  demoResetRunning=true;
+  const btn=$('clearDemoDataBtn');if(btn)btn.disabled=true;
   try{
-    // Save a downloadable/local snapshot before deleting demo data.
+    if(syncRunning)throw new Error('A cloud sync is in progress. Please wait and retry.');
+    // Do not discard unsynced transactions without a recoverable snapshot.
     if(typeof saveAutoBackup==='function')saveAutoBackup('Before Demo Reset');
-
-    // Delete cloud transaction rows. Keep product metadata/settings.
     const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_purchase_returns','bbbm_sales','bbbm_purchases','bbbm_expenses'];
     for(const table of tables){
-      const {error}=await cloud.from(table).delete().not('id','is',null);
-      if(error)throw new Error(table+': '+error.message);
+      if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='Clearing cloud: '+table+'…';
+      await demoDeleteCloudTable(table);
     }
-
-    db.purchases=[];
-    db.sales=[];
-    db.returns=[];
-    db.expenses=[];
-    db.collections=[];
-    db.purchaseReturns=[];
-    // Prevent queued demo transactions from being uploaded after reset.
+    // Verify ALL tables before clearing the local copy or claiming success.
+    for(const table of tables){
+      const count=await demoCloudCount(table);
+      if(count!==0)throw new Error(table+': '+count+' cloud records still exist');
+    }
     writePendingQueue([]);
-    safeSet(DB,db);
-
-    // Reset Accounts opening cash only; keep all other settings.
+    db.purchases=[];db.sales=[];db.returns=[];db.expenses=[];db.collections=[];db.purchaseReturns=[];
+    if(!safeSet(DB,db))throw new Error('Local storage could not be updated');
     try{localStorage.removeItem('bbbm_accounts_opening_cash_v1')}catch(e){}
-
+    await loadCloudData();
+    const remaining=['purchases','sales','returns','expenses','collections','purchaseReturns'].reduce((n,k)=>n+(db[k]||[]).length,0);
+    if(remaining)throw new Error(remaining+' transactions reappeared after cloud reload. Check other devices and pending sync.');
     render();
     if(typeof renderAccounts==='function')renderAccounts();
     if(typeof renderBackupPanel==='function')renderBackupPanel();
-
-    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Demo transaction data cleared. System is ready for live use.';
-    alert('Demo data cleared successfully. Product settings, barcodes, selling rates and Settings were kept.');
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Cloud and this device verified empty. Check other logged-in devices after refreshing.';
+    alert('Demo data cleared and verified in cloud and this device. Refresh other POS/phones to confirm. Product settings, barcodes, selling rates and Settings were kept.');
   }catch(e){
     console.error('Demo reset failed',e);
-    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Demo reset failed: '+(e.message||e);
-    alert('Demo reset failed: '+(e.message||e)+'\n\nDo not start live sales yet. Check cloud data before retrying.');
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Reset NOT verified: '+(e.message||e);
+    alert('Demo reset NOT verified: '+(e.message||e)+'\n\nDo not start live sales. Cloud permissions or another device may need attention. Some cloud rows may already have been deleted.');
     try{await loadCloudData();render()}catch(_){}
-  }
+  }finally{demoResetRunning=false;if(btn)btn.disabled=false}
 }
 if($('clearDemoDataBtn'))$('clearDemoDataBtn').onclick=clearDemoDataForLiveStart;
 
@@ -5183,7 +5208,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.33';
+  const POS_VERSION='POS Safe v7.34';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
