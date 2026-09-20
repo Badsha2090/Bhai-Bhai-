@@ -1156,7 +1156,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.27</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.28</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1942,7 +1942,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.27: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.28: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2088,18 +2088,29 @@ function generateBarcode(){
   const base='29'+String(Math.floor(Math.random()*1e10)).padStart(10,'0');
   return base+ean13Check(base);
 }
-function fillPurchaseFromBarcode(){
-  let code=$('pBarcode').value.trim(),x=stockMap()[code];
-  if(!x)return;
-  $('pItem').value=x.item||'';
-  $('pUnit').value=x.unit||'PCS';
-  const last=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'')===code);
-  if(last){
-    $('pPrice').value=Number(last.price||0);
-    if(last.sellingPrice!=null)$('pSellPrice').value=Number(last.sellingPrice||0);
-    calcP();
-  }
+// Reuse the latest known purchase and saved selling rate for existing barcodes.
+function bbbmKnownBarcode(code){
+ code=String(code||'').trim();
+ if(!code)return null;
+ const x=stockMap()[code];
+ const last=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'').trim()===code);
+ const meta=metaFor(code);
+ if(!x&&!last&&!meta.item)return null;
+ const cost=last&&last.price!=null?Number(last.price):x&&Number.isFinite(x.avg)?Number(x.avg):null;
+ const sell=meta.sellPrice!=null&&meta.sellPrice!==''?Number(meta.sellPrice):last&&last.sellingPrice!=null?Number(last.sellingPrice):null;
+ return {item:(x&&x.item)||(last&&last.item)||meta.item||'',unit:(x&&x.unit)||(last&&last.unit)||meta.unit||'PCS',cost,sell};
 }
+function bbbmFillKnownBarcode(prefix){
+ const barcode=$(prefix+'Barcode'),code=barcode&&barcode.value.trim(),known=bbbmKnownBarcode(code);
+ if(!known)return;
+ $(prefix+'Item').value=known.item;
+ $(prefix+'Unit').value=known.unit;
+ if(known.cost!=null&&Number.isFinite(known.cost))$(prefix+'Price').value=known.cost;
+ if(known.sell!=null&&Number.isFinite(known.sell))$(prefix+'SellPrice').value=known.sell;
+ if(prefix==='p')calcP();else calcO();
+}
+function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p')}
+function fillOpeningFromBarcode(){bbbmFillKnownBarcode('o')}
 function fillSaleFromBarcode(){
   const code=$('sBarcode').value.trim(),x=stockMap()[code];
   $('sItem').value=x?x.item:'';$('sAvailable').value=x?fmtQty(x.current):'';$('sUnit').value=x?(x.unit||unitFor(code)):'';
@@ -2553,9 +2564,10 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.27: Opening Stock =====
+// ===== POS Safe v7.28: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
+if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
 if($('openingStockForm'))$('openingStockForm').onsubmit=async function(e){
  e.preventDefault();let q=+$('oQty').value,p=+$('oPrice').value,sp=$('oSellPrice').value===''?null:+$('oSellPrice').value,unit=$('oUnit').value||'PCS',code=$('oBarcode').value.trim();
@@ -2992,7 +3004,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.27: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.28: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5136,7 +5148,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.27';
+  const POS_VERSION='POS Safe v7.28';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
