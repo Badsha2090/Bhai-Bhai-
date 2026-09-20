@@ -745,7 +745,7 @@ section#sales label, section#pos label{
 #secureStockSummaryCard .secure-summary-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid rgba(234,88,12,.18);font-size:11px;font-weight:900;letter-spacing:.35px}
 #secureStockSummaryCard .secure-summary-head>div{display:flex;align-items:center;gap:7px}.secure-summary-icon{font-size:16px}
 .secure-summary-state{font-size:9px;padding:4px 7px;border-radius:999px;background:#9a3412;color:#fff;letter-spacing:.5px}
-.secure-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.secure-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .secure-summary-cell{padding:11px 12px;border-right:1px solid rgba(234,88,12,.14)}.secure-summary-cell:last-child{border-right:0}
 .secure-summary-cell span{display:block;font-size:9px;font-weight:900;color:#9a3412;margin-bottom:5px}.secure-summary-cell b{display:block;font-size:17px;font-weight:950;color:#7c2d12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .secure-summary-hint{padding:0 12px 10px;font-size:9px;font-weight:800;color:#c2410c}
@@ -763,25 +763,7 @@ body.bbbm-dark-mode #secureStockSummaryCard.unlocked{background:linear-gradient(
 #secureSummaryPinMsg{min-height:20px;margin-top:8px;font-size:11px;font-weight:800;color:#b91c1c}
 #secureSummaryPinActions{display:flex;gap:8px;margin-top:6px}#secureSummaryPinActions button{flex:1}
 body.bbbm-dark-mode #secureSummaryPinBox{background:#0f172a;border-color:#334155;color:#f8fafc}body.bbbm-dark-mode #secureSummaryPinBox p{color:#94a3b8}body.bbbm-dark-mode #secureSummaryPinInput{background:#111827;color:#fff;border-color:#475569}
-@media(max-width:760px){#secureStockSummaryCard{grid-column:span 1}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
-/* v7.30: small dashboard entry; private totals appear only in a separate PIN-protected details panel. */
-#secureStockSummaryCard{grid-column:span 1!important;min-height:94px!important;padding:12px!important;display:flex!important;align-items:center;gap:10px;justify-content:flex-start;border-radius:10px!important}
-#secureStockSummaryCard .secure-summary-icon{font-size:23px;flex-shrink:0}
-.secure-summary-compact-text{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
-.secure-summary-compact-text strong{font-size:11px;line-height:1.2;white-space:normal}
-.secure-summary-compact-text small{font-size:10px;font-weight:700;opacity:.75}
-#secureStockSummaryCard .secure-summary-state{flex-shrink:0;font-size:8px;padding:4px 5px}
-#secureSummaryDetailModal{position:fixed;inset:0;z-index:10019;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;padding:75px 12px 20px;overflow:auto}
-#secureSummaryDetailBox{width:min(540px,100%);background:#fff;border:1px solid #cbd5e1;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
-.secure-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid #e2e8f0;font-size:15px}
-#secureSummaryDetailBox .secure-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-#secureSummaryDetailBox .secure-summary-cell{padding:15px;border-bottom:1px solid #e2e8f0}
-#secureSummaryDetailBox .secure-summary-cell span{display:block;color:#64748b;font-size:10px;font-weight:900;margin-bottom:7px}
-#secureSummaryDetailBox .secure-summary-cell b{display:block;color:#0f172a;font-size:20px;overflow-wrap:anywhere}
-body.bbbm-dark-mode #secureSummaryDetailBox{background:#172033;color:#fff;border-color:#475569}
-body.bbbm-dark-mode #secureSummaryDetailBox .secure-summary-cell{border-color:#475569}
-body.bbbm-dark-mode #secureSummaryDetailBox .secure-summary-cell b{color:#fff}
-@media(max-width:760px){#secureStockSummaryCard{min-height:94px!important;padding:9px!important;gap:6px}.secure-summary-compact-text strong{font-size:10px}#secureStockSummaryCard .secure-summary-state{font-size:7px}#secureSummaryDetailModal{padding-top:65px}}
+@media(max-width:760px){#secureStockSummaryCard{grid-column:span 2}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
 </style>
 
 <style id="dashboard-quick-actions-colorful-css">
@@ -1174,7 +1156,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.34</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.27</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1183,12 +1165,20 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 <div class="metric-grid">
               <div class="card metric metric-green"><div class="metric-icon">🛒</div><div><div class="l">TODAY'S SALES</div><div id="mTodaySales" class="v">৳0.00</div><div class="metric-note">Today's total</div></div></div>
               <div class="card metric metric-blue"><div class="metric-icon">📦</div><div><div class="l">TODAY'S PURCHASE</div><div id="mTodayPurchase" class="v">৳0.00</div><div class="metric-note">Today's purchase</div></div></div>
-              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Open locked profit and stock details">
-                <span class="secure-summary-icon">🔐</span>
-                <span class="secure-summary-compact-text"><strong>PROFIT &amp; STOCK</strong><small>Tap to open details</small></span>
-                <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
+              <button type="button" id="secureStockSummaryCard" class="card secure-stock-summary locked" aria-label="Locked profit and stock summary">
+                <div class="secure-summary-head">
+                  <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK</span></div>
+                  <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
+                </div>
+                <div class="secure-summary-grid">
+                  <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
+                </div>
+                <div id="secureSummaryHint" class="secure-summary-hint">Tap and enter Admin PIN to view</div>
               </button>
-
+              <div class="card metric metric-purple"><div class="metric-icon">৳</div><div><div class="l">TOTAL SALES</div><div id="mSales" class="v">৳0.00</div><div class="metric-note">All-time sales</div></div></div>
+              <div class="card metric metric-gold"><div class="metric-icon">🪙</div><div><div class="l">TOTAL PURCHASE</div><div id="mPurchase" class="v">৳0.00</div><div class="metric-note">All-time purchase</div></div></div>
               <div class="card metric metric-red"><div class="metric-icon">⚠</div><div><div class="l">LOW STOCK ITEMS</div><div id="mLow" class="v">0</div><div class="metric-note">5 or less remaining</div></div></div>
 
               <button type="button" id="dashCreditMetric" class="card metric metric-credit dash-credit-metric">
@@ -1732,8 +1722,6 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
   <div class="stat-card"><div><span>Sales Return</span><strong id="repReturn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Cash In</span><strong id="repCashIn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
-  <div class="stat-card"><div><span>Today Cash Balance</span><strong id="repTodayCashBalance">৳0</strong><small id="repTodayCashDate" style="display:block;color:#64748b;margin-top:4px">Today</small></div></div>
-  <div class="stat-card"><div><span>Monthly Cash Balance (1–31 / Month End)</span><strong id="repMonthCashBalance">৳0</strong><small id="repMonthCashRange" style="display:block;color:#64748b;margin-top:4px">Current month</small></div></div>
  </div>
 </section>
 
@@ -1954,7 +1942,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.34: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.27: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2565,7 +2553,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.34: Opening Stock =====
+// ===== POS Safe v7.27: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
@@ -2853,28 +2841,6 @@ function renderReport(){
  $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
  $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
  $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
- // Period-only cash movement: do not carry forward transactions from previous days/months.
- // Purchase amounts are treated as cash outflows, consistent with the existing report.
- const selectedDay=$('reportType').value==='daily'?($('reportDate').value||today()):today();
- const selectedMonth=$('reportType').value==='monthly'?($('reportMonth').value||today().slice(0,7)):selectedDay.slice(0,7);
- function cashForPeriod(startDate,endDate){
-   const within=(arr,field,pred)=> (arr||[]).reduce((sum,x)=>{
-     const d=String(x.date||'').slice(0,10);
-     return d&&d>=startDate&&d<=endDate&&(!pred||pred(x))?sum+(+x[field]||0):sum;
-   },0);
-   return within(db.sales,'total',x=>(x.paymentMethod||'Cash')==='Cash')
-     +within(db.collections,'amount',x=>(x.paymentMethod||'Cash')==='Cash')
-     -within(db.returns,'refund',x=>(x.paymentMethod||'Cash')==='Cash')
-     -within(realPurchases(),'total')-within(db.expenses,'amount');
- }
- const monthStart=selectedMonth+'-01';
- const monthEnd=selectedMonth+'-'+String(new Date(+selectedMonth.slice(0,4),+selectedMonth.slice(5,7),0).getDate()).padStart(2,'0');
- const monthThrough=selectedMonth===today().slice(0,7)?today():monthEnd;
- if($('repTodayCashBalance'))$('repTodayCashBalance').textContent=money(cashForPeriod(selectedDay,selectedDay));
- if($('repTodayCashDate'))$('repTodayCashDate').textContent='Cash movement on '+selectedDay+' (no previous-day balance)';
- if($('repMonthCashBalance'))$('repMonthCashBalance').textContent=money(cashForPeriod(monthStart,monthThrough));
- if($('repMonthCashRange'))$('repMonthCashRange').textContent='Cash movement '+monthStart+' to '+monthThrough+' (no previous-month balance)';
-
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
@@ -2990,7 +2956,7 @@ $('rFindBtn').onclick=function(){
  loadReturnMatches(matches);
 };
 
-// v7.27 Sales Return on-screen keyboard (Bill/Barcode + Return Qty)
+// v7.26 Sales Return on-screen keyboard (Bill/Barcode + Return Qty)
 (function initReturnKeyboard(){
  const box=$('returnKbKeys'),disp=$('returnKbDisplay'),abc=$('returnKbABC'),num=$('returnKb123');
  const search=$('rSearch'),qty=$('rQty');if(!box||!disp||!search||!qty)return;
@@ -3026,7 +2992,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.34: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.27: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3557,6 +3523,7 @@ if($('prRate'))$('prRate').oninput=calcPurchaseReturnTotal;
 if($('prClearBtn'))$('prClearBtn').onclick=clearPurchaseReturnForm;
 if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
   e.preventDefault();
+  if(!askSecureCode('Purchase Return'))return;
   const code=String($('prBarcode').value||'').trim();
   const x=stockMap()[code];
   const q=+$('prQty').value||0;
@@ -3592,6 +3559,7 @@ if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
 
 async function goTab(tab){
  if(tab==='settings' && !askSecureCode('Settings'))return;
+ if(tab==='purchasereturn' && !askSecureCode('Purchase Return'))return;
  await stopScanner();
  if(tab!=='creditcustomers'){
    const d=$('creditCustomerDetailView'),l=$('creditCustomerListView');
@@ -3685,35 +3653,7 @@ function changeDemoResetPin(){
 }
 if($('changeDemoPinBtn'))$('changeDemoPinBtn').onclick=changeDemoResetPin;
 
-// Reset is deliberately fail-closed: a successful API response alone does not
-// prove that RLS allowed any rows to be deleted.
-let demoResetRunning=false;
-async function demoCloudCount(table){
-  const r=await cloud.from(table).select('id',{count:'exact',head:true});
-  if(r.error)throw new Error(table+' count: '+r.error.message);
-  if(r.count==null)throw new Error(table+': cloud row count unavailable');
-  return r.count;
-}
-async function demoDeleteCloudTable(table){
-  // Delete in small batches; PostgREST may limit large result sets.
-  for(let attempt=0;attempt<1000;attempt++){
-    const before=await demoCloudCount(table);
-    if(before===0)return;
-    const found=await cloud.from(table).select('id').limit(200);
-    if(found.error)throw new Error(table+' select: '+found.error.message);
-    const ids=(found.data||[]).map(x=>x.id);
-    if(!ids.length)throw new Error(table+': '+before+' records remain but cannot be selected');
-    const deleted=await cloud.from(table).delete().in('id',ids).select('id');
-    if(deleted.error)throw new Error(table+' delete: '+deleted.error.message);
-    const after=await demoCloudCount(table);
-    if(after>=before)throw new Error(table+': '+after+' records remain. Cloud DELETE permission/RLS may be blocking reset. No success was reported.');
-  }
-  throw new Error(table+': reset exceeded batch limit');
-}
 async function clearDemoDataForLiveStart(){
-  if(demoResetRunning)return;
-  if(!currentUser){alert('Please log in and connect to cloud before clearing demo data.');return}
-  if(navigator.onLine===false){alert('Internet connection is required for demo reset.');return}
   if(!verifyDemoResetPin())return;
   const phrase=prompt('Demo data মুছতে CLEAR DEMO লিখুন।\n\nএতে Sale, Purchase, Return, Expense, Credit Collection ও Accounts Opening Cash মুছে যাবে। Product settings/barcode/selling rate/Settings থাকবে।');
   if(String(phrase||'').trim().toUpperCase()!=='CLEAR DEMO'){
@@ -3721,40 +3661,41 @@ async function clearDemoDataForLiveStart(){
     return;
   }
   if(!confirm('Final confirmation: সব Demo transaction data permanently delete করবেন?'))return;
-  demoResetRunning=true;
-  const btn=$('clearDemoDataBtn');if(btn)btn.disabled=true;
+
   try{
-    if(syncRunning)throw new Error('A cloud sync is in progress. Please wait and retry.');
-    // Do not discard unsynced transactions without a recoverable snapshot.
+    // Save a downloadable/local snapshot before deleting demo data.
     if(typeof saveAutoBackup==='function')saveAutoBackup('Before Demo Reset');
+
+    // Delete cloud transaction rows. Keep product metadata/settings.
     const tables=['bbbm_sales_returns','bbbm_credit_collections','bbbm_purchase_returns','bbbm_sales','bbbm_purchases','bbbm_expenses'];
     for(const table of tables){
-      if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='Clearing cloud: '+table+'…';
-      await demoDeleteCloudTable(table);
+      const {error}=await supabase.from(table).delete().not('id','is',null);
+      if(error)throw new Error(table+': '+error.message);
     }
-    // Verify ALL tables before clearing the local copy or claiming success.
-    for(const table of tables){
-      const count=await demoCloudCount(table);
-      if(count!==0)throw new Error(table+': '+count+' cloud records still exist');
-    }
-    writePendingQueue([]);
-    db.purchases=[];db.sales=[];db.returns=[];db.expenses=[];db.collections=[];db.purchaseReturns=[];
-    if(!safeSet(DB,db))throw new Error('Local storage could not be updated');
+
+    db.purchases=[];
+    db.sales=[];
+    db.returns=[];
+    db.expenses=[];
+    db.collections=[];
+    db.purchaseReturns=[];
+    safeSet(DB,db);
+
+    // Reset Accounts opening cash only; keep all other settings.
     try{localStorage.removeItem('bbbm_accounts_opening_cash_v1')}catch(e){}
-    await loadCloudData();
-    const remaining=['purchases','sales','returns','expenses','collections','purchaseReturns'].reduce((n,k)=>n+(db[k]||[]).length,0);
-    if(remaining)throw new Error(remaining+' transactions reappeared after cloud reload. Check other devices and pending sync.');
+
     render();
     if(typeof renderAccounts==='function')renderAccounts();
     if(typeof renderBackupPanel==='function')renderBackupPanel();
-    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Cloud and this device verified empty. Check other logged-in devices after refreshing.';
-    alert('Demo data cleared and verified in cloud and this device. Refresh other POS/phones to confirm. Product settings, barcodes, selling rates and Settings were kept.');
+
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='✅ Demo transaction data cleared. System is ready for live use.';
+    alert('Demo data cleared successfully. Product settings, barcodes, selling rates and Settings were kept.');
   }catch(e){
     console.error('Demo reset failed',e);
-    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Reset NOT verified: '+(e.message||e);
-    alert('Demo reset NOT verified: '+(e.message||e)+'\n\nDo not start live sales. Cloud permissions or another device may need attention. Some cloud rows may already have been deleted.');
+    if($('clearDemoDataMsg'))$('clearDemoDataMsg').textContent='❌ Demo reset failed: '+(e.message||e);
+    alert('Demo reset failed. Nothing else will be changed until the error is fixed.');
     try{await loadCloudData();render()}catch(_){}
-  }finally{demoResetRunning=false;if(btn)btn.disabled=false}
+  }
 }
 if($('clearDemoDataBtn'))$('clearDemoDataBtn').onclick=clearDemoDataForLiveStart;
 
@@ -4694,7 +4635,8 @@ window.addEventListener('DOMContentLoaded', function(){
   function init(){document.querySelectorAll('.bbbm-nb-panel').forEach(enhance)}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(init,140)); else setTimeout(init,140);
 })();
-</script>\n
+</script>
+
 <script id="bbbm-bracket-type-size-js">
 (function(){
  const TYPES=['L/Angle Bracket','Shelf Bracket','Corner Bracket','T Bracket','Flat Bracket','U Bracket','Pipe Bracket','Wall Bracket','AC Bracket','Other Bracket'];
@@ -5150,35 +5092,23 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   const card=document.getElementById('secureStockSummaryCard');
   if(!card)return;
   let unlocked=false;
-  const detail=document.createElement('div');
-  detail.id='secureSummaryDetailModal';
-  detail.innerHTML=`<div id="secureSummaryDetailBox" role="dialog" aria-modal="true" aria-label="Profit and stock details">
-    <div class="secure-detail-head"><strong>🔓 Profit &amp; Stock Details</strong><button type="button" id="secureSummaryDetailClose" class="btn gray">✕ Close &amp; Lock</button></div>
-    <div class="secure-summary-grid">
-      <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
-      <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
-      <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
-      <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mPurchase" class="secure-value">••••••</b></div>
-      <div class="secure-summary-cell"><span>TOTAL SALES</span><b id="mSales" class="secure-value">••••••</b></div>
-    </div>
-  </div>`;
-  document.body.appendChild(detail);
   const modal=document.createElement('div');
   modal.id='secureSummaryPinModal';
-  modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock & Purchase & Sales</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
+  modal.innerHTML='<div id="secureSummaryPinBox"><h3>🔐 Profit & Stock</h3><p>4-digit Admin PIN দিন</p><input id="secureSummaryPinInput" type="password" inputmode="none" maxlength="4" autocomplete="off" aria-label="Admin PIN"><div id="secureSummaryPinMsg"></div><div id="secureSummaryPinActions"><button type="button" class="btn gray" id="secureSummaryCancel">Cancel</button><button type="button" class="btn primary" id="secureSummaryOpen">Open</button></div></div>';
   document.body.appendChild(modal);
   const input=document.getElementById('secureSummaryPinInput');
   const msg=document.getElementById('secureSummaryPinMsg');
   const state=document.getElementById('secureSummaryState');
+  const hint=document.getElementById('secureSummaryHint');
   function setLocked(on){
     unlocked=!on; card.classList.toggle('locked',on); card.classList.toggle('unlocked',!on);
     if(state)state.textContent=on?'LOCKED':'OPEN';
-    if(on)detail.style.display='none';
+    if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Tap again to lock';
   }
   function closeModal(){modal.style.display='none'; input.value=''; msg.textContent='';}
   function verify(){
     const v=String(input.value||'').replace(/\D/g,'').slice(0,4); input.value=v;
-    if(v===PIN){setLocked(false);closeModal();detail.style.display='flex';return true}
+    if(v===PIN){setLocked(false);closeModal();return true}
     msg.textContent='❌ Wrong PIN'; input.value='';
     if(window.__bbbmOpenFloatingKeyboard)setTimeout(()=>window.__bbbmOpenFloatingKeyboard(input,'numeric'),0);
     return false;
@@ -5187,9 +5117,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
     modal.style.display='flex'; input.value=''; msg.textContent='';
     setTimeout(()=>{try{input.focus()}catch(e){}; if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric')},30);
   }
-  card.addEventListener('click',function(){if(unlocked){detail.style.display='flex';return}openModal()});
-  document.getElementById('secureSummaryDetailClose').onclick=()=>setLocked(true);
-  detail.addEventListener('click',e=>{if(e.target===detail)setLocked(true)});
+  card.addEventListener('click',function(){if(unlocked){setLocked(true);return}openModal()});
   input.addEventListener('input',function(){
     const clean=String(this.value||'').replace(/\D/g,'').slice(0,4); if(this.value!==clean)this.value=clean;
     if(clean.length===4)setTimeout(verify,60);
@@ -5208,7 +5136,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.34';
+  const POS_VERSION='POS Safe v7.27';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
