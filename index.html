@@ -18,6 +18,8 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .scan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scan-row input{flex:1;min-width:180px}.scan-row .btn{margin-top:6px}.scanner-box{margin-top:10px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc}.scanner-box.hidden{display:none!important}.scanner-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.scanner-reader{width:100%;min-height:220px;position:relative;overflow:hidden;border-radius:10px}.scanner-reader video,.scanner-reader canvas{width:100%!important;height:auto!important;display:block}.scanner-reader canvas{position:absolute;left:0;top:0}.smallbtn{padding:9px 11px;font-size:13px}.scan-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0}.scan-status{font-size:12px;color:#475569;flex:1;min-width:160px}.scan-tools button,.photo-scan-label{border:0;border-radius:9px;padding:9px 11px;background:#e5e7eb;font-weight:700;font-size:13px;cursor:pointer}.photo-scan-label input{display:none}
 @media(max-width:640px){form.dataform{grid-template-columns:1fr}.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
+
+.duplicate-name-msg{display:none;margin-top:5px;padding:8px 10px;border:1px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:700;line-height:1.5}
 </style>
 
 <style>
@@ -1156,7 +1158,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.29</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.30</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1227,7 +1229,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
             <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
             <div class="card form-card">
               <form id="purchaseForm" class="dataform">
-                <label>Item Name<input id="pItem" required></label>
+                <label>Item Name<input id="pItem" required><small id="pDuplicateNameMsg" class="duplicate-name-msg" role="status" aria-live="polite"></small></label>
                 <label>Barcode<div class="scan-row"><input id="pBarcode" inputmode="numeric" placeholder="Scan or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="pScanBtn">📷 Scan</button><button class="btn gray smallbtn" type="button" id="pGenBtn">Auto Barcode</button></div></label>
                 <label>Quantity<input id="pQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 2.75"></label>
                 <label>Unit<select id="pUnit" required><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option></select></label>
@@ -1268,7 +1270,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
             <div class="section-heading"><div><h2>🏁 Opening Stock</h2><p>Starting stock only — increases Inventory/Stock Value but does NOT count as Purchase.</p></div><div class="opening-nb-wrap"><button type="button" id="openingNonBarcodeBtn" class="opening-nb-btn">বারকোড ছাড়া পণ্য</button><div id="openingNonBarcodePanel" class="opening-nb-panel"><div id="openingNbCats" class="opening-nb-cats"></div><div id="openingNbOptions" class="opening-nb-options"></div></div></div></div>
             <div class="card form-card">
               <form id="openingStockForm" class="dataform">
-                <label>Item Name<input id="oItem" required></label>
+                <label>Item Name<input id="oItem" required><small id="oDuplicateNameMsg" class="duplicate-name-msg" role="status" aria-live="polite"></small></label>
                 <label>Barcode<div class="scan-row"><input id="oBarcode" inputmode="numeric" placeholder="Enter barcode or leave blank for auto barcode"><button class="btn gray smallbtn" type="button" id="oGenBtn">Auto Barcode</button></div></label>
                 <label>Opening Quantity<input id="oQty" type="number" step="0.001" min="0.001" required placeholder="e.g. 25"></label>
                 <label>Unit<select id="oUnit" required><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option></select></label>
@@ -1942,7 +1944,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.29: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.30: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2109,8 +2111,35 @@ function bbbmFillKnownBarcode(prefix){
  if(known.sell!=null&&Number.isFinite(known.sell))$(prefix+'SellPrice').value=known.sell;
  if(prefix==='p')calcP();else calcO();
 }
-function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p')}
-function fillOpeningFromBarcode(){bbbmFillKnownBarcode('o')}
+// Warn about duplicate product names across Purchase and Opening Stock.
+// Replenishing the SAME barcode is permitted; creating a second barcode for the same name is not.
+function bbbmNormalizedItemName(name){return String(name||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase()}
+function bbbmExistingItemWithName(name){
+ const normalized=bbbmNormalizedItemName(name);if(!normalized)return null;
+ const matches=Object.values(stockMap()).find(x=>bbbmNormalizedItemName(x.item)===normalized);
+ if(matches)return matches;
+ const meta=typeof productMeta!=='undefined'?productMeta:null;
+ if(meta&&typeof meta==='object'){
+  const entry=Object.entries(meta).find(([code,m])=>m&&bbbmNormalizedItemName(m.item)===normalized);
+  if(entry)return {barcode:entry[0],item:entry[1].item};
+ }
+ return null;
+}
+function bbbmCheckDuplicateName(prefix){
+ const nameInput=$(prefix+'Item'),barcodeInput=$(prefix+'Barcode'),msg=$(prefix+'DuplicateNameMsg');
+ if(!nameInput||!barcodeInput)return true;
+ const match=bbbmExistingItemWithName(nameInput.value),code=barcodeInput.value.trim();
+ const duplicate=!!(match&&String(match.barcode||'').trim()!==code);
+ if(msg){msg.textContent=duplicate?'⚠️ Name Same: "'+match.item+'" আগেই আছে। Existing Barcode: '+match.barcode+' — নতুন barcode দিয়ে একই নামে Save হবে না।':'';msg.style.display=duplicate?'block':'none'}
+ nameInput.setCustomValidity(duplicate?'Name Same — existing barcode '+match.barcode+' ব্যবহার করুন।':'');
+ return !duplicate;
+}
+function bbbmWireDuplicateName(prefix){
+ [prefix+'Item',prefix+'Barcode'].forEach(id=>{const input=$(id);if(input){input.addEventListener('input',()=>bbbmCheckDuplicateName(prefix));input.addEventListener('change',()=>bbbmCheckDuplicateName(prefix));}});
+}
+bbbmWireDuplicateName('p');bbbmWireDuplicateName('o');
+function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p');bbbmCheckDuplicateName('p')}
+function fillOpeningFromBarcode(){bbbmFillKnownBarcode('o');bbbmCheckDuplicateName('o')}
 function fillSaleFromBarcode(){
   const code=$('sBarcode').value.trim(),x=stockMap()[code];
   $('sItem').value=x?x.item:'';$('sAvailable').value=x?fmtQty(x.current):'';$('sUnit').value=x?(x.unit||unitFor(code)):'';
@@ -2545,6 +2574,7 @@ $('purchaseForm').onsubmit=async function(e){
  e.preventDefault();let q=+$('pQty').value,p=+$('pPrice').value,sp=$('pSellPrice').value===''?null:+$('pSellPrice').value,unit=$('pUnit').value||'PCS',code=$('pBarcode').value.trim();
  if(!code){code=generateBarcode();$('pBarcode').value=code}
  let existing=stockMap()[code],item=$('pItem').value.trim();
+ if(!bbbmCheckDuplicateName('p')){alert('⚠️ Name Same! এই পণ্যের নাম আগেই আছে। Existing Barcode ব্যবহার করুন অথবা আলাদা Item Name দিন।');$('pItem').focus();return;}
  if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}
  saveMeta(code,sp==null?{unit,item}:{unit,item,sellPrice:sp});
  const btn=this.querySelector('[type=submit]');btn.disabled=true;
@@ -2564,7 +2594,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.29: Opening Stock =====
+// ===== POS Safe v7.30: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -2573,6 +2603,7 @@ if($('openingStockForm'))$('openingStockForm').onsubmit=async function(e){
  e.preventDefault();let q=+$('oQty').value,p=+$('oPrice').value,sp=$('oSellPrice').value===''?null:+$('oSellPrice').value,unit=$('oUnit').value||'PCS',code=$('oBarcode').value.trim();
  if(!code){code=generateBarcode();$('oBarcode').value=code}
  let existing=stockMap()[code],item=$('oItem').value.trim();
+ if(!bbbmCheckDuplicateName('o')){alert('⚠️ Name Same! এই পণ্যের নাম আগেই আছে। Existing Barcode ব্যবহার করুন অথবা আলাদা Item Name দিন।');$('oItem').focus();return;}
  if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}
  saveMeta(code,sp==null?{unit,item}:{unit,item,sellPrice:sp});
  const byName='OPENING STOCK • '+currentUser.name;
@@ -3004,7 +3035,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.29: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.30: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5146,7 +5177,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.29';
+  const POS_VERSION='POS Safe v7.30';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
