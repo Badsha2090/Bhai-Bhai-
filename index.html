@@ -1158,7 +1158,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.31</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.32</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1944,7 +1944,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.31: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.32: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2594,7 +2594,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.31: Opening Stock =====
+// ===== POS Safe v7.32: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3035,7 +3035,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.31: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.32: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -4444,6 +4444,21 @@ window.addEventListener('DOMContentLoaded', function(){
      box.appendChild(b);
    });
    cats.insertAdjacentElement('afterend',box);
+   // The original non-barcode options also render cement buttons. Route those
+   // buttons through the same inventory-backed handler as the dedicated list.
+   // Capture before the original option click handler can reject stocked items.
+   panel.addEventListener('click',function(e){
+     const source=e.target.closest('button');
+     if(!source||box.contains(source)||cats.contains(source))return;
+     const active=cats.querySelector('.bbbm-nb-cat.active');
+     if(!active||active.textContent.trim()!=='সিমেন্ট')return;
+     const selected=brands.find(n=>n.toLocaleLowerCase()===source.textContent.trim().toLocaleLowerCase());
+     if(!selected)return;
+     const target=[...box.querySelectorAll('button')].find(b=>b.textContent===selected);
+     if(!target)return;
+     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+     target.click();
+   },true);
    function sync(){
      const a=cats.querySelector('.bbbm-nb-cat.active');
      box.classList.toggle('open',!!a&&a.textContent.trim()==='সিমেন্ট');
@@ -5199,7 +5214,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.31';
+  const POS_VERSION='POS Safe v7.32';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
