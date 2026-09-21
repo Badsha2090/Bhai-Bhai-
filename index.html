@@ -1158,7 +1158,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.30</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.31</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1944,7 +1944,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.30: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.31: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2594,7 +2594,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.30: Opening Stock =====
+// ===== POS Safe v7.31: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3035,7 +3035,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.30: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.31: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -4384,14 +4384,20 @@ window.addEventListener('DOMContentLoaded', function(){
  const brands=['Seven Ring Special','Shah Special','Crown Cement','Bashundhara Cement','Premier Cement','Akij Cement','Aman Cement','Anwar Cement','Confidence Cement','Diamond Cement','Mir Cement','Metrocem Cement','Royal Cement','Bengal Cement','Deshbandhu Cement','Aramit Cement','S. Alam Cement','ScanCement','RubyCement','Holcim Cement','Meghna Cement','Olympic Cement','Nowapara Cement','Mongla Cement','Eastern Cement'];
  const $=id=>document.getElementById(id);
  function findBrand(name,sale){
-   let m={}; try{m=stockMap()||{}}catch(e){}
+   let m={}; try{m=stockMap()||{}}catch(e){console.error('Cement stock lookup:',e)}
    const norm=v=>String(v||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase();
    const target=norm(name);
-   // Prefer an exact item name; never select another cement brand by a partial match.
-   let rows=Object.values(m).filter(x=>x&&norm(x.item)===target);
+   // Match the actual stock record by its item name, saved product name, or
+   // the barcode shown in Inventory. Never substitute a different cement brand.
+   let rows=Object.values(m).filter(x=>x&&(norm(x.item)===target||norm(metaFor(x.barcode).item)===target));
    if(!rows.length){
-     // A saved product name may be held in product metadata rather than the latest purchase row.
-     rows=Object.values(m).filter(x=>x&&norm(metaFor(x.barcode).item)===target);
+     const trs=document.querySelectorAll('#stockRows tr');
+     for(const tr of trs){
+       const cells=tr.querySelectorAll('td');
+       if(cells.length<4||norm(cells[1].textContent)!==target)continue;
+       const code=String(cells[2].textContent||'').trim();
+       if(code&&m[code])rows.push(m[code]);
+     }
    }
    if(sale)rows=rows.filter(x=>Number(x.current||0)>0);
    rows.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
@@ -4411,7 +4417,7 @@ window.addEventListener('DOMContentLoaded', function(){
        e.preventDefault();e.stopPropagation();
        const x=findBrand(name,mode==='sale');
        if(mode==='sale'){
-         if(!x){alert(name+' বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');return}
+         if(!x){alert(name+'-এর স্টক এই POS-এ এখন পাওয়া যাচ্ছে না। Inventory-তে স্টক থাকলে Barcode স্ক্যান করুন অথবা POS Update দিয়ে আবার চেষ্টা করুন।');return}
          $('sBarcode').value=String(x.barcode||'').trim();
          if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
          // Populate the chosen inventory row directly, including when its barcode is blank.
@@ -5193,7 +5199,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.30';
+  const POS_VERSION='POS Safe v7.31';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
