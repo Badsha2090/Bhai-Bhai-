@@ -1158,7 +1158,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.33</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.34</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1386,7 +1386,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const display = document.getElementById('sidePadDisplay');
   if (!pad || !display) return;
 
-  const fieldIds = ['sBarcode','sQty','sPrice'];
+  const fieldIds = ['sBarcode','sQty','sPrice','saleServiceCharge'];
   let active = document.getElementById('sQty') || null;
   let raw = active ? String(active.value || '') : '';
 
@@ -1395,6 +1395,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(el.id==='sBarcode') return 'Barcode';
     if(el.id==='sQty') return 'Sale Quantity';
     if(el.id==='sPrice') return 'Sale Price';
+    if(el.id==='saleServiceCharge') return 'Service Charge';
     return 'Number';
   }
 
@@ -1503,7 +1504,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Total</th><th>Action</th></tr></thead>
                   <tbody id="saleCartRows"><tr><td colspan="6">No item added yet.</td></tr></tbody>
                 </table></div>
-                <div class="cart-total"><span>Grand Total</span><b id="saleCartTotal">৳0.00</b></div>
+                <div class="cart-total" style="flex-wrap:wrap"><label style="margin:0;min-width:190px">Service Charge (Optional) ৳<input id="saleServiceCharge" type="number" inputmode="decimal" min="0" step="0.01" value="0" placeholder="0.00" style="max-width:170px" aria-label="Optional service charge"></label><span>Grand Total (including service)</span><b id="saleCartTotal">৳0.00</b></div>
               </div>
               <div id="creditCustomerBox" class="sale-finish hidden">
                 <div class="finish-head">
@@ -1944,7 +1945,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.33: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.34: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2594,7 +2595,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.33: Opening Stock =====
+// ===== POS Safe v7.34: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3035,7 +3036,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.33: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.34: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3184,7 +3185,9 @@ function clearSaleItemFields(){
  $('addSaleItemBtn').textContent='＋ Add Item to Bill';
  setTimeout(()=>$('sBarcode').focus(),50);
 }
-function cartGrandTotal(){return saleCart.reduce((a,x)=>a+(+x.total||0),0)}
+function saleServiceCharge(){return Math.round((Number($('saleServiceCharge')?.value)||0)*100)/100}
+function cartGrandTotal(){return Math.round((saleCart.reduce((a,x)=>a+(+x.total||0),0)+saleServiceCharge())*100)/100}
+$('saleServiceCharge').addEventListener('input',()=>{renderSaleCart();if(pendingSale)pendingSale=null});
 function renderSaleCart(){
  $('saleCartCount').textContent=saleCart.length+' item'+(saleCart.length===1?'':'s');
  $('saleCartTotal').textContent=money(cartGrandTotal());
@@ -3223,13 +3226,20 @@ function buildPendingSale(){
  const need={};
  saleCart.forEach(x=>need[x.code]=(need[x.code]||0)+(+x.qty||0));
  for(const code of Object.keys(need)){const st=stockMap()[code];if(!st||need[code]>st.current){alert('Not enough stock for '+(st?st.item:code)+'. Available: '+fmtQty(st?st.current:0));return null}}
- return {items:saleCart.map(x=>({...x})),total:cartGrandTotal(),date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
+ const charge=saleServiceCharge();
+ if(!Number.isFinite(charge)||charge<0||charge>1000000){alert('Valid service charge লিখুন।');return null}
+ // Allocate the additional amount to the first sold item for existing cloud/report totals.
+ // Keep the original unit rate and base item total for receipt display.
+ const items=saleCart.map(x=>({...x}));
+ if(charge){items[0].baseTotal=items[0].total;items[0].serviceCharge=charge;items[0].total=Math.round((items[0].total+charge)*100)/100}
+ return {items,total:cartGrandTotal(),serviceCharge:charge,date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
 }
 function showSaleFinish(sale){
  const lines=sale.items.map((x,i)=>`<div><span>${i+1}. ${x.item}</span><b>${fmtQty(x.qty)} ${x.unit} × ${money(x.price)} = ${money(x.total)}</b></div>`).join('');
  $('saleFinishSummary').innerHTML=`
    ${lines}
    <div><span>Items</span><b>${sale.items.length}</b></div>
+  ${sale.serviceCharge?`<div><span>Service Charge</span><b>${money(sale.serviceCharge)}</b></div>`:''}
    <div><span>Payment</span><b>${sale.paymentMethod}</b></div>
    ${sale.paymentMethod==='Credit'?`<div><span>Customer</span><b>${sale.creditName||'-'}</b></div><div><span>Mobile</span><b>${sale.creditPhone||'-'}</b></div>`:''}
    <div><span>Grand Total</span><b>${money(sale.total)}</b></div>`;
@@ -3237,7 +3247,7 @@ function showSaleFinish(sale){
  $('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');
 }
 function resetSaleForm(){
- $('saleForm').reset();saleCart=[];editingCartIndex=null;renderSaleCart();
+ $('saleForm').reset();$('saleServiceCharge').value='0';saleCart=[];editingCartIndex=null;renderSaleCart();
  $('sDate').value=today();
  const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
  $('saleFinishBox').classList.add('hidden');$('creditCustomerBox').classList.add('hidden');$('saleCartBox').classList.remove('hidden');
@@ -3249,7 +3259,7 @@ function receiptHtml(sale){
  const d=sale.date||'';
  let t=sale.saleTime||new Date().toTimeString().slice(0,8);
  const parts=t.split(':');let hh=+(parts[0]||0),mm=parts[1]||'00',ap=hh>=12?'PM':'AM';hh=hh%12||12;t=String(hh).padStart(2,'0')+':'+mm+' '+ap;
- const rows=sale.items.map(x=>`<tr><td>${esc(x.item)}</td><td>${esc(fmtQty(x.qty))} ${esc(x.unit)}</td><td>${esc(money(x.price))}</td><td>${esc(money(x.total))}</td></tr>`).join('');
+ const rows=sale.items.map(x=>`<tr><td>${esc(x.item)}</td><td>${esc(fmtQty(x.qty))} ${esc(x.unit)}</td><td>${esc(money(x.price))}</td><td>${esc(money(x.baseTotal??x.total))}</td></tr>`).join('');
  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(bill)}</title><style>
  @page{margin:2.5mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Sans Bengali",sans-serif;margin:0;padding:0;color:#000}
  .receipt{width:100%;max-width:76mm;margin:auto;font-size:10px;line-height:1.18}
@@ -3274,6 +3284,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
  <div class="dash"></div><div class="title">SALES INVOICE</div><div class="dash"></div>
  <div class="bill"><b>Bill No:</b> ${esc(bill)}</div><div class="row dt"><span><b>Date:</b> ${esc(d)}</span><span><b>Time:</b> ${esc(t)}</span></div><div class="dash"></div>
  <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+ ${sale.serviceCharge?`<div class="pay" style="text-align:right"><b>Service Charge:</b> ${esc(money(sale.serviceCharge))}</div>`:''}
  <div class="total">TOTAL: ${esc(money(sale.total))}</div><div class="dash"></div><div class="pay"><b>Payment:</b> ${esc(sale.paymentMethod)}</div>
  ${sale.paymentMethod==='Credit'?`<div class="pay"><b>Customer:</b> ${esc(sale.creditName||'-')} ${sale.creditPhone?' | '+esc(sale.creditPhone):''}</div><div class="pay"><b>Due:</b> ${esc(money(sale.total))}</div>`:''}
  <div class="dash"></div><div class="thanks">ধন্যবাদ, আবার আসবেন</div></div>
@@ -3328,7 +3339,7 @@ async function completeSale(printAfter){
      payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
      sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name
    }));
-   const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.price,total:+x.total,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
+   const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.price,total:+x.total,serviceCharge:+x.serviceCharge||0,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
    sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
    addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
    db.sales.push(...localRecords);safeSet(DB,db);
@@ -5216,7 +5227,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.33';
+  const POS_VERSION='POS Safe v7.34';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
