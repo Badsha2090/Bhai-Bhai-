@@ -4385,10 +4385,17 @@ window.addEventListener('DOMContentLoaded', function(){
  const $=id=>document.getElementById(id);
  function findBrand(name,sale){
    let m={}; try{m=stockMap()||{}}catch(e){}
-   let a=Object.values(m).filter(x=>x&&String(x.item||'').toLowerCase().includes(name.toLowerCase()));
-   if(sale)a=a.filter(x=>Number(x.current||0)>0);
-   a.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
-   return a[0]||null;
+   const norm=v=>String(v||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase();
+   const target=norm(name);
+   // Prefer an exact item name; never select another cement brand by a partial match.
+   let rows=Object.values(m).filter(x=>x&&norm(x.item)===target);
+   if(!rows.length){
+     // A saved product name may be held in product metadata rather than the latest purchase row.
+     rows=Object.values(m).filter(x=>x&&norm(metaFor(x.barcode).item)===target);
+   }
+   if(sale)rows=rows.filter(x=>Number(x.current||0)>0);
+   rows.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
+   return rows[0]||null;
  }
  function enhance(panel){
    if(!panel||panel.dataset.cementReady==='1')return;
@@ -4405,7 +4412,16 @@ window.addEventListener('DOMContentLoaded', function(){
        const x=findBrand(name,mode==='sale');
        if(mode==='sale'){
          if(!x){alert(name+' বর্তমানে স্টকে পাওয়া যায়নি। আগে Purchase-এ যোগ করুন।');return}
-         $('sBarcode').value=x.barcode||''; if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
+         $('sBarcode').value=String(x.barcode||'').trim();
+         if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
+         // Populate the chosen inventory row directly, including when its barcode is blank.
+         $('sItem').value=x.item||name;
+         $('sAvailable').value=typeof fmtQty==='function'?fmtQty(x.current):String(x.current);
+         $('sUnit').value=x.unit||'Bag';
+         const saved=metaFor(x.barcode).sellPrice;
+         const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===String(x.barcode||''));
+         const rate=saved!=null&&saved!==''?saved:lastSale?lastSale.price:null;
+         $('sPrice').value=rate!=null&&rate!==''?String(rate):'';
          $('sQty').value='1'; if(typeof calcS==='function')calcS();
        }else{
          if(x){
