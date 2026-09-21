@@ -1055,6 +1055,16 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 .opening-nb-wrap{position:relative;margin-left:auto}.opening-nb-btn{border:1px solid #1769e0;background:#1769e0;color:#fff;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap}.opening-nb-panel{display:none;position:absolute;right:0;top:40px;z-index:1200;width:min(520px,90vw);background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:10px;box-shadow:0 12px 30px rgba(15,23,42,.20)}.opening-nb-panel.open{display:block}.opening-nb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.opening-nb-cat{border:1px solid #cfe0ef;background:#f8fbff;border-radius:7px;padding:8px 5px;font-size:11px;font-weight:800;cursor:pointer}.opening-nb-cat.active{background:#1769e0;color:#fff;border-color:#1769e0}.opening-nb-options{margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.opening-nb-options button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:38px;padding:7px 5px;font-size:11px;font-weight:800;cursor:pointer}.opening-nb-options .wide{grid-column:1/-1;text-align:left;padding-left:10px}.opening-nb-title{grid-column:1/-1;font-size:11px;color:#64748b;font-weight:800;margin-top:2px}
 @media(max-width:900px){#openingStockSidePad{position:static!important;width:100%!important;margin-top:14px!important}#openingstock .form-card{padding-right:16px!important}.opening-nb-panel{right:auto;left:0}.opening-nb-cats,.opening-nb-options{grid-template-columns:repeat(2,1fr)}}
 </style>
+<style id="sale-service-inline-v735-css">
+/* Service charge beside the compact date, above Add Item to Bill. */
+#sales .sale-date-service-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;min-width:0}
+#sales .sale-date-service-row label{margin-bottom:0!important;min-width:0}
+#sales .sale-date-compact{flex:0 0 155px;max-width:155px}
+#sales .sale-date-compact #sDate{width:155px!important;max-width:155px!important;min-width:0!important;font-size:12px!important;padding:5px 6px!important}
+#sales .sale-service-inline{flex:0 0 175px;max-width:175px}
+#sales .sale-service-inline #saleServiceCharge{width:175px!important;max-width:175px!important;min-width:0!important}
+@media(max-width:520px){#sales .sale-date-service-row{gap:8px}#sales .sale-date-compact,#sales .sale-date-compact #sDate{width:145px!important;max-width:145px!important;flex-basis:145px}#sales .sale-service-inline,#sales .sale-service-inline #saleServiceCharge{width:155px!important;max-width:155px!important;flex-basis:155px}}
+</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -1158,7 +1168,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.34</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.35</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1357,7 +1367,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 <label>Unit<input id="sUnit" readonly></label>
                 <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" value="1" required placeholder="e.g. 2.75"></label>
                 <label>Sale Price / Unit<input id="sPrice" type="number" inputmode="decimal" step="0.01" min="0" required autocomplete="off"></label>
-                <label>Date<input id="sDate" type="date" required></label>
+                <div class="sale-date-service-row"><label class="sale-date-compact">Date<input id="sDate" type="date" required></label><label class="sale-service-inline">Service Charge (Optional) ৳<input id="saleServiceCharge" type="number" inputmode="decimal" min="0" step="0.01" value="0" placeholder="0.00" aria-label="Optional service charge"></label></div>
                 <label>Total<input id="sTotal" readonly></label>
                 <div id="sideNumberPad">
   <div class="pad-title">🔢 Number Keyboard</div>
@@ -1504,7 +1514,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Total</th><th>Action</th></tr></thead>
                   <tbody id="saleCartRows"><tr><td colspan="6">No item added yet.</td></tr></tbody>
                 </table></div>
-                <div class="cart-total" style="flex-wrap:wrap"><label style="margin:0;min-width:190px">Service Charge (Optional) ৳<input id="saleServiceCharge" type="number" inputmode="decimal" min="0" step="0.01" value="0" placeholder="0.00" style="max-width:170px" aria-label="Optional service charge"></label><span>Grand Total (including service)</span><b id="saleCartTotal">৳0.00</b></div>
+                <div class="cart-total" style="flex-wrap:wrap"><span>Grand Total (including service)</span><b id="saleCartTotal">৳0.00</b></div>
               </div>
               <div id="creditCustomerBox" class="sale-finish hidden">
                 <div class="finish-head">
@@ -1945,7 +1955,7 @@ let currentUser=null, db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_prod
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.34: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.35: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2595,7 +2605,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.34: Opening Stock =====
+// ===== POS Safe v7.35: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3036,7 +3046,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.34: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.35: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5227,7 +5237,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.34';
+  const POS_VERSION='POS Safe v7.35';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
