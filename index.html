@@ -1169,7 +1169,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.36</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.37</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1965,7 +1965,7 @@ let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.36: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.37: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2616,7 +2616,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.36: Opening Stock =====
+// ===== POS Safe v7.37: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -2644,9 +2644,10 @@ if($('openingStockForm'))$('openingStockForm').onsubmit=async function(e){
 };
 if($('oDate'))$('oDate').value=today();
 
+function openingCreditEscape(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderOpeningCreditHistory(){
  const el=$('ocHistory');if(!el)return;
- el.innerHTML=openingCredits.length?openingCredits.slice().reverse().map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.creditName||'')}</td><td>${esc(x.creditPhone||'')}</td><td>${money(x.total)}</td><td>${money(invoiceDue(x.billNo))}</td></tr>`).join(''):'<tr><td colspan="5">No previous due entry yet.</td></tr>';
+ el.innerHTML=openingCredits.length?openingCredits.slice().reverse().map(x=>`<tr><td>${openingCreditEscape(x.date||'')}</td><td>${openingCreditEscape(x.creditName||'')}</td><td>${openingCreditEscape(x.creditPhone||'')}</td><td>${money(x.total)}</td><td>${money(invoiceDue(x.billNo))}</td></tr>`).join(''):'<tr><td colspan="5">No previous due entry yet.</td></tr>';
 }
 if($('ocPhone'))$('ocPhone').addEventListener('input',()=>{
  const phone=normalizeCustomerPhone($('ocPhone').value);
@@ -2662,7 +2663,10 @@ if($('openingCreditForm'))$('openingCreditForm').onsubmit=async function(e){
   const inv=await cloud.rpc('next_bbbm_invoice_no');if(inv.error||!Number(inv.data))throw new Error(inv.error?.message||'Invoice number unavailable');
   const row={user_id:currentUser.id,item:'Previous Due',barcode:'__OPENING_CREDIT__',qty:1,price:amount,total:amount,unit:'PCS',payment_method:'Credit',credit_name:name,credit_phone:phone,sale_date:today(),sale_time:new Date().toTimeString().slice(0,8),by_name:currentUser.name,invoice_no:Number(inv.data)};
   const saved=await cloud.from('bbbm_sales').insert(row);if(saved.error)throw saved.error;
-  await loadCloudData();this.reset();render();renderOpeningCreditHistory();renderReport();alert('✅ Previous Due saved. Sales / Stock unchanged.');
+  this.reset();
+  try{await loadCloudData();render();renderOpeningCreditHistory();renderReport();}
+  catch(refreshError){console.error('Previous Due saved; refresh pending:',refreshError);}
+  alert('✅ Previous Due saved. Sales / Stock unchanged.');
  }catch(err){alert('Previous Due save হয়নি: '+(err.message||err)+'\nইন্টারনেট ও Supabase connection চেক করুন।')}finally{btn.disabled=false}
 };
 let selectedCreditSale=null;
@@ -3078,7 +3082,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.36: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.37: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -5270,7 +5274,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.36';
+  const POS_VERSION='POS Safe v7.37';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
