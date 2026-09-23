@@ -1169,7 +1169,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.40</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.41</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1840,6 +1840,15 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 </div>
 <div class="card settings-card"><h3>ℹ️ About / System Info</h3><div class="set-info"><span>System</span><b>Bhai Bhai Building Materials POS</b></div><div class="set-info"><span>Version</span><b>2026.09</b></div><div class="set-info"><span>Cloud</span><b>Supabase</b></div><div class="set-info"><span>Current User</span><b id="settingsCurrentUser">—</b></div><div class="set-info"><span>Last Backup</span><b id="settingsAboutBackup">—</b></div></div>
 </div></section>
+<div id="historyLabelCountDialog" class="hidden" role="dialog" aria-modal="true" aria-label="Barcode label copies" style="position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;padding:14px">
+ <div style="width:min(360px,96vw);background:#fff;border-radius:14px;padding:18px;box-shadow:0 16px 45px #0005">
+  <h3 style="margin:0 0 6px">🖨️ কতটি Barcode Print করবেন?</h3>
+  <div id="historyLabelItemName" style="font-size:12px;color:#475569;overflow-wrap:anywhere;margin-bottom:10px"></div>
+  <label>Labels (1–100)<input id="historyLabelCountInput" type="number" inputmode="numeric" min="1" max="100" value="1" style="font-size:22px;font-weight:800;text-align:center"></label>
+  <div id="historyLabelNumPad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0"></div>
+  <div style="display:flex;gap:8px"><button type="button" id="historyLabelCancel" class="btn gray" style="flex:1">Cancel</button><button type="button" id="historyLabelConfirm" class="btn primary" style="flex:1">🖨️ Print</button></div>
+ </div>
+</div>
 <section id="barcode" class="section">
   <div class="section-heading"><div><h2>🖨️ Barcode Print</h2><p>Stock item select করে barcode label print করুন.</p></div></div>
   <div class="card form-card">
@@ -1965,7 +1974,7 @@ let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.40: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.41: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2616,7 +2625,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.40: Opening Stock =====
+// ===== POS Safe v7.41: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3082,7 +3091,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.40: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.41: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3675,6 +3684,29 @@ async function goTab(tab){
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+// Touch-friendly copy-count dialog for both Purchase and Opening Stock history.
+(function(){
+ const dialog=$('historyLabelCountDialog'),input=$('historyLabelCountInput'),pad=$('historyLabelNumPad');
+ if(!dialog||!input||!pad)return;
+ const close=()=>dialog.classList.add('hidden');
+ const print=()=>{
+  const n=Number(input.value);
+  if(!Number.isInteger(n)||n<1||n>100){alert('১ থেকে ১০০ এর মধ্যে Labels সংখ্যা লিখুন।');input.focus();return}
+  if($('bCount'))$('bCount').value=String(n);
+  close();
+  if($('barcodeForm'))$('barcodeForm').requestSubmit();
+ };
+ ['1','2','3','4','5','6','7','8','9','C','0','⌫'].forEach(key=>{
+  const b=document.createElement('button');b.type='button';b.textContent=key;
+  b.style.cssText='min-height:44px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;font-size:21px;font-weight:800;cursor:pointer';
+  b.onclick=()=>{if(key==='C')input.value='';else if(key==='⌫')input.value=input.value.slice(0,-1);else input.value=(input.value==='1'&&input.dataset.fresh==='1'?'':input.value)+key;input.dataset.fresh='0';input.focus()};pad.appendChild(b);
+ });
+ $('historyLabelCancel').onclick=close;
+ $('historyLabelConfirm').onclick=print;
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();print()}if(e.key==='Escape')close()});
+ dialog.addEventListener('click',e=>{if(e.target===dialog)close()});
+ document.addEventListener('click',e=>{if(e.target.closest('button[data-history-barcode-print]'))input.dataset.fresh='1'});
+})();
 // History print buttons are handled inside this IIFE (inline onclick cannot see local functions).
 if($('purchaseHistoryBarcodePrint'))$('purchaseHistoryBarcodePrint').onclick=function(){goTab('barcode')};
 if($('openingHistoryBarcodePrint'))$('openingHistoryBarcodePrint').onclick=function(){goTab('barcode')};
@@ -3688,8 +3720,15 @@ document.addEventListener('click',function(event){
  // Print the selected history item directly, using the existing 50×25mm label printer flow.
  if($('bSearch'))$('bSearch').value=item;
  if($('bCode'))$('bCode').value=code;
- if($('bCount'))$('bCount').value='1';
- if($('barcodeForm'))$('barcodeForm').requestSubmit();
+ // Ask for the number of labels before printing a history row.
+ const dialog=document.getElementById('historyLabelCountDialog');
+ const input=document.getElementById('historyLabelCountInput');
+ const caption=document.getElementById('historyLabelItemName');
+ if(!dialog||!input){goTab('barcode');if($('bCount'))$('bCount').value='1';return}
+ caption.textContent=item+' · '+code;
+ input.value='1';
+ dialog.classList.remove('hidden');
+ input.focus();input.select();
 });
 
 if($('dashBillHistoryMetric'))$('dashBillHistoryMetric').onclick=function(){goTab('billhistory')};
@@ -5291,7 +5330,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.40';
+  const POS_VERSION='POS Safe v7.41';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
