@@ -1169,7 +1169,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.39</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.40</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1965,7 +1965,7 @@ let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.39: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.40: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2540,8 +2540,8 @@ function render(){
  const cs=vals.reduce((a,b)=>a+b.current,0),sv=vals.reduce((a,b)=>a+b.value,0),tdp=realPurchases().filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0),tds=db.sales.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0);
  let cogs=0;db.sales.forEach(s=>{let x=m[s.barcode];if(x)cogs+=+s.qty*x.avg});
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
- $('purchaseRows').innerHTML=realPurchases().length?realPurchases().slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td><td><button type="button" class="btn primary smallbtn" onclick="openHistoryBarcodePrint(this)" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No purchase yet.</td></tr>';
- const opening=openingPurchases(); if($('openingStockRows'))$('openingStockRows').innerHTML=opening.length?opening.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${String(p.by||'').replace('OPENING STOCK • ','')}</td><td><button type="button" class="btn primary smallbtn" onclick="openHistoryBarcodePrint(this)" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No opening stock yet.</td></tr>'; if($('openingStockCount'))$('openingStockCount').textContent=opening.length+' items';
+ $('purchaseRows').innerHTML=realPurchases().length?realPurchases().slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td><td><button type="button" class="btn primary smallbtn" data-history-barcode-print="1" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No purchase yet.</td></tr>';
+ const opening=openingPurchases(); if($('openingStockRows'))$('openingStockRows').innerHTML=opening.length?opening.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${String(p.by||'').replace('OPENING STOCK • ','')}</td><td><button type="button" class="btn primary smallbtn" data-history-barcode-print="1" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No opening stock yet.</td></tr>'; if($('openingStockCount'))$('openingStockCount').textContent=opening.length+' items';
  $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.billNo?'BBBM-'+String(s.billNo).padStart(6,'0'):'-'}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="10">No sale yet.</td></tr>';
  const collections=db.collections||[];
  if($('collectionRows'))$('collectionRows').innerHTML=collections.length?collections.slice().reverse().map(c=>`<tr><td>${c.date}</td><td>${c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-'}</td><td>${c.customerName||c.customerPhone||'-'}</td><td>${money(c.amount)}</td><td>${c.paymentMethod}</td><td>${c.by||''}</td></tr>`).join(''):'<tr><td colspan="6">No collection yet.</td></tr>';
@@ -2616,7 +2616,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.39: Opening Stock =====
+// ===== POS Safe v7.40: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -3082,7 +3082,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.39: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.40: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3675,16 +3675,22 @@ async function goTab(tab){
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+// History print buttons are handled inside this IIFE (inline onclick cannot see local functions).
 if($('purchaseHistoryBarcodePrint'))$('purchaseHistoryBarcodePrint').onclick=function(){goTab('barcode')};
 if($('openingHistoryBarcodePrint'))$('openingHistoryBarcodePrint').onclick=function(){goTab('barcode')};
-function openHistoryBarcodePrint(button){
+document.addEventListener('click',function(event){
+ const button=event.target.closest('button[data-history-barcode-print]');
+ if(!button)return;
+ event.preventDefault();
  const item=decodeURIComponent(button.dataset.item||'');
  const code=decodeURIComponent(button.dataset.barcode||'');
- goTab('barcode');
+ if(!item||!code){alert('এই পণ্যের নাম বা Barcode পাওয়া যায়নি।');return}
+ // Print the selected history item directly, using the existing 50×25mm label printer flow.
  if($('bSearch'))$('bSearch').value=item;
  if($('bCode'))$('bCode').value=code;
  if($('bCount'))$('bCount').value='1';
-}
+ if($('barcodeForm'))$('barcodeForm').requestSubmit();
+});
 
 if($('dashBillHistoryMetric'))$('dashBillHistoryMetric').onclick=function(){goTab('billhistory')};
 if($('dashDailyReportMetric'))$('dashDailyReportMetric').onclick=function(){goTab('reports')};
@@ -5285,7 +5291,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.39';
+  const POS_VERSION='POS Safe v7.40';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
