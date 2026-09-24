@@ -1055,6 +1055,13 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 .opening-nb-wrap{position:relative;margin-left:auto}.opening-nb-btn{border:1px solid #1769e0;background:#1769e0;color:#fff;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap}.opening-nb-panel{display:none;position:absolute;right:0;top:40px;z-index:1200;width:min(520px,90vw);background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:10px;box-shadow:0 12px 30px rgba(15,23,42,.20)}.opening-nb-panel.open{display:block}.opening-nb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.opening-nb-cat{border:1px solid #cfe0ef;background:#f8fbff;border-radius:7px;padding:8px 5px;font-size:11px;font-weight:800;cursor:pointer}.opening-nb-cat.active{background:#1769e0;color:#fff;border-color:#1769e0}.opening-nb-options{margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.opening-nb-options button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:38px;padding:7px 5px;font-size:11px;font-weight:800;cursor:pointer}.opening-nb-options .wide{grid-column:1/-1;text-align:left;padding-left:10px}.opening-nb-title{grid-column:1/-1;font-size:11px;color:#64748b;font-weight:800;margin-top:2px}
 @media(max-width:900px){#openingStockSidePad{position:static!important;width:100%!important;margin-top:14px!important}#openingstock .form-card{padding-right:16px!important}.opening-nb-panel{right:auto;left:0}.opening-nb-cats,.opening-nb-options{grid-template-columns:repeat(2,1fr)}}
 </style>
+<style id="sale-discount-v745-css">
+#sales #saleForm .sale-date-service-row{grid-column:1;grid-row:4}
+#sales #saleForm .sale-discount-field{grid-column:2;grid-row:4}
+#sales #saleForm #sDiscount{max-width:200px}
+#sales #saleForm label:has(#sTotal){grid-column:2;grid-row:5}
+@media(max-width:640px){#sales #saleForm .sale-date-service-row,#sales #saleForm .sale-discount-field,#sales #saleForm label:has(#sTotal){grid-column:1;grid-row:auto}}
+</style>
 <style id="sale-service-inline-v735-css">
 /* Service charge beside the compact date, above Add Item to Bill. */
 #sales .sale-date-service-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;min-width:0}
@@ -1169,7 +1176,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.44</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.45</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1369,7 +1376,8 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 <label>Sale Quantity<input id="sQty" type="number" step="0.001" min="0.001" value="1" required placeholder="e.g. 2.75"></label>
                 <label>Sale Price / Unit<input id="sPrice" type="number" inputmode="decimal" step="0.01" min="0" required autocomplete="off"></label>
                 <div class="sale-date-service-row"><label class="sale-date-compact">Date<input id="sDate" type="date" required></label><label class="sale-service-inline">Service Charge (Optional) ৳<input id="saleServiceCharge" type="number" inputmode="decimal" min="0" step="0.01" value="0" placeholder="0.00" aria-label="Optional service charge"></label></div>
-                <label>Total<input id="sTotal" readonly></label>
+                <label class="sale-discount-field">Discount %<input id="sDiscount" type="number" inputmode="decimal" step="0.01" min="0" max="100" value="0" placeholder="0" aria-label="Discount percentage"></label>
+                <label>Total (after discount)<input id="sTotal" readonly></label>
                 <div id="sideNumberPad">
   <div class="pad-title">🔢 Number Keyboard</div>
   <div id="sidePadDisplay" class="pad-target">Select a field</div>
@@ -1397,7 +1405,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const display = document.getElementById('sidePadDisplay');
   if (!pad || !display) return;
 
-  const fieldIds = ['sBarcode','sQty','sPrice','saleServiceCharge'];
+  const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','saleServiceCharge'];
   let active = document.getElementById('sQty') || null;
   let raw = active ? String(active.value || '') : '';
 
@@ -1406,6 +1414,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(el.id==='sBarcode') return 'Barcode';
     if(el.id==='sQty') return 'Sale Quantity';
     if(el.id==='sPrice') return 'Sale Price';
+    if(el.id==='sDiscount') return 'Discount %';
     if(el.id==='saleServiceCharge') return 'Service Charge';
     return 'Number';
   }
@@ -1432,7 +1441,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(!active) return;
     active.value = raw;
     active.dispatchEvent(new Event('input', {bubbles:true}));
-    if(active.id==='sQty' || active.id==='sPrice'){
+    if(active.id==='sQty' || active.id==='sPrice' || active.id==='sDiscount'){
       if(typeof calcS === 'function') calcS();
     }
   }
@@ -1974,7 +1983,7 @@ let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
-// ===== POS Safe v7.44: Offline-safe Sale/Purchase queue =====
+// ===== POS Safe v7.45: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
 function pendingQueue(){
@@ -2064,7 +2073,7 @@ async function loadCloudData(){
   openingCredits=(sr.data||[]).filter(x=>x.barcode==='__OPENING_CREDIT__').map(x=>({id:x.id,item:'Previous Due',barcode:x.barcode,qty:1,price:+x.total,total:+x.total,date:x.sale_date,by:x.by_name,unit:'PCS',paymentMethod:'Credit',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',saleTime:x.sale_time||''}));
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price,openingStock:String(x.by_name||'').startsWith('OPENING STOCK •')})),
-    sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
+    sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,listPrice:x.list_price==null?+x.price:+x.list_price,discountPct:+x.discount_pct||0,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
     collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''})),
@@ -2595,8 +2604,10 @@ if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInven
  if($('dashLowStock'))$('dashLowStock').innerHTML=low.length?low.map(x=>`<div class="alert-item"><b>${x.item}</b><span>${fmtQty(x.current)} ${x.unit||'PCS'} left</span></div>`).join(''):'<div class="alert-item"><span>No low stock items.</span></div>';
 }
 function calcP(){$('pTotal').value=((+$('pQty').value||0)*(+$('pPrice').value||0)).toFixed(2)}
-function calcS(){$('sTotal').value=((+$('sQty').value||0)*(+$('sPrice').value||0)).toFixed(2)}
-$('pQty').oninput=calcP;$('pPrice').oninput=calcP;$('sQty').oninput=calcS;$('sPrice').oninput=calcS;
+function discountedUnitPrice(price,percent){return Math.round((Number(price)||0)*(1-(Number(percent)||0)/100)*10000)/10000}
+function discountedLineTotal(qty,price,percent){return Math.round((Number(qty)||0)*discountedUnitPrice(price,percent)*100)/100}
+function calcS(){const d=Number($('sDiscount').value||0);$('sDiscount').setCustomValidity(!Number.isFinite(d)||d<0||d>100?'Discount must be between 0 and 100%.':'');$('sTotal').value=Number.isFinite(d)&&d>=0&&d<=100?discountedLineTotal($('sQty').value,$('sPrice').value,d).toFixed(2):''}
+$('pQty').oninput=calcP;$('pPrice').oninput=calcP;$('sQty').oninput=calcS;$('sPrice').oninput=calcS;$('sDiscount').oninput=calcS;
 $('sBarcode').oninput=fillSaleFromBarcode;$('pBarcode').oninput=fillPurchaseFromBarcode;
 $('pGenBtn').onclick=function(){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()};
 $('pScanBtn').onclick=()=>startScanner('purchase');$('sScanBtn').onclick=()=>startScanner('sales');$('pStopScan').onclick=stopScanner;$('sStopScan').onclick=stopScanner;
@@ -2625,7 +2636,7 @@ $('purchaseForm').onsubmit=async function(e){
 };
 
 
-// ===== POS Safe v7.44: Opening Stock =====
+// ===== POS Safe v7.45: Opening Stock =====
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
@@ -2819,7 +2830,7 @@ function directPrintHtml(html){
 function printBillSearchRows(rows){
   if(!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
-  const items=rows.map(x=>`<tr><td>${x.item||''}</td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  const items=rows.map(x=>`<tr><td>${x.item||''}${x.discountPct?'<br><small>Discount −'+x.discountPct+'%</small>':''}</td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bill ${billNoLabel(rows)}</title><style>
   @page{margin:2.5mm}body{font-family:Arial,sans-serif;padding:0;margin:0;color:#111}h3{margin:0 0 6px;text-align:center}p{margin:3px 0;font-size:12px}
   .receipt{width:100%;max-width:76mm;margin:auto}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{border-bottom:1px solid #ddd;padding:6px 3px;text-align:left}
@@ -2905,7 +2916,7 @@ function showBillHistoryDetail(rows){
   if(!box||!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
   const customer=first.creditName||'',phone=first.creditPhone||'';
-  const tr=rows.map(x=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(+x.price||0)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  const tr=rows.map(x=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}${x.discountPct?' • Discount −'+x.discountPct+'%':''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
   box.innerHTML=`<div class="bill-detail-head">
     <div><div class="bill-detail-title">Bill #${billNoLabel(rows)}</div>
     <div class="bill-detail-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''}${phone?' • '+phone:''} • ${first.paymentMethod||'Cash'}</div></div>
@@ -3091,7 +3102,7 @@ $('returnForm').onsubmit=async function(e){
  await loadCloudData();selectedReturnSale=null;this.reset();this.classList.add('hidden');$('returnSaleInfo').classList.add('hidden');$('rSearch').value='';render();alert('Return saved. Stock updated.');
 };
 
-// ===== POS Safe v7.44: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
+// ===== POS Safe v7.45: EZPOS rear 8-LED customer display (COM2 / 2400 / 8N1) =====
 let customerDisplayPort=null;
 let customerDisplayWriter=null;
 function setCustomerDisplayStatus(text,ok=false){
@@ -3225,17 +3236,18 @@ function cartQtyFor(code,excludeIndex=-1){
  return saleCart.reduce((a,x,i)=>a+(i===excludeIndex||String(x.code)!==String(code)?0:(+x.qty||0)),0);
 }
 function buildCurrentSaleItem(excludeIndex=-1){
- const code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value;
+ const code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value,discountPct=Number($('sDiscount').value||0);
  if(!x){alert('Barcode not found.');return null}
  if(!q||q<=0){alert('Enter sale quantity.');return null}
  const already=cartQtyFor(code,excludeIndex);
  if(q+already>x.current){alert('Not enough stock. Available for this bill: '+fmtQty(Math.max(0,x.current-already))+' '+(x.unit||'PCS'));return null}
  if(p<0||$('sPrice').value===''){alert('Enter sale price.');return null}
- return {code,item:x.item,qty:q,price:p,total:q*p,unit:x.unit||'PCS',available:x.current};
+ if(!Number.isFinite(discountPct)||discountPct<0||discountPct>100){alert('Discount 0 থেকে 100% লিখুন।');$('sDiscount').focus();return null}
+ return {code,item:x.item,qty:q,price:p,discountPct,netPrice:discountedUnitPrice(p,discountPct),total:discountedLineTotal(q,p,discountPct),unit:x.unit||'PCS',available:x.current};
 }
 function clearSaleItemFields(){
  $('sBarcode').value='';$('sItem').value='';$('sAvailable').value='';$('sUnit').value='';
- $('sQty').value='1';$('sPrice').value='';$('sTotal').value='';
+ $('sQty').value='1';$('sPrice').value='';$('sDiscount').value='0';$('sTotal').value='';
  editingCartIndex=null;
  $('addSaleItemBtn').textContent='＋ Add Item to Bill';
  setTimeout(()=>$('sBarcode').focus(),50);
@@ -3248,24 +3260,24 @@ function renderSaleCart(){
  $('saleCartTotal').textContent=money(cartGrandTotal());
  $('saleCartRows').innerHTML=saleCart.length?saleCart.map((x,i)=>`<tr>
    <td><b>${x.item}</b><div class="muted">${x.code}</div></td>
-   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}</td><td><b>${money(x.total)}</b></td>
+   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}${x.discountPct?'<br><small>−'+x.discountPct+'% discount</small>':''}</td><td><b>${money(x.total)}</b></td>
    <td><button type="button" class="cart-edit" data-cart-edit="${i}">Edit</button><button type="button" class="cart-remove" data-cart-remove="${i}">Remove</button></td>
  </tr>`).join(''):'<tr><td colspan="6">No item added yet.</td></tr>';
  document.querySelectorAll('[data-cart-remove]').forEach(b=>b.onclick=()=>{saleCart.splice(+b.dataset.cartRemove,1);renderSaleCart()});
  document.querySelectorAll('[data-cart-edit]').forEach(b=>b.onclick=()=>{
    const i=+b.dataset.cartEdit,x=saleCart[i];if(!x)return;
-   editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;calcS();
+   editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;$('sDiscount').value=x.discountPct||0;calcS();
    $('addSaleItemBtn').textContent='✓ Update Item';window.scrollTo({top:$('sales').offsetTop||0,behavior:'smooth'});
  });
 }
 function addCurrentItemToCart(){
  const item=buildCurrentSaleItem(editingCartIndex==null?-1:editingCartIndex);if(!item)return false;
  if(editingCartIndex!=null){saleCart[editingCartIndex]=item}else{
-   const same=saleCart.findIndex(x=>String(x.code)===String(item.code)&&Number(x.price)===Number(item.price));
+   const same=saleCart.findIndex(x=>String(x.code)===String(item.code)&&Number(x.price)===Number(item.price)&&Number(x.discountPct||0)===Number(item.discountPct||0));
    if(same>=0){
      const mergedQty=(+saleCart[same].qty||0)+item.qty, stock=stockMap()[item.code];
      if(stock&&mergedQty>stock.current){alert('Not enough stock. Available: '+fmtQty(stock.current)+' '+stock.unit);return false}
-     saleCart[same].qty=mergedQty;saleCart[same].total=mergedQty*saleCart[same].price;
+     saleCart[same].qty=mergedQty;saleCart[same].total=discountedLineTotal(mergedQty,saleCart[same].price,saleCart[same].discountPct);
    }else saleCart.push(item);
  }
  renderSaleCart();clearSaleItemFields();return true;
@@ -3290,7 +3302,7 @@ function buildPendingSale(){
  return {items,total:cartGrandTotal(),serviceCharge:charge,date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
 }
 function showSaleFinish(sale){
- const lines=sale.items.map((x,i)=>`<div><span>${i+1}. ${x.item}</span><b>${fmtQty(x.qty)} ${x.unit} × ${money(x.price)} = ${money(x.total)}</b></div>`).join('');
+ const lines=sale.items.map((x,i)=>`<div><span>${i+1}. ${x.item}${x.discountPct?' (−'+x.discountPct+'%)':''}</span><b>${fmtQty(x.qty)} ${x.unit} × ${money(x.price)} = ${money(x.baseTotal??x.total)}</b></div>`).join('');
  $('saleFinishSummary').innerHTML=`
    ${lines}
    <div><span>Items</span><b>${sale.items.length}</b></div>
@@ -3314,7 +3326,8 @@ function receiptHtml(sale){
  const d=sale.date||'';
  let t=sale.saleTime||new Date().toTimeString().slice(0,8);
  const parts=t.split(':');let hh=+(parts[0]||0),mm=parts[1]||'00',ap=hh>=12?'PM':'AM';hh=hh%12||12;t=String(hh).padStart(2,'0')+':'+mm+' '+ap;
- const rows=sale.items.map(x=>`<tr><td>${esc(x.item)}</td><td>${esc(fmtQty(x.qty))} ${esc(x.unit)}</td><td>${esc(money(x.price))}</td><td>${esc(money(x.baseTotal??x.total))}</td></tr>`).join('');
+ const rows=sale.items.map(x=>`<tr><td>${esc(x.item)}${x.discountPct?'<br><span class="small">Discount −'+esc(x.discountPct)+'%</span>':''}</td><td>${esc(fmtQty(x.qty))} ${esc(x.unit)}</td><td>${esc(money(x.price))}</td><td>${esc(money(x.baseTotal??x.total))}</td></tr>`).join('');
+ const discountTotal=Math.round(sale.items.reduce((sum,x)=>sum+(x.qty*x.price-(x.baseTotal??x.total)),0)*100)/100;
  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(bill)}</title><style>
  @page{margin:2.5mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Sans Bengali",sans-serif;margin:0;padding:0;color:#000}
  .receipt{width:100%;max-width:76mm;margin:auto;font-size:10px;line-height:1.18}
@@ -3339,6 +3352,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
  <div class="dash"></div><div class="title">SALES INVOICE</div><div class="dash"></div>
  <div class="bill"><b>Bill No:</b> ${esc(bill)}</div><div class="row dt"><span><b>Date:</b> ${esc(d)}</span><span><b>Time:</b> ${esc(t)}</span></div><div class="dash"></div>
  <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+ ${discountTotal>0?`<div class="pay" style="text-align:right"><b>Discount included:</b> −${esc(money(discountTotal))}</div>`:''}
  ${sale.serviceCharge?`<div class="pay" style="text-align:right"><b>Service Charge:</b> ${esc(money(sale.serviceCharge))}</div>`:''}
  <div class="total">TOTAL: ${esc(money(sale.total))}</div><div class="dash"></div><div class="pay"><b>Payment:</b> ${esc(sale.paymentMethod)}</div>
  ${sale.paymentMethod==='Credit'?`<div class="pay"><b>Customer:</b> ${esc(sale.creditName||'-')} ${sale.creditPhone?' | '+esc(sale.creditPhone):''}</div><div class="pay"><b>Due:</b> ${esc(money(sale.total))}</div>`:''}
@@ -3373,7 +3387,7 @@ async function completeSale(printAfter){
    invoiceNo=Number(inv.data);
    if(!invoiceNo)throw new Error('Invoice number could not be generated.');
    const rows=sale.items.map(x=>({
-     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
+     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.netPrice,total:x.total,unit:x.unit,list_price:x.price,discount_pct:x.discountPct||0,
      payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
      sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name,invoice_no:invoiceNo
    }));
@@ -3390,11 +3404,11 @@ async function completeSale(printAfter){
    const saleTime=new Date().toTimeString().slice(0,8);
    const tempBill=invoiceNo||('OFF-'+Date.now());
    const syncRows=sale.items.map(x=>({
-     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.price,total:x.total,unit:x.unit,
+     user_id:currentUser.id,item:x.item,barcode:x.code,qty:x.qty,price:x.netPrice,total:x.total,unit:x.unit,list_price:x.price,discount_pct:x.discountPct||0,
      payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
      sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name
    }));
-   const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.price,total:+x.total,serviceCharge:+x.serviceCharge||0,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
+   const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.netPrice,total:+x.total,listPrice:+x.price,discountPct:+x.discountPct||0,serviceCharge:+x.serviceCharge||0,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
    sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
    addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
    db.sales.push(...localRecords);safeSet(DB,db);
@@ -5339,7 +5353,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.44';
+  const POS_VERSION='POS Safe v7.45';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
