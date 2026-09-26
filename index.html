@@ -1207,7 +1207,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.48</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.49</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2732,9 +2732,17 @@ function creditDue(x){return invoiceDue(x.billNo)}
 $('cDate').value=today();
 $('cFindBtn').onclick=function(){
  const q=$('cSearch').value.trim();if(!q){alert('Bill No or mobile number দিন।');return}
- let x=null;const b=returnBill(q);
- if(b!==null)x=[...(db.sales||[]),...openingCredits].slice().reverse().find(z=>+z.billNo===b&&z.paymentMethod==='Credit');
- else x=[...(db.sales||[]),...openingCredits].slice().reverse().find(z=>z.paymentMethod==='Credit'&&(z.creditPhone||'').includes(q)&&invoiceDue(z.billNo)>0);
+ const all=[...(db.sales||[]),...openingCredits].slice().reverse();
+ const digits=q.replace(/\D/g,'');
+ const isPhone=!/^BBBM-/i.test(q)&&digits.length>=10;
+ let x=null;
+ if(isPhone){
+   x=all.find(z=>z.paymentMethod==='Credit'&&normalizeCustomerPhone(z.creditPhone||'').includes(digits)&&invoiceDue(z.billNo)>0);
+ }else{
+   const b=returnBill(q);
+   if(b!==null)x=all.find(z=>+z.billNo===b&&z.paymentMethod==='Credit');
+   if(!x&&digits.length>=7)x=all.find(z=>z.paymentMethod==='Credit'&&normalizeCustomerPhone(z.creditPhone||'').includes(digits)&&invoiceDue(z.billNo)>0);
+ }
  if(!x){alert('Credit sale পাওয়া যায়নি।');return}
  const due=invoiceDue(x.billNo);if(due<=0){alert('এই bill-এর কোনো due নেই।');return}
  selectedCreditSale=x;$('cCustomer').value=x.creditName||x.creditPhone||'-';$('cDue').value=money(due);$('cAmount').value='';
@@ -5406,7 +5414,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.48';
+  const POS_VERSION='POS Safe v7.49';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
