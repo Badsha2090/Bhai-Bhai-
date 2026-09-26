@@ -1207,7 +1207,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.49</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.50</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2547,7 +2547,7 @@ function renderDashboardCreditDetail(key){
 
  const target=$('creditDetailBills');
  target.innerHTML=groups.length?groups.map(g=>{
-   const nums=g.rows.map(r=>+r.billNo).filter(Boolean).sort((a,b)=>a-b);
+   const nums=[...new Set(g.rows.map(r=>+r.billNo).filter(Boolean))].sort((a,b)=>a-b);
    const billLabel=nums.length===1
      ? 'BBBM-'+String(nums[0]).padStart(6,'0')
      : nums.length>1
@@ -2570,8 +2570,18 @@ function renderDashboardCreditDetail(key){
          <div class="item-due ${d>0?'due':'paid'}">${d>0?('Due '+money(d)):'Paid'}</div>
        </div>`;
      }).join('')}</div>
+     ${groupDue>0&&nums.length===1?`<div style="margin-top:14px"><button type="button" class="btn primary collect-credit-bill" data-bill="${nums[0]}">💰 এই বিলের টাকা আদায়</button></div>`:''}
    </div>`;
  }).join(''):'<div class="card credit-detail-empty">এই customer-এর কোনো credit sale পাওয়া যায়নি।</div>';
+
+ target.querySelectorAll('.collect-credit-bill').forEach(button=>button.onclick=async()=>{
+   const bill=Number(button.dataset.bill);
+   if(!Number.isSafeInteger(bill)||invoiceDue(bill)<=0){alert('এই bill-এর কোনো due নেই।');renderDashboardCredit();return}
+   await goTab('credit');
+   $('cSearch').value='BBBM-'+String(bill).padStart(6,'0');
+   $('cFindBtn').click();
+   if(!$('creditForm').classList.contains('hidden'))$('cAmount').focus();
+ });
 
  $('creditCustomerListView').classList.add('hidden');
  $('creditCustomerDetailView').classList.remove('hidden');
@@ -5414,7 +5424,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.49';
+  const POS_VERSION='POS Safe v7.50';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
