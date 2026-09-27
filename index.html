@@ -22,6 +22,17 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 .duplicate-name-msg{display:none;margin-top:5px;padding:8px 10px;border:1px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:700;line-height:1.5}
 </style>
 
+<style id="sale-purchase-price-reveal-css">
+#sales .sale-cost-heading{position:relative;min-height:48px}
+#sales .sale-cost-lookup{position:absolute;left:29%;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sales .sale-cost-lookup button{cursor:pointer;min-height:34px}
+#sales .sale-cost-lookup button:disabled{cursor:not-allowed;opacity:.55}
+#sales .sale-cost-value{display:inline-block;background:#fef3c7;color:#78350f;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:900}
+#sales .sale-cost-value[hidden]{display:none!important}
+body.bbbm-dark-mode #sales .sale-cost-value{background:#78350f;color:#fff7ed}
+@media(max-width:760px){#sales .sale-cost-heading{display:block}#sales .sale-cost-lookup{position:static;transform:none;margin-top:8px}}
+</style>
+
 <style>
 :root{--navy:#06243f;--navy2:#0a3153;--blue:#1769e0;--line:#dfe7ef;--soft:#f4f7fb;--ink:#102033;--muted:#6b7a8c}
 body{background:#edf2f7;color:var(--ink)}
@@ -1210,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.54</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.56</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1399,7 +1410,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
           </section>
 
 <section id="sales" class="section">
-            <div class="section-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div></div>
+            <div class="section-heading sale-cost-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div><div class="sale-cost-lookup"><button type="button" id="showSalePurchasePrice" class="btn gray smallbtn" disabled>👁 Show Purchase Price</button><span id="salePurchasePriceValue" class="sale-cost-value" hidden></span></div></div>
             
 <div class="card form-card">
               <form id="saleForm" class="dataform">
@@ -2215,10 +2226,31 @@ bbbmWireDuplicateName('p');bbbmWireDuplicateName('o');
 function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p');bbbmCheckDuplicateName('p')}
 function fillOpeningFromBarcode(){bbbmFillKnownBarcode('o');bbbmCheckDuplicateName('o')}
 function fillSaleFromBarcode(){
+  hideSalePurchasePrice();
   const code=$('sBarcode').value.trim(),x=stockMap()[code];
   $('sItem').value=x?x.item:'';$('sAvailable').value=x?fmtQty(x.current):'';$('sUnit').value=x?(x.unit||unitFor(code)):'';
+  $('showSalePurchasePrice').disabled=!x;
   if(x){const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===code);const mp=metaFor(code);const rate=mp.sellPrice!=null?mp.sellPrice:(lastSale?lastSale.price:'');if(rate!==''&&rate!=null)$('sPrice').value=Number(rate);calcS()}
 }
+let saleCostRevealTimer=null;
+function hideSalePurchasePrice(){
+  clearTimeout(saleCostRevealTimer);saleCostRevealTimer=null;
+  const value=$('salePurchasePriceValue');if(value){value.hidden=true;value.textContent=''}
+}
+$('showSalePurchasePrice').addEventListener('click',()=>{
+  hideSalePurchasePrice();
+  const code=$('sBarcode').value.trim(),item=stockMap()[code];
+  if(!item)return;
+  const priced=p=>String(p.barcode||'').trim()===code&&p.price!=null&&Number.isFinite(Number(p.price));
+  const last=[...realPurchases()].reverse().find(priced);
+  const opening=last?null:[...openingPurchases()].reverse().find(priced);
+  const value=$('salePurchasePriceValue');
+  value.textContent=last?('Last purchase: '+money(Number(last.price))+' / '+(last.unit||item.unit||'PCS')):
+    opening?('Opening cost: '+money(Number(opening.price))+' / '+(opening.unit||item.unit||'PCS')):
+    item.purchased>0?('Average purchase: '+money(item.avg)+' / '+(item.unit||'PCS')):'Purchase price not saved';
+  value.hidden=false;
+  saleCostRevealTimer=setTimeout(hideSalePurchasePrice,3000);
+});
 let activeScanner=null, activeScannerType=null, quaggaDetectedHandler=null, activeTrack=null, scanTimers=[];
 function clearScanTimers(){scanTimers.forEach(t=>clearTimeout(t));scanTimers=[]}
 function scanStatus(isPurchase,msg){const el=$(isPurchase?'pScanStatus':'sScanStatus');if(el)el.textContent=msg}
@@ -3295,6 +3327,7 @@ function buildCurrentSaleItem(excludeIndex=-1){
  return {code,item:x.item,qty:q,price:p,discountPct,netPrice:discountedUnitPrice(p,discountPct),total:discountedLineTotal(q,p,discountPct),unit:x.unit||'PCS',available:x.current};
 }
 function clearSaleItemFields(){
+ hideSalePurchasePrice();$('showSalePurchasePrice').disabled=true;
  $('sBarcode').value='';$('sItem').value='';$('sAvailable').value='';$('sUnit').value='';
  $('sQty').value='1';$('sPrice').value='';$('sDiscount').value='0';$('sTotal').value='';
  editingCartIndex=null;
@@ -5425,7 +5458,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.54';
+  const POS_VERSION='POS Safe v7.56';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
