@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.56</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.57</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1450,7 +1450,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const display = document.getElementById('sidePadDisplay');
   if (!pad || !display) return;
 
-  const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','saleServiceCharge'];
+  const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','saleServiceCharge','saleCartFinalTotal'];
   let active = document.getElementById('sQty') || null;
   let raw = active ? String(active.value || '') : '';
 
@@ -1461,6 +1461,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(el.id==='sPrice') return 'Sale Price';
     if(el.id==='sDiscount') return 'Discount %';
     if(el.id==='saleServiceCharge') return 'Service Charge';
+    if(el.id==='saleCartFinalTotal') return 'Final Bill Total';
     return 'Number';
   }
 
@@ -1569,7 +1570,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Total</th><th>Action</th></tr></thead>
                   <tbody id="saleCartRows"><tr><td colspan="6">No item added yet.</td></tr></tbody>
                 </table></div>
-                <div class="cart-total" style="flex-wrap:wrap"><span>Grand Total (including service)</span><b id="saleCartTotal">৳0.00</b></div>
+                <div class="cart-total" style="flex-wrap:wrap"><span>Grand Total (edit for bill discount)<small id="saleCartDiscountNote" style="display:block;font-weight:normal"></small></span><label style="display:flex;align-items:center;gap:5px">৳ <input id="saleCartFinalTotal" type="number" inputmode="decimal" step="0.01" min="0" value="0.00" aria-label="Final bill total" style="width:145px;font:inherit;font-weight:800;text-align:right;padding:6px;border:1px solid #a4b8cb;border-radius:7px;background:var(--card,#fff);color:inherit"></label><b id="saleCartTotal" style="display:none">৳0.00</b></div>
               </div>
               <div id="creditCustomerBox" class="sale-finish hidden">
                 <div class="finish-head">
@@ -3308,7 +3309,7 @@ setTimeout(()=>{
  };
 },700);
 
-let pendingSale=null, saleCart=[], editingCartIndex=null;
+let pendingSale=null, saleCart=[], editingCartIndex=null, saleFinalTotalOverride=null;
 function selectedPaymentMethod(){
  const el=document.querySelector('input[name="paymentMethod"]:checked');
  return el?el.value:'Cash';
@@ -3335,17 +3336,44 @@ function clearSaleItemFields(){
  setTimeout(()=>$('sBarcode').focus(),50);
 }
 function saleServiceCharge(){return Math.round((Number($('saleServiceCharge')?.value)||0)*100)/100}
-function cartGrandTotal(){return Math.round((saleCart.reduce((a,x)=>a+(+x.total||0),0)+saleServiceCharge())*100)/100}
-$('saleServiceCharge').addEventListener('input',()=>{renderSaleCart();if(pendingSale)pendingSale=null});
-function renderSaleCart(){
+function cartOriginalTotal(){return Math.round((saleCart.reduce((a,x)=>a+(+x.total||0),0)+saleServiceCharge())*100)/100}
+function cartGrandTotal(){return saleFinalTotalOverride==null?cartOriginalTotal():saleFinalTotalOverride}
+function resetBillDiscount(){saleFinalTotalOverride=null;pendingSale=null}
+function allocateBillDiscount(items,discountCents){
+ const cents=items.map(x=>Math.round(Number(x.total)*100)),sum=cents.reduce((a,b)=>a+b,0);
+ if(!discountCents)return items;
+ if(discountCents>sum||sum<=0)throw new Error('Bill discount exceeds item totals.');
+ const parts=cents.map((value,i)=>({i,whole:Math.floor(discountCents*value/sum),remainder:(discountCents*value)%sum}));
+ let left=discountCents-parts.reduce((a,x)=>a+x.whole,0);
+ parts.sort((a,b)=>b.remainder-a.remainder||a.i-b.i);
+ for(let i=0;i<left;i++)parts[i].whole++;
+ parts.forEach(({i,whole})=>{items[i].billDiscount=whole/100;items[i].total=(cents[i]-whole)/100;});
+ return items;
+}
+$('saleServiceCharge').addEventListener('input',()=>{resetBillDiscount();renderSaleCart()});
+$('saleCartFinalTotal').addEventListener('input',function(){
+ const raw=this.value.trim();saleFinalTotalOverride=raw===''?null:Math.round(Number(raw)*100)/100;pendingSale=null;
+ const original=cartOriginalTotal(),valid=raw===''||(Number.isFinite(saleFinalTotalOverride)&&saleFinalTotalOverride>=saleServiceCharge()&&saleFinalTotalOverride<=original);
+ renderSaleCart(true);
+ this.setCustomValidity(valid?'':'Final total must be between the service charge and the original bill total.');
+ $('saleCartDiscountNote').textContent=valid&&saleFinalTotalOverride!=null&&saleFinalTotalOverride<original?'Bill discount: −'+money(original-saleFinalTotalOverride):'';
+ $('saleCartTotal').textContent=money(cartGrandTotal());
+});
+function renderSaleCart(preserveInput=false){
+ const typedValue=preserveInput?$('saleCartFinalTotal').value:null;
  $('saleCartCount').textContent=saleCart.length+' item'+(saleCart.length===1?'':'s');
  $('saleCartTotal').textContent=money(cartGrandTotal());
- $('saleCartRows').innerHTML=saleCart.length?saleCart.map((x,i)=>`<tr>
+ $('saleCartFinalTotal').value=cartGrandTotal().toFixed(2);
+ if(preserveInput)$('saleCartFinalTotal').value=typedValue;
+ $('saleCartFinalTotal').setCustomValidity('');
+ $('saleCartDiscountNote').textContent=saleFinalTotalOverride!=null&&saleFinalTotalOverride<cartOriginalTotal()?'Bill discount: −'+money(cartOriginalTotal()-saleFinalTotalOverride):'';
+ const displayItems=saleFinalTotalOverride!=null&&saleFinalTotalOverride>=saleServiceCharge()&&saleFinalTotalOverride<=cartOriginalTotal()?allocateBillDiscount(saleCart.map(x=>({...x})),Math.round((cartOriginalTotal()-saleFinalTotalOverride)*100)):saleCart;
+ $('saleCartRows').innerHTML=saleCart.length?displayItems.map((x,i)=>`<tr>
    <td><b>${x.item}</b><div class="muted">${x.code}</div></td>
-   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}${x.discountPct?'<br><small>−'+x.discountPct+'% discount</small>':''}</td><td><b>${money(x.total)}</b></td>
+   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}${x.discountPct?'<br><small>−'+x.discountPct+'% discount</small>':''}</td><td><b>${money(x.total)}</b>${x.billDiscount?'<br><small>Bill −'+money(x.billDiscount)+'</small>':''}</td>
    <td><button type="button" class="cart-edit" data-cart-edit="${i}">Edit</button><button type="button" class="cart-remove" data-cart-remove="${i}">Remove</button></td>
  </tr>`).join(''):'<tr><td colspan="6">No item added yet.</td></tr>';
- document.querySelectorAll('[data-cart-remove]').forEach(b=>b.onclick=()=>{saleCart.splice(+b.dataset.cartRemove,1);renderSaleCart()});
+ document.querySelectorAll('[data-cart-remove]').forEach(b=>b.onclick=()=>{saleCart.splice(+b.dataset.cartRemove,1);resetBillDiscount();renderSaleCart()});
  document.querySelectorAll('[data-cart-edit]').forEach(b=>b.onclick=()=>{
    const i=+b.dataset.cartEdit,x=saleCart[i];if(!x)return;
    editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;$('sDiscount').value=x.discountPct||0;calcS();
@@ -3354,6 +3382,7 @@ function renderSaleCart(){
 }
 function addCurrentItemToCart(){
  const item=buildCurrentSaleItem(editingCartIndex==null?-1:editingCartIndex);if(!item)return false;
+ resetBillDiscount();
  if(editingCartIndex!=null){saleCart[editingCartIndex]=item}else{
    const same=saleCart.findIndex(x=>String(x.code)===String(item.code)&&Number(x.price)===Number(item.price)&&Number(x.discountPct||0)===Number(item.discountPct||0));
    if(same>=0){
@@ -3377,11 +3406,14 @@ function buildPendingSale(){
  for(const code of Object.keys(need)){const st=stockMap()[code];if(!st||need[code]>st.current){alert('Not enough stock for '+(st?st.item:code)+'. Available: '+fmtQty(st?st.current:0));return null}}
  const charge=saleServiceCharge();
  if(!Number.isFinite(charge)||charge<0||charge>1000000){alert('Valid service charge লিখুন।');return null}
+ const original=cartOriginalTotal(),finalTotal=cartGrandTotal();
+ if(!$('saleCartFinalTotal').checkValidity()||!Number.isFinite(finalTotal)||finalTotal<charge||finalTotal>original){alert('Final bill total must be between the service charge and '+money(original)+'.');$('saleCartFinalTotal').focus();return null}
  // Allocate the additional amount to the first sold item for existing cloud/report totals.
  // Keep the original unit rate and base item total for receipt display.
- const items=saleCart.map(x=>({...x}));
+ const items=allocateBillDiscount(saleCart.map(x=>({...x})),Math.round((original-finalTotal)*100));
+ items.forEach(x=>{if(x.billDiscount){x.netPrice=x.total/x.qty;x.discountPct=x.price>0?Math.round((1-x.total/(x.qty*x.price))*1000000)/10000:0}});
  if(charge){items[0].baseTotal=items[0].total;items[0].serviceCharge=charge;items[0].total=Math.round((items[0].total+charge)*100)/100}
- return {items,total:cartGrandTotal(),serviceCharge:charge,date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
+ return {items,total:finalTotal,billDiscount:original-finalTotal,serviceCharge:charge,date:$('sDate').value,paymentMethod:selectedPaymentMethod()};
 }
 function showSaleFinish(sale){
  const lines=sale.items.map((x,i)=>`<div><span>${i+1}. ${x.item}${x.discountPct?' (−'+x.discountPct+'%)':''}</span><b>${fmtQty(x.qty)} ${x.unit} × ${money(x.price)} = ${money(x.baseTotal??x.total)}</b></div>`).join('');
@@ -3389,6 +3421,7 @@ function showSaleFinish(sale){
    ${lines}
    <div><span>Items</span><b>${sale.items.length}</b></div>
   ${sale.serviceCharge?`<div><span>Service Charge</span><b>${money(sale.serviceCharge)}</b></div>`:''}
+  ${sale.billDiscount?`<div><span>Bill Discount (shared across items)</span><b>−${money(sale.billDiscount)}</b></div>`:''}
    <div><span>Payment</span><b>${sale.paymentMethod}</b></div>
    ${sale.paymentMethod==='Credit'?`<div><span>Customer</span><b>${sale.creditName||'-'}</b></div><div><span>Mobile</span><b>${sale.creditPhone||'-'}</b></div>`:''}
    <div><span>Grand Total</span><b>${money(sale.total)}</b></div>`;
@@ -3396,7 +3429,7 @@ function showSaleFinish(sale){
  $('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');
 }
 function resetSaleForm(){
- $('saleForm').reset();$('saleServiceCharge').value='0';saleCart=[];editingCartIndex=null;renderSaleCart();
+ $('saleForm').reset();$('saleServiceCharge').value='0';saleCart=[];editingCartIndex=null;resetBillDiscount();renderSaleCart();
  $('sDate').value=today();
  const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
  $('saleFinishBox').classList.add('hidden');$('creditCustomerBox').classList.add('hidden');$('saleCartBox').classList.remove('hidden');
@@ -5458,7 +5491,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.56';
+  const POS_VERSION='POS Safe v7.57';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
