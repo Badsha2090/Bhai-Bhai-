@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.57</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.58</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1422,7 +1422,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 <label>Sale Price / Unit<input id="sPrice" type="number" inputmode="decimal" step="0.01" min="0" required autocomplete="off"></label>
                 <div class="sale-date-service-row"><label class="sale-date-compact">Date<input id="sDate" type="date" required></label><label class="sale-service-inline">Service Charge (Optional) ৳<input id="saleServiceCharge" type="number" inputmode="decimal" min="0" step="0.01" value="0" placeholder="0.00" aria-label="Optional service charge"></label></div>
                 <label class="sale-discount-field">Discount %<input id="sDiscount" type="number" inputmode="decimal" step="0.01" min="0" max="100" value="0" placeholder="0" aria-label="Discount percentage"></label>
-                <label>Total (after discount)<input id="sTotal" readonly></label>
+                <label>Total (after discount) · editable<input id="sTotal" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Enter final item amount" aria-label="Final total for this item"></label>
                 <div id="sideNumberPad">
   <div class="pad-title">🔢 Number Keyboard</div>
   <div id="sidePadDisplay" class="pad-target">Select a field</div>
@@ -1450,7 +1450,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const display = document.getElementById('sidePadDisplay');
   if (!pad || !display) return;
 
-  const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','saleServiceCharge','saleCartFinalTotal'];
+  const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','sTotal','saleServiceCharge','saleCartFinalTotal'];
   let active = document.getElementById('sQty') || null;
   let raw = active ? String(active.value || '') : '';
 
@@ -1459,6 +1459,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(el.id==='sBarcode') return 'Barcode';
     if(el.id==='sQty') return 'Sale Quantity';
     if(el.id==='sPrice') return 'Sale Price';
+    if(el.id==='sTotal') return 'Item Total';
     if(el.id==='sDiscount') return 'Discount %';
     if(el.id==='saleServiceCharge') return 'Service Charge';
     if(el.id==='saleCartFinalTotal') return 'Final Bill Total';
@@ -3325,7 +3326,10 @@ function buildCurrentSaleItem(excludeIndex=-1){
  if(q+already>x.current){alert('Not enough stock. Available for this bill: '+fmtQty(Math.max(0,x.current-already))+' '+(x.unit||'PCS'));return null}
  if(p<0||$('sPrice').value===''){alert('Enter sale price.');return null}
  if(!Number.isFinite(discountPct)||discountPct<0||discountPct>100){alert('Discount 0 থেকে 100% লিখুন।');$('sDiscount').focus();return null}
- return {code,item:x.item,qty:q,price:p,discountPct,netPrice:discountedUnitPrice(p,discountPct),total:discountedLineTotal(q,p,discountPct),unit:x.unit||'PCS',available:x.current};
+ const calculated=discountedLineTotal(q,p,discountPct),raw=$('sTotal').value.trim(),total=raw===''?calculated:Number(raw),manualTotal=total!==calculated;
+ if(!Number.isFinite(total)||total<0||total>calculated||Math.abs(Math.round(total*100)-total*100)>0.000001){alert('Item Total 0 থেকে '+money(calculated)+' এর মধ্যে দুই দশমিক পর্যন্ত লিখুন।');$('sTotal').focus();return null}
+ const effectivePct=manualTotal&&p>0?Math.round((1-total/(q*p))*1000000)/10000:discountPct;
+ return {code,item:x.item,qty:q,price:p,discountPct:effectivePct,enteredDiscountPct:discountPct,manualTotal,netPrice:manualTotal?total/q:discountedUnitPrice(p,discountPct),total,unit:x.unit||'PCS',available:x.current};
 }
 function clearSaleItemFields(){
  hideSalePurchasePrice();$('showSalePurchasePrice').disabled=true;
@@ -3370,13 +3374,13 @@ function renderSaleCart(preserveInput=false){
  const displayItems=saleFinalTotalOverride!=null&&saleFinalTotalOverride>=saleServiceCharge()&&saleFinalTotalOverride<=cartOriginalTotal()?allocateBillDiscount(saleCart.map(x=>({...x})),Math.round((cartOriginalTotal()-saleFinalTotalOverride)*100)):saleCart;
  $('saleCartRows').innerHTML=saleCart.length?displayItems.map((x,i)=>`<tr>
    <td><b>${x.item}</b><div class="muted">${x.code}</div></td>
-   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}${x.discountPct?'<br><small>−'+x.discountPct+'% discount</small>':''}</td><td><b>${money(x.total)}</b>${x.billDiscount?'<br><small>Bill −'+money(x.billDiscount)+'</small>':''}</td>
+   <td>${fmtQty(x.qty)}</td><td>${x.unit}</td><td>${money(x.price)}${x.discountPct?'<br><small>−'+x.discountPct+'% discount</small>':''}</td><td><b>${money(x.total)}</b>${x.manualTotal?'<br><small>Item total edited</small>':''}${x.billDiscount?'<br><small>Bill −'+money(x.billDiscount)+'</small>':''}</td>
    <td><button type="button" class="cart-edit" data-cart-edit="${i}">Edit</button><button type="button" class="cart-remove" data-cart-remove="${i}">Remove</button></td>
  </tr>`).join(''):'<tr><td colspan="6">No item added yet.</td></tr>';
  document.querySelectorAll('[data-cart-remove]').forEach(b=>b.onclick=()=>{saleCart.splice(+b.dataset.cartRemove,1);resetBillDiscount();renderSaleCart()});
  document.querySelectorAll('[data-cart-edit]').forEach(b=>b.onclick=()=>{
    const i=+b.dataset.cartEdit,x=saleCart[i];if(!x)return;
-   editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;$('sDiscount').value=x.discountPct||0;calcS();
+   editingCartIndex=i;$('sBarcode').value=x.code;fillSaleFromBarcode();$('sQty').value=x.qty;$('sPrice').value=x.price;$('sDiscount').value=x.enteredDiscountPct??x.discountPct??0;calcS();$('sTotal').value=Number(x.total).toFixed(2);
    $('addSaleItemBtn').textContent='✓ Update Item';window.scrollTo({top:$('sales').offsetTop||0,behavior:'smooth'});
  });
 }
@@ -3384,7 +3388,7 @@ function addCurrentItemToCart(){
  const item=buildCurrentSaleItem(editingCartIndex==null?-1:editingCartIndex);if(!item)return false;
  resetBillDiscount();
  if(editingCartIndex!=null){saleCart[editingCartIndex]=item}else{
-   const same=saleCart.findIndex(x=>String(x.code)===String(item.code)&&Number(x.price)===Number(item.price)&&Number(x.discountPct||0)===Number(item.discountPct||0));
+   const same=item.manualTotal?-1:saleCart.findIndex(x=>!x.manualTotal&&String(x.code)===String(item.code)&&Number(x.price)===Number(item.price)&&Number(x.discountPct||0)===Number(item.discountPct||0));
    if(same>=0){
      const mergedQty=(+saleCart[same].qty||0)+item.qty, stock=stockMap()[item.code];
      if(stock&&mergedQty>stock.current){alert('Not enough stock. Available: '+fmtQty(stock.current)+' '+stock.unit);return false}
@@ -5491,7 +5495,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.57';
+  const POS_VERSION='POS Safe v7.58';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
