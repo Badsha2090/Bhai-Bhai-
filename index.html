@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.58</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.59</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2120,7 +2120,7 @@ async function loadCloudData(){
   openingCredits=(sr.data||[]).filter(x=>x.barcode==='__OPENING_CREDIT__').map(x=>({id:x.id,item:'Previous Due',barcode:x.barcode,qty:1,price:+x.total,total:+x.total,date:x.sale_date,by:x.by_name,unit:'PCS',paymentMethod:'Credit',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',saleTime:x.sale_time||''}));
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price,openingStock:String(x.by_name||'').startsWith('OPENING STOCK •')})),
-    sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,listPrice:x.list_price==null?+x.price:+x.list_price,discountPct:+x.discount_pct||0,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
+    sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({id:x.id,userId:x.user_id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,listPrice:x.list_price==null?+x.price:+x.list_price,discountPct:+x.discount_pct||0,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
     collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''})),
@@ -2954,7 +2954,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 function allBillTransactions(){
   const groups={};
   (db.sales||[]).forEach(s=>{
-    const key=[String(s.date||''),String(s.saleTime||''),String(s.creditPhone||''),String(s.creditName||''),String(s.paymentMethod||'Cash')].join('|');
+    const key=s.billNo?'invoice|'+String(s.billNo):[String(s.date||''),String(s.saleTime||''),String(s.creditPhone||''),String(s.creditName||''),String(s.paymentMethod||'Cash')].join('|');
     if(!groups[key])groups[key]=[];
     groups[key].push(s);
   });
@@ -3002,7 +3002,7 @@ function showBillHistoryDetail(rows){
   if(!box||!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
   const customer=first.creditName||'',phone=first.creditPhone||'';
-  const tr=rows.map(x=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}${x.discountPct?' • Discount −'+x.discountPct+'%':''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}</td></tr>`).join('');
+  const tr=rows.map((x,i)=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}${x.discountPct?' • Discount −'+x.discountPct+'%':''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}${x.id&&x.userId===currentUser?.id?`<br><button type="button" class="btn gray smallbtn" data-saved-discount="${i}" style="margin-top:5px">৳ টাকা ছাড়</button>`:''}</td></tr>`).join('');
   box.innerHTML=`<div class="bill-detail-head">
     <div><div class="bill-detail-title">Bill #${billNoLabel(rows)}</div>
     <div class="bill-detail-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''}${phone?' • '+phone:''} • ${first.paymentMethod||'Cash'}</div></div>
@@ -3012,7 +3012,13 @@ function showBillHistoryDetail(rows){
     </div>
   </div>
   <div style="overflow:auto"><table class="bill-detail-table"><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${tr}</tbody></table></div>
-  <div class="bill-detail-total">Total: ${money(total)}</div>`;
+  <div class="bill-detail-total">Total: ${money(total)}</div>
+  <div id="savedSaleDiscountPanel" class="hidden" style="margin:12px 0;padding:12px;border:1px solid #bfd1e5;border-radius:8px">
+    <b id="savedSaleDiscountTitle"></b><p style="margin:5px 0">পণ্য ফেরত নয়। আইটেমের নতুন মোট টাকা লিখুন; Quantity ও Stock একই থাকবে।</p>
+    <label>New item total (৳) <input id="savedSaleDiscountAmount" type="number" inputmode="decimal" step="0.01" min="0" style="width:155px;padding:8px;margin:0 8px"></label>
+    <button type="button" class="btn primary" id="savedSaleDiscountSave">Save discount</button>
+    <button type="button" class="btn gray" id="savedSaleDiscountCancel">Cancel</button>
+  </div>`;
   box.classList.remove('hidden');
   $('billHistoryList').closest('.card').classList.add('hidden');
   $('billHistorySearchInput').closest('.card').classList.add('hidden');
@@ -3022,6 +3028,37 @@ function showBillHistoryDetail(rows){
     $('billHistorySearchInput').closest('.card').classList.remove('hidden');
   };
   $('billDetailPrintBtn').onclick=()=>printBillSearchRows(rows);
+  box.querySelectorAll('[data-saved-discount]').forEach(btn=>btn.onclick=()=>{
+    const x=rows[Number(btn.dataset.savedDiscount)],panel=$('savedSaleDiscountPanel');
+    panel.classList.remove('hidden');$('savedSaleDiscountTitle').textContent=x.item+' · '+fmtQty(x.qty)+' '+x.unit+' · current '+money(x.total);
+    $('savedSaleDiscountAmount').value=Number(x.total).toFixed(2);$('savedSaleDiscountAmount').max=Number(x.total).toFixed(2);
+    $('savedSaleDiscountCancel').onclick=()=>panel.classList.add('hidden');
+    $('savedSaleDiscountSave').onclick=()=>saveExistingSaleDiscount(x,rows);
+    $('savedSaleDiscountAmount').focus();
+  });
+}
+
+async function saveExistingSaleDiscount(x,billRows){
+ const input=$('savedSaleDiscountAmount'),button=$('savedSaleDiscountSave'),raw=input.value.trim(),amount=Number(raw);
+ if(!x.id||!raw||!Number.isFinite(amount)||amount<0||amount>=x.total||Math.abs(Math.round(amount*100)-amount*100)>0.000001){alert('বর্তমান '+money(x.total)+' থেকে কম, সঠিক নতুন মোট টাকা লিখুন।');input.focus();return}
+ if(returnedQty(x)>0){alert('এই আইটেমের Return আগেই হয়েছে। Return থাকা বিলের দাম এখানে বদলানো যাবে না।');return}
+ const billTotal=billRows.reduce((a,r)=>a+(Number(r.total)||0),0),newBillTotal=Math.round((billTotal-x.total+amount)*100)/100;
+ const collected=(db.collections||[]).filter(c=>String(c.billNo)===String(x.billNo)).reduce((a,c)=>a+(Number(c.amount)||0),0);
+ if(collected>newBillTotal){alert('এই বিলে জমা টাকা '+money(collected)+'; তার নিচে বিল কমানো যাবে না।');return}
+ if(!confirm('Bill #'+billNoLabel(billRows)+'\n'+x.item+'\n'+money(x.total)+' → '+money(amount)+'\nছাড়: '+money(x.total-amount)+'\nনতুন বিল: '+money(newBillTotal)+'\nস্টকের পরিমাণ বদলাবে না। Save করবেন?'))return;
+ button.disabled=true;
+ try{
+  const qty=Number(x.qty),list=Number(x.listPrice),effectivePct=list>0?Math.max(0,Math.round((1-amount/(qty*list))*1000000)/10000):0;
+  const updated=await cloud.from('bbbm_sales').update({total:amount,price:amount/qty,list_price:list,discount_pct:effectivePct}).eq('id',x.id).eq('total',x.total).select('id,total');
+  if(updated.error)throw updated.error;
+  if(!updated.data||updated.data.length!==1)throw new Error('Bill changed elsewhere or update permission is unavailable. Refresh and try again.');
+  await loadCloudData();render();
+  const fresh=(db.sales||[]).filter(r=>String(r.billNo)===String(x.billNo));
+  renderBillHistoryPage($('billHistorySearchInput').value);
+  if(fresh.length)showBillHistoryDetail(fresh);
+  alert('টাকা ছাড় সেভ হয়েছে। নতুন বিল '+money(newBillTotal)+'। Stock বদলায়নি।');
+ }catch(err){alert('টাকা ছাড় সেভ হয়নি: '+(err.message||err))}
+ finally{button.disabled=false}
 }
 
 function renderReport(){
@@ -5495,7 +5532,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.58';
+  const POS_VERSION='POS Safe v7.59';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
