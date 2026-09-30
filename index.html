@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.67</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.68</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1280,7 +1280,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
               </div>
 
               <div class="card panel">
-                <div class="panel-head"><h3>Stock Alert</h3><button class="mini-link" data-go="stock">View Stock</button></div>
+                <div class="panel-head"><h3>Stock Alert</h3><button class="mini-link" data-go="stockalerts">View Alerts</button></div>
                 <div id="dashLowStock" class="alert-list"></div>
               </div>
 
@@ -1288,6 +1288,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
             </div>
           </section>
 
+          <section id="stockalerts" class="section"><div class="section-heading"><div><h2>Stock Alert</h2><p>শুধু কম স্টকের পণ্য — নির্ধারিত সীমার সমান বা কম।</p></div></div><div class="card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Current Stock</th><th>Alert Limit</th></tr></thead><tbody id="stockAlertRows"></tbody></table></div></div></section>
           <section id="purchase" class="section">
             <div class="section-heading"><div><h2>Purchase</h2><p>Add stock using barcode, unit and purchase/selling rate.</p></div></div>
             <div class="card form-card">
@@ -1298,6 +1299,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 <label>Unit<select id="pUnit" required><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option><option value="ROLL">ROLL</option></select></label>
                 <label>Purchase Price / Unit<input id="pPrice" type="number" step="0.01" min="0" required></label>
                 <label>Selling Price / Unit<input id="pSellPrice" type="number" step="0.01" min="0" placeholder="Default sale rate"></label>
+                <label>Low Stock Alert <span id="pAlertUnit">(PCS)</span> — Optional<input id="pLowStock" type="number" min="0" step="0.001" placeholder="Default: 3"><small>স্টক এই পরিমাণ বা কম হলে alert দেখাবে।</small></label>
                 <label>Date<input id="pDate" type="date" required></label>
                 <label>Total<input id="pTotal" readonly></label>
                 
@@ -2241,7 +2243,7 @@ function bbbmWireDuplicateName(prefix){
  [prefix+'Item',prefix+'Barcode'].forEach(id=>{const input=$(id);if(input){const check=()=>{if(id===prefix+'Item')bbbmReuseBarcodeByName(prefix);else if(input.value.trim()!==input.dataset.reusedNameBarcode)delete input.dataset.reusedNameBarcode;bbbmCheckDuplicateName(prefix)};input.addEventListener('input',check);input.addEventListener('change',check);}});
 }
 bbbmWireDuplicateName('p');bbbmWireDuplicateName('o');
-function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p');bbbmCheckDuplicateName('p')}
+function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p');bbbmCheckDuplicateName('p');bbbmLoadPurchaseAlert()}
 function fillOpeningFromBarcode(){bbbmFillKnownBarcode('o');bbbmCheckDuplicateName('o')}
 function fillSaleFromBarcode(){
   hideSalePurchasePrice();
@@ -2694,10 +2696,17 @@ if(typeof window.__bbbmApplyInventorySearch==='function')window.__bbbmApplyInven
  const top=Object.values(grouped).sort((a,b)=>b.qty-a.qty).slice(0,5);
  if($('dashTopItems'))$('dashTopItems').innerHTML=top.length?top.map((x,i)=>`<div class="top-item"><b>${i+1}. ${x.item}</b><span>${fmtQty(x.qty)} ${x.unit}<br>${money(x.total)}</span></div>`).join(''):'<div class="top-item"><span>No sales yet.</span></div>';
 
- const low=vals.filter(x=>x.current<=5).sort((a,b)=>a.current-b.current).slice(0,5);
- if($('dashLowStock'))$('dashLowStock').innerHTML=low.length?low.map(x=>`<div class="alert-item"><b>${x.item}</b><span>${fmtQty(x.current)} ${x.unit||'PCS'} left</span></div>`).join(''):'<div class="alert-item"><span>No low stock items.</span></div>';
+ const low=bbbmLowStockItems(vals);
+ bbbmRenderStockAlerts(low);
+ if($('dashLowStock'))$('dashLowStock').innerHTML=low.length?low.slice(0,5).map(x=>`<div class="alert-item"><b>${x.item}</b><span>${fmtQty(x.current)} ${x.unit||'PCS'} left</span></div>`).join(''):'<div class="alert-item"><span>No low stock items.</span></div>';
 }
-function calcP(){$('pTotal').value=((+$('pQty').value||0)*(+$('pPrice').value||0)).toFixed(2)}
+
+function bbbmStockAlertLimit(code){const v=metaFor(code).lowStockAlert;return v!=null&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):3}
+function bbbmLowStockItems(vals){return vals.filter(x=>Number(x.current)<=bbbmStockAlertLimit(x.barcode)).sort((a,b)=>a.current-b.current)}
+function bbbmRenderStockAlerts(items){const body=document.getElementById('stockAlertRows');if(!body)return;body.replaceChildren();if(!items.length){const row=body.insertRow();const c=row.insertCell();c.colSpan=5;c.textContent='কোনো low stock পণ্য নেই।';return}items.forEach((x,i)=>{const row=body.insertRow();[i+1,x.item,x.barcode,fmtQty(x.current)+' '+(x.unit||'PCS'),fmtQty(bbbmStockAlertLimit(x.barcode))+' '+(x.unit||'PCS')].forEach(v=>{row.insertCell().textContent=v})})}
+function bbbmLoadPurchaseAlert(){const input=document.getElementById('pLowStock');if(!input)return;const code=document.getElementById('pBarcode').value.trim();const v=metaFor(code).lowStockAlert;input.dataset.alertCode=code;input.value=v==null?'':v;document.getElementById('pAlertUnit').textContent='('+document.getElementById('pUnit').value+')'}
+
+function calcP(){if($('pLowStock')&&$('pLowStock').dataset.alertCode!==$('pBarcode').value.trim())bbbmLoadPurchaseAlert();if($('pAlertUnit'))$('pAlertUnit').textContent='('+$('pUnit').value+')';$('pTotal').value=((+$('pQty').value||0)*(+$('pPrice').value||0)).toFixed(2)}
 function discountedUnitPrice(price,percent){return Math.round((Number(price)||0)*(1-(Number(percent)||0)/100)*10000)/10000}
 function discountedLineTotal(qty,price,percent){return Math.round((Number(qty)||0)*discountedUnitPrice(price,percent)*100)/100}
 function calcS(){const d=Number($('sDiscount').value||0);$('sDiscount').setCustomValidity(!Number.isFinite(d)||d<0||d>100?'Discount must be between 0 and 100%.':'');$('sTotal').value=Number.isFinite(d)&&d>=0&&d<=100?discountedLineTotal($('sQty').value,$('sPrice').value,d).toFixed(2):''}
@@ -2712,7 +2721,7 @@ $('purchaseForm').onsubmit=async function(e){
  let existing=stockMap()[code],item=$('pItem').value.trim();
  if(!bbbmCheckDuplicateName('p')){alert('⚠️ Name Same! এই পণ্যের নাম আগেই আছে। Existing Barcode ব্যবহার করুন অথবা আলাদা Item Name দিন।');$('pItem').focus();return;}
  if(existing&&existing.item!==item){if(!confirm('This barcode already belongs to '+existing.item+'. Use the existing item name?'))return;item=existing.item}
- saveMeta(code,sp==null?{unit,item}:{unit,item,sellPrice:sp});
+ saveMeta(code,{...(sp==null?{unit,item}:{unit,item,sellPrice:sp}),lowStockAlert:$('pLowStock').value===''?bbbmStockAlertLimit(code):Number($('pLowStock').value)});
  const btn=this.querySelector('[type=submit]');btn.disabled=true;
  const payload={user_id:currentUser.id,item,barcode:code,qty:q,price:p,total:q*p,unit,selling_price:sp,purchase_date:$('pDate').value,by_name:currentUser.name};
  try{
@@ -3862,12 +3871,13 @@ async function goTab(tab){
  document.querySelectorAll('.nav button[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
+ if(tab==='stockalerts')bbbmRenderStockAlerts(bbbmLowStockItems(Object.values(stockMap())));
  if(tab==='barcode')refreshBarcodeItems();
  if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
       if(tab==='accounts')renderAccounts();
       if(tab==='purchasereturn')renderPurchaseReturnHistory();
  if(tab==='openingcredit')renderOpeningCreditHistory();
- const names={openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
+ const names={openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -5095,9 +5105,9 @@ window.addEventListener('DOMContentLoaded', function(){
  const pad=document.getElementById('purchaseSidePad'),display=document.getElementById('purchasePadDisplay');
  const num=document.getElementById('purchaseNumKeys'),text=document.getElementById('purchaseTextKeys');
  if(!pad||!display||!num||!text)return;
- const fields=['pItem','pBarcode','pQty','pPrice','pSellPrice'];
+ const fields=['pItem','pBarcode','pQty','pPrice','pSellPrice','pLowStock'];
  let active=document.getElementById('pQty'),raw=active?String(active.value||''):'';
- function label(el){return !el?'Select a field':({pItem:'Item Name',pBarcode:'Barcode',pQty:'Quantity',pPrice:'Purchase Price',pSellPrice:'Selling Price'}[el.id]||'Field')}
+ function label(el){return !el?'Select a field':({pItem:'Item Name',pBarcode:'Barcode',pQty:'Quantity',pPrice:'Purchase Price',pSellPrice:'Selling Price',pLowStock:'Low Stock Alert'}[el.id]||'Field')}
  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
  function refresh(){display.innerHTML=active?'<small>'+label(active)+'</small>'+esc(raw||'0'):'Select a field'}
  function mode(m){num.classList.toggle('hidden',m!=='num');text.classList.toggle('hidden',m!=='text');pad.querySelectorAll('[data-ppadmode]').forEach(b=>b.classList.toggle('active',b.dataset.ppadmode===m))}
@@ -5192,7 +5202,7 @@ window.addEventListener('DOMContentLoaded', function(){
 <script id="all-settings-js">
 (function(){
 const K='bbbm_settings_v1',$=id=>document.getElementById(id);
-const D={shopName:'Bhai Bhai Building Materials Trading LLC',shopAddress:'',shopPhone:'',receiptHeader:'Bhai Bhai Building Materials',receiptFooter:'Thank you',paperSize:'80',receiptAddress:true,receiptPhone:true,defaultUnit:'PCS',lowStock:5,autoBarcode:true,saleQty:1,defaultPayment:'Cash',salePriceEdit:true,purchaseQty:1,showPurchaseSellPrice:true,saleKeypad:true,purchaseKeypad:true,creditKeyboard:true,keyboardSize:'normal',autoBackup:true,billPrinter:'',barcodePrinter:'EZPOS LP002',receiptCopies:1,autoPrint:false,currency:'৳',dateFormat:'DD-MM-YYYY',confirmDelete:true,confirmReturn:true,lastBackup:''};
+const D={shopName:'Bhai Bhai Building Materials Trading LLC',shopAddress:'',shopPhone:'',receiptHeader:'Bhai Bhai Building Materials',receiptFooter:'Thank you',paperSize:'80',receiptAddress:true,receiptPhone:true,defaultUnit:'PCS',lowStock:3,autoBarcode:true,saleQty:1,defaultPayment:'Cash',salePriceEdit:true,purchaseQty:1,showPurchaseSellPrice:true,saleKeypad:true,purchaseKeypad:true,creditKeyboard:true,keyboardSize:'normal',autoBackup:true,billPrinter:'',barcodePrinter:'EZPOS LP002',receiptCopies:1,autoPrint:false,currency:'৳',dateFormat:'DD-MM-YYYY',confirmDelete:true,confirmReturn:true,lastBackup:''};
 function load(){try{return Object.assign({},D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return {...D}}}function save(s){localStorage.setItem(K,JSON.stringify(s));apply(s)}
 function v(id){return $(id)?$(id).value:''}function c(id){return !!($(id)&&$(id).checked)}function sv(id,x){if($(id))$(id).value=x??''}function sc(id,x){if($(id))$(id).checked=!!x}function msg(x){try{alert(x)}catch(e){}}
 function fill(){let s=load();[['setShopName','shopName'],['setShopAddress','shopAddress'],['setShopPhone','shopPhone'],['setReceiptHeader','receiptHeader'],['setReceiptFooter','receiptFooter'],['setPaperSize','paperSize'],['setDefaultUnit','defaultUnit'],['setLowStock','lowStock'],['setSaleQty','saleQty'],['setDefaultPayment','defaultPayment'],['setPurchaseQty','purchaseQty'],['setKeyboardSize','keyboardSize'],['setBillPrinter','billPrinter'],['setBarcodePrinter','barcodePrinter'],['setReceiptCopies','receiptCopies'],['setCurrency','currency'],['setDateFormat','dateFormat']].forEach(a=>sv(a[0],s[a[1]]));[['setReceiptAddress','receiptAddress'],['setReceiptPhone','receiptPhone'],['setAutoBarcode','autoBarcode'],['setSalePriceEdit','salePriceEdit'],['setShowPurchaseSellPrice','showPurchaseSellPrice'],['setSaleKeypad','saleKeypad'],['setPurchaseKeypad','purchaseKeypad'],['setCreditKeyboard','creditKeyboard'],['setAutoBackup','autoBackup'],['setAutoPrint','autoPrint'],['setConfirmDelete','confirmDelete'],['setConfirmReturn','confirmReturn']].forEach(a=>sc(a[0],s[a[1]]));if($('settingsLastBackup'))$('settingsLastBackup').textContent=s.lastBackup||'—';if($('settingsAboutBackup'))$('settingsAboutBackup').textContent=s.lastBackup||'—';let w=$('who');if($('settingsCurrentUser'))$('settingsCurrentUser').textContent=w?w.textContent:'—';if($('setUserDisplayName')&&w)$('setUserDisplayName').value=w.textContent}
@@ -5551,7 +5561,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.67';
+  const POS_VERSION='POS Safe v7.68';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5950,6 +5960,9 @@ document.addEventListener('click',function(e){
  if(!panel)return;
  setTimeout(function(){if(!panel.classList.contains('open')){bbbmReuseBarcodeByName('p');bbbmCheckDuplicateName('p')}},0);
 },true);
+</script>
+<script>
+(function(){const form=document.getElementById('purchaseForm'),unit=document.getElementById('pUnit');unit.addEventListener('change',()=>document.getElementById('pAlertUnit').textContent='('+unit.value+')');['pItem','pBarcode'].forEach(id=>document.getElementById(id).addEventListener('change',bbbmLoadPurchaseAlert));form.addEventListener('reset',()=>setTimeout(bbbmLoadPurchaseAlert,0));const panel=document.querySelector('#dashboard #dashLowStock');if(panel)panel.addEventListener('click',()=>goTab('stockalerts'));})();
 </script>
 </body>
 </html>
