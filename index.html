@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.65</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.66</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -4476,7 +4476,7 @@ window.addEventListener('DOMContentLoaded', function(){
     ['এঙ্গেল',/\bangle\b|এঙ্গেল|অ্যাঙ্গেল|এংগেল/i],
     ['ব্র্যাকেট',/bracket|braket|ব্র্যাকেট/i],
     ['শাটার',/shutter|rolling shutter|roller shutter|শাটার/i],
-    ['রিং',/o[ -]?ring|rubber ring|gi ring|ms ring|ss ring|washer ring|lock ring|snap ring|circlip|pipe ring|pvc ring|ppr ring|bearing ring|welding ring|curtain ring|hook ring|রিং/i],
+    ['রিং',/\b(?:o[ -]?ring|ring|circlip|stirrup)\b|রিং/i],
     ['চেইন/শিকল',/chain|shikol|sikol|শিকল|চেইন/i],
     ['ক্ল্যাম্প',/clamp|door clamp|u[ -]?bolt|saddle|omega|hose clamp|conduit clamp|ক্ল্যাম্প/i],
     ['রশি',/rope|রশি|দড়ি/i],
@@ -5551,7 +5551,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.65';
+  const POS_VERSION='POS Safe v7.66';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5631,6 +5631,17 @@ body.bbbm-dark-mode #openingSetupPinBox{background:#0f172a;color:#fff}body.bbbm-
 })();
 </script>
 <script id="bbbm-ring-type-size-js">
+window.bbbmRingMatches=function(brand,size,saleOnly){
+ const norm=v=>String(v||'').normalize('NFKC').toLowerCase().replace(/[০-৯]/g,c=>'০১২৩৪৫৬৭৮৯'.indexOf(c)).replace(/(\d)\s*[×x]\s*(?=\d)/g,'$1x').replace(/(\d)\s*mm\b/g,'$1mm').replace(/\b(?:inches|in)\b|["″]/g,'inch').replace(/\s+/g,' ').trim();
+ const contains=(name,value)=>{const i=name.indexOf(value);if(i<0)return false;return !/[a-z0-9]/.test(name[i-1]||'')&&!/[a-z0-9]/.test(name[i+value.length]||'')};
+ const company=norm(brand==='BZS (বাংলা)'?'BZS':brand),wanted=norm(size);
+ return Object.values(stockMap()).filter(x=>{
+  const n=norm(x.item);if(!/\b(?:o[ -]?ring|ring|circlip|stirrup)\b|রিং/i.test(n))return false;
+  if(saleOnly&&Number(x.current)<=0)return false;
+  const brandOK=brand==='Local / No Brand'?(!/\b(?:bsrm|bzs|aks|gph|ksrm|anwar|rsrm|ksml|china)\b/.test(n)):contains(n,company);
+  return brandOK&&contains(n,wanted);
+ });
+};
 window.bbbmRodRingConfig={
  brands:['BSRM','BZS (বাংলা)','AKS','GPH Ispat','KSRM','Anwar','RSRM','KSML','China','Local / No Brand','Other company'],
  sizes:{'All Ring':['6mm','8mm','10mm','12mm','4 × 4 inch','5 × 5 inch','6 × 6 inch','8 × 8 inch','10 × 10 inch','12 × 12 inch','4 × 6 inch','5 × 8 inch','6 × 8 inch','6 × 10 inch','6 × 12 inch','8 × 10 inch','8 × 12 inch']},
@@ -5660,15 +5671,20 @@ window.bbbmRodRingConfig={
   function draw(label,values,fn){st.textContent=label;st.classList.add('show');sb.classList.add('open');sb.innerHTML='';values.forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v;b.onclick=e=>{e.preventDefault();e.stopPropagation();fn(v)};sb.appendChild(b)})}
   function standard(){draw('Size নির্বাচন করুন',['✓ Size ছাড়া',...SIZES.map(z=>z+' inch')],z=>prepare(mode,selected,z==='✓ Size ছাড়া'?'':z.replace(' inch',''),panel))}
   function prepareRod(brand,size,mm){
-   const nm=cfg.name(brand,selected,size,mm),known=bbbmExistingItemWithName(nm),x=known&&stockMap()[known.barcode];
-   if(mode==='sale'){
-    if(!x||Number(x.current)<=0){alert(nm+' স্টকে নেই। আগে Purchase / Opening Stock-এ যোগ করুন।');return}
-    $('sBarcode').value=x.barcode;fillSaleFromBarcode();$('sQty').value='1';calcS();setTimeout(()=>$('sQty').focus(),30);
-   }else{
-    $('pBarcode').value=known?known.barcode:'';$('pItem').value=nm;$('pUnit').value='KG';$('pQty').value='1';$('pPrice').value='';$('pSellPrice').value='';
-    if(known)fillPurchaseFromBarcode();else calcP();setTimeout(()=>$('pQty').focus(),30);
+   const nm=cfg.name(brand,selected,size,mm),matches=bbbmRingMatches(brand,size,mode==='sale');
+   function choose(x){
+    if(mode==='sale'){
+     $('sBarcode').value=x.barcode;fillSaleFromBarcode();$('sQty').value='1';calcS();setTimeout(()=>$('sQty').focus(),30);
+    }else{
+     $('pBarcode').value=x?x.barcode:'';$('pItem').value=x?x.item:nm;$('pUnit').value=x?x.unit:'KG';$('pQty').value='1';$('pPrice').value='';$('pSellPrice').value='';
+     if(x)fillPurchaseFromBarcode();else calcP();setTimeout(()=>$('pQty').focus(),30);
+    }
+    panel.classList.remove('open');
    }
-   panel.classList.remove('open');
+   if(matches.length>1){const labels=matches.map((x,i)=>(i+1)+'. '+x.item+' — Stock: '+x.current+' '+x.unit);draw('স্টক থেকে রিং বাছুন',labels,label=>choose(matches[labels.indexOf(label)]));return}
+   if(matches.length===1){choose(matches[0]);return}
+   if(mode==='sale'){alert(nm+' স্টকে পাওয়া যায়নি। কোম্পানি ও সাইজ মিলিয়ে দেখুন।');return}
+   choose(null);
   }
   function rodSizes(brand){draw('রিংয়ের সাইজ নির্বাচন করুন',[...cfg.sizes[selected],'অন্য সাইজ'],size=>{if(size==='অন্য সাইজ'){const t=prompt('রিংয়ের সাইজ লিখুন, যেমন 6 × 8 inch অথবা 6 × 8 inch · 8mm');if(t&&t.trim())prepareRod(brand,t.trim(),'')}else prepareRod(brand,size,'')})}
   function brands(){draw('কোম্পানি নির্বাচন করুন',cfg.brands,brand=>{if(brand==='Other company'){const t=prompt('কোম্পানির নাম লিখুন');if(t&&t.trim())rodSizes(t.trim())}else rodSizes(brand)})}
