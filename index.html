@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.62</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.63</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2212,6 +2212,22 @@ function bbbmExistingItemWithName(name){
  }
  return null;
 }
+// Resolve an existing product by its complete name; never create a second identity.
+function bbbmReuseBarcodeByName(prefix,fillRates=true){
+ const nameInput=$(prefix+'Item'),barcodeInput=$(prefix+'Barcode');
+ if(!nameInput||!barcodeInput)return false;
+ const match=bbbmExistingItemWithName(nameInput.value),previous=barcodeInput.dataset.reusedNameBarcode||'',code=barcodeInput.value.trim();
+ if(!match){if(previous&&code===previous)barcodeInput.value='';delete barcodeInput.dataset.reusedNameBarcode;return false}
+ const found=String(match.barcode||'').trim();if(!found)return false;
+ if(code&&code!==found&&code!==previous)return false;
+ barcodeInput.value=found;barcodeInput.dataset.reusedNameBarcode=found;
+ const known=bbbmKnownBarcode(found);
+ if(known){nameInput.value=known.item;$(prefix+'Unit').value=known.unit;
+  if(fillRates){if(known.cost!=null&&Number.isFinite(known.cost))$(prefix+'Price').value=known.cost;if(known.sell!=null&&Number.isFinite(known.sell))$(prefix+'SellPrice').value=known.sell}
+ }
+ if(prefix==='p')calcP();else calcO();
+ bbbmCheckDuplicateName(prefix);return true;
+}
 function bbbmCheckDuplicateName(prefix){
  const nameInput=$(prefix+'Item'),barcodeInput=$(prefix+'Barcode'),msg=$(prefix+'DuplicateNameMsg');
  if(!nameInput||!barcodeInput)return true;
@@ -2222,7 +2238,7 @@ function bbbmCheckDuplicateName(prefix){
  return !duplicate;
 }
 function bbbmWireDuplicateName(prefix){
- [prefix+'Item',prefix+'Barcode'].forEach(id=>{const input=$(id);if(input){input.addEventListener('input',()=>bbbmCheckDuplicateName(prefix));input.addEventListener('change',()=>bbbmCheckDuplicateName(prefix));}});
+ [prefix+'Item',prefix+'Barcode'].forEach(id=>{const input=$(id);if(input){const check=()=>{if(id===prefix+'Item')bbbmReuseBarcodeByName(prefix);else if(input.value.trim()!==input.dataset.reusedNameBarcode)delete input.dataset.reusedNameBarcode;bbbmCheckDuplicateName(prefix)};input.addEventListener('input',check);input.addEventListener('change',check);}});
 }
 bbbmWireDuplicateName('p');bbbmWireDuplicateName('o');
 function fillPurchaseFromBarcode(){bbbmFillKnownBarcode('p');bbbmCheckDuplicateName('p')}
@@ -2687,7 +2703,7 @@ function discountedLineTotal(qty,price,percent){return Math.round((Number(qty)||
 function calcS(){const d=Number($('sDiscount').value||0);$('sDiscount').setCustomValidity(!Number.isFinite(d)||d<0||d>100?'Discount must be between 0 and 100%.':'');$('sTotal').value=Number.isFinite(d)&&d>=0&&d<=100?discountedLineTotal($('sQty').value,$('sPrice').value,d).toFixed(2):''}
 $('pQty').oninput=calcP;$('pPrice').oninput=calcP;$('sQty').oninput=calcS;$('sPrice').oninput=calcS;$('sDiscount').oninput=calcS;
 $('sBarcode').oninput=fillSaleFromBarcode;$('pBarcode').oninput=fillPurchaseFromBarcode;
-$('pGenBtn').onclick=function(){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()};
+$('pGenBtn').onclick=function(){if(!bbbmReuseBarcodeByName('p')){$('pBarcode').value=generateBarcode();fillPurchaseFromBarcode()}};
 $('pScanBtn').onclick=()=>startScanner('purchase');$('sScanBtn').onclick=()=>startScanner('sales');$('pStopScan').onclick=stopScanner;$('sStopScan').onclick=stopScanner;
 $('pZoom1').onclick=()=>setCameraZoom(1);$('pZoom15').onclick=()=>setCameraZoom(1.5);$('pZoom2').onclick=()=>setCameraZoom(2);$('sZoom1').onclick=()=>setCameraZoom(1);$('sZoom15').onclick=()=>setCameraZoom(1.5);$('sZoom2').onclick=()=>setCameraZoom(2);$('pTorch').onclick=()=>toggleTorch();$('sTorch').onclick=()=>toggleTorch();$('pPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],true);e.target.value=''};$('sPhotoScan').onchange=e=>{scanPhoto(e.target.files&&e.target.files[0],false);e.target.value=''};
 $('purchaseForm').onsubmit=async function(e){
@@ -2718,7 +2734,7 @@ $('purchaseForm').onsubmit=async function(e){
 function calcO(){if($('oTotal'))$('oTotal').value=((+$('oQty').value||0)*(+$('oPrice').value||0)).toFixed(2)}
 if($('oQty'))$('oQty').oninput=calcO;if($('oPrice'))$('oPrice').oninput=calcO;
 if($('oBarcode')){ $('oBarcode').addEventListener('input',fillOpeningFromBarcode);$('oBarcode').addEventListener('change',fillOpeningFromBarcode); }
-if($('oGenBtn'))$('oGenBtn').onclick=function(){$('oBarcode').value=generateBarcode()};
+if($('oGenBtn'))$('oGenBtn').onclick=function(){if(!bbbmReuseBarcodeByName('o'))$('oBarcode').value=generateBarcode()};
 if($('openingStockForm'))$('openingStockForm').onsubmit=async function(e){
  e.preventDefault();let q=+$('oQty').value,p=+$('oPrice').value,sp=$('oSellPrice').value===''?null:+$('oSellPrice').value,unit=$('oUnit').value||'PCS',code=$('oBarcode').value.trim();
  if(!code){code=generateBarcode();$('oBarcode').value=code}
@@ -5535,7 +5551,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.62';
+  const POS_VERSION='POS Safe v7.63';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5877,10 +5893,17 @@ body.bbbm-dark-mode #openingSetupPinBox{background:#0f172a;color:#fff}body.bbbm-
 'জিআই তার':{unit:'KG',types:['জিআই সাধারণ তার','জিআই বাইন্ডিং তার','গুনা তার','জিআই ফেন্সিং তার','জিআই কাঁটাতার','জিআই চেইন লিংক তার','জিআই ওয়েল্ডেড মেশ তার','জিআই চিকেন মেশ তার','জিআই রেজর তার','জিআই স্টে তার','জিআই হাই টেনসাইল তার'],sizes:['8','10','12','14','16','18','20','22'],suffix:' Gauge'},
 'প্লাস্টিক':{unit:'PCS',types:['পলিথিন শিট','ত্রিপল','প্লাস্টিক নেট / জালি','প্লাস্টিক দড়ি / সুতা','প্লাস্টিক বস্তা','প্লাস্টিক শিট','পিভিসি শিট','প্লাস্টিক কর্নার / এঙ্গেল','প্লাস্টিক ক্লিপ','প্লাস্টিক ওয়াল প্লাগ','প্লাস্টিক টেপ'],sizes:['1','2','3','4','5','6','8','10','12'],suffix:'mm'},
 'শিট/জালি':{unit:'PCS',types:['জিআই শিট','প্লেইন শিট','কালার শিট','ঢেউটিন / করুগেটেড শিট','অ্যালুমিনিয়াম শিট','স্টেইনলেস স্টিল শিট','এমএস শিট','পারফোরেটেড শিট','এক্সপান্ডেড মেটাল জালি','ওয়েল্ডেড জালি','চিকেন জালি','মশার জালি','প্লাস্টিক জালি','ফাইবার জালি','ডায়মন্ড জালি'],sizes:['0.3','0.4','0.5','0.6','0.8','1','1.2','1.5','2'],suffix:'mm'}};let extraType='';const CEMENT=['Seven Ring Special','Shah Special','Crown Cement','Bashundhara Cement','Premier Cement','Akij Cement','Aman Cement','Anwar Cement','Confidence Cement','Diamond Cement','Mir Cement','Metrocem Cement','Royal Cement','Bengal Cement','Deshbandhu Cement','Aramit Cement','S. Alam Cement','ScanCement','RubyCement','Holcim Cement','Meghna Cement'];let active='রড',rodCompany='',pipeType='',bracketType='',shutterType='',ringType='',chainType='',clampType='';
- function setItem(name,unit){$('oItem').value=name;$('oBarcode').value='';$('oUnit').value=unit||'PCS';if(!$('oQty').value)$('oQty').value='1';$('oPrice').value='';$('oSellPrice').value='';calc();panel.classList.remove('open');setTimeout(()=>$('oQty')&&$('oQty').focus(),30)} function ob(t,fn,cls){const b=document.createElement('button');b.type='button';b.textContent=t;if(cls)b.className=cls;b.onclick=e=>{e.preventDefault();e.stopPropagation();fn()};opts.appendChild(b)} function title(t){const d=document.createElement('div');d.className='opening-nb-title';d.textContent=t;opts.appendChild(d)}
+ function setItem(name,unit){$('oItem').value=name;$('oBarcode').value='';$('oUnit').value=unit||'PCS';if(!$('oQty').value)$('oQty').value='1';$('oPrice').value='';$('oSellPrice').value='';bbbmReuseBarcodeByName('o');bbbmCheckDuplicateName('o');calc();panel.classList.remove('open');setTimeout(()=>$('oQty')&&$('oQty').focus(),30)} function ob(t,fn,cls){const b=document.createElement('button');b.type='button';b.textContent=t;if(cls)b.className=cls;b.onclick=e=>{e.preventDefault();e.stopPropagation();fn()};opts.appendChild(b)} function title(t){const d=document.createElement('div');d.className='opening-nb-title';d.textContent=t;opts.appendChild(d)}
  function render(){opts.innerHTML='';rodCompany='';pipeType='';bracketType='';shutterType='';ringType='';chainType='';clampType='';tapeBrand='';tapeType='';angleBrand='';angleSize='';if(active==='রড'){title('রড কোম্পানি নির্বাচন করুন');ROD_COMP.forEach(c=>ob(c,()=>{rodCompany=c;renderRodMM()}))}else if(active==='পাইপ'){title('পাইপের ধরন নির্বাচন করুন');PIPE_TYPES.forEach(t=>ob(t,()=>{pipeType=t;renderPipeSizes()}))}else if(active==='স্কয়ার বার'){title('MS Square Bar / স্কয়ার বার — কোম্পানি নির্বাচন করুন (KG)');SQUARE_BRANDS.forEach(c=>ob(c,()=>{if(c==='Other company'){const x=prompt('কোম্পানির নাম লিখুন');if(x&&x.trim())squareSizes(x.trim())}else squareSizes(c)}))}else if(active==='এঙ্গেল'){title('MS Angle / এঙ্গেল — কোম্পানি নির্বাচন করুন');ANGLE_BRANDS.forEach(c=>ob(c,()=>{if(c==='Other company'){const x=prompt('কোম্পানির নাম লিখুন');if(!x||!x.trim())return;angleBrand=x.trim()}else angleBrand=c;angleSizes()}))}else if(active==='ব্র্যাকেট'){title('Bracket Type নির্বাচন করুন');BRACKET_TYPES.forEach(t=>ob(t,()=>{bracketType=t;renderBracketSizes()}))}else if(active==='শাটার'){title('Shutter Item নির্বাচন করুন');SHUTTER_TYPES.forEach(t=>ob(t,()=>{shutterType=t;renderShutterSizes()}))}else if(active==='রিং'){title('Ring Type নির্বাচন করুন');RING_TYPES.forEach(t=>ob(t,()=>{ringType=t;renderRingSizes()}))}else if(active==='চেইন/শিকল'){title('Chain / শিকল Type নির্বাচন করুন');CHAIN_TYPES.forEach(t=>ob(t,()=>{chainType=t;renderChainSizes()}))}else if(active==='ক্ল্যাম্প'){title('Clamp Type নির্বাচন করুন');CLAMP_TYPES.forEach(t=>ob(t,()=>{clampType=t;renderClampSizes()}))}else if(active==='টেপ'){title('টেপের কোম্পানি নির্বাচন করুন');TAPE_BRANDS.forEach(b=>ob(b,()=>{tapeBrand=b;renderTapeTypes()}))}else if(EXTRA[active]){title(active+' — ধরন নির্বাচন করুন');EXTRA[active].types.forEach(t=>ob(t,()=>{extraType=t;renderExtraSizes()}))}else if(active==='সিমেন্ট'){title('সিমেন্ট ব্র্যান্ড নির্বাচন করুন');CEMENT.forEach(c=>ob(c,()=>setItem(c,'Bag')))}else if(active==='অন্যান্য'){title('Item Name ঘরে নাম লিখুন');ob('Manual Item Entry',()=>{panel.classList.remove('open');$('oItem').focus()},'wide')}else{ob(active,()=>setItem(active,active==='তার'||active==='জিআই তার'||active==='রশি'?'KG':'PCS'),'wide')}} function renderRodMM(){opts.innerHTML='';title(rodCompany+' — MM নির্বাচন করুন');ROD_MM.forEach(mm=>ob(mm+' mm',()=>setItem(rodCompany+' '+mm+'mm Rod','PCS')))} function renderPipeSizes(){opts.innerHTML='';title(pipeType+' — Size নির্বাচন করুন');(HOSE_SIZES[pipeType]||PIPE_SIZES).forEach(sz=>ob(sz+'"',()=>setItem(pipeType+(HOSE_SIZES[pipeType]?' ':' Pipe ')+sz+' inch',HOSE_SIZES[pipeType]?'Feet':'PCS')))} function renderBracketSizes(){opts.innerHTML='';title(bracketType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(bracketType,'PCS'),'wide');BRACKET_SIZES.forEach(sz=>ob(sz+'"',()=>setItem(bracketType+' '+sz+' inch','PCS')))} function renderShutterSizes(){opts.innerHTML='';title(shutterType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(shutterType,'PCS'),'wide');SHUTTER_SIZES.forEach(sz=>ob(sz+'"',()=>setItem(shutterType+' '+sz+' inch','PCS')))} function renderRingSizes(){opts.innerHTML='';title(ringType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(ringType,'PCS'),'wide');RING_SIZES.forEach(sz=>ob(sz+'"',()=>setItem(ringType+' '+sz+' inch','PCS')))} function renderChainSizes(){opts.innerHTML='';title(chainType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(chainType,'KG'),'wide');CHAIN_SIZES.forEach(sz=>ob(sz+'mm',()=>setItem(chainType+' '+sz+'mm','KG')))} function renderClampSizes(){opts.innerHTML='';title(clampType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(clampType,'PCS'),'wide');CLAMP_SIZES.forEach(sz=>ob(sz+'"',()=>setItem(clampType+' '+sz+' inch','PCS')))} function renderTapeTypes(){opts.innerHTML='';title(tapeBrand+' — টেপের ধরন নির্বাচন করুন');Object.keys(TAPE_VARIANTS).forEach(t=>ob(t,()=>{tapeType=t;renderTapeSizes()}))} function tapeName(z){return (tapeBrand==='Local / No Brand'?'':tapeBrand+' ')+tapeType+(z?' '+z:'')} function renderTapeSizes(){opts.innerHTML='';title(tapeType+' — Width × Length নির্বাচন করুন');ob('✓ Size ছাড়া',()=>setItem(tapeName(''),'ROLL'),'wide');TAPE_VARIANTS[tapeType].forEach(z=>ob(z,()=>setItem(tapeName(z),'ROLL')))} function renderExtraSizes(){const c=EXTRA[active];opts.innerHTML='';title(extraType+' — Size optional');ob('✓ Size ছাড়া',()=>setItem(extraType,c.unit),'wide');c.sizes.forEach(sz=>ob(sz+c.suffix,()=>setItem(extraType+' '+sz+c.suffix,c.unit)))}
  CAT.forEach(name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.className='opening-nb-cat'+(name===active?' active':'');b.onclick=e=>{e.preventDefault();e.stopPropagation();active=name;cats.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));render()};cats.appendChild(b)});btn.onclick=e=>{e.preventDefault();e.stopPropagation();panel.classList.toggle('open');if(panel.classList.contains('open'))render()};panel.onclick=e=>e.stopPropagation();document.addEventListener('click',()=>panel.classList.remove('open'));render();
 })();
+</script>
+<script id="bbbm-nonbarcode-reuse-hook">
+document.addEventListener('click',function(e){
+ const panel=e.target.closest&&e.target.closest('#purchase .bbbm-nb-panel');
+ if(!panel)return;
+ setTimeout(function(){if(!panel.classList.contains('open')){bbbmReuseBarcodeByName('p');bbbmCheckDuplicateName('p')}},0);
+},true);
 </script>
 </body>
 </html>
