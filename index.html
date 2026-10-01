@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.72</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.73</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2303,7 +2303,7 @@ async function stopScanner(){
 function acceptScannedValue(value,isPurchase){
   value=String(value||'').replace(/\s+/g,'').trim();
   if(!value)return false;
-  if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode();bbbmAutoAddScan(value)}
+  if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode();bbbmAutoAddScan(value,true)}
   if(navigator.vibrate)try{navigator.vibrate(80)}catch(e){}
   return true
 }
@@ -5412,7 +5412,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.72';
+  const POS_VERSION='POS Safe v7.73';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5816,7 +5816,7 @@ document.addEventListener('click',function(e){
 (function(){const form=document.getElementById('purchaseForm'),unit=document.getElementById('pUnit');unit.addEventListener('change',()=>document.getElementById('pAlertUnit').textContent='('+unit.value+')');['pItem','pBarcode'].forEach(id=>document.getElementById(id).addEventListener('change',bbbmLoadPurchaseAlert));form.addEventListener('reset',()=>setTimeout(bbbmLoadPurchaseAlert,0));const panel=document.querySelector('#dashboard #dashLowStock');if(panel)panel.addEventListener('click',()=>goTab('stockalerts'));})();
 </script>
 <script id="bbbm-auto-scan-add-js">
-let bbbmAutoScanTimer=null,bbbmStagedScan=null;
+let bbbmAutoScanTimer=null,bbbmStagedScan=null,bbbmNewScanStarted=false;
 function bbbmCaptureScan(){
  const ids=['sBarcode','sQty','sPrice','sDiscount','sTotal'];return Object.fromEntries(ids.map(id=>[id,document.getElementById(id).value]));
 }
@@ -5824,15 +5824,18 @@ function bbbmAutoAddScan(expected,repeat=false){
  clearTimeout(bbbmAutoScanTimer);
  const input=document.getElementById('sBarcode'),toggle=document.getElementById('saleAutoScanAdd'),status=document.getElementById('saleAutoScanStatus');
  if(!toggle.checked||editingCartIndex!=null||input.value.trim()!==expected||!expected)return false;
- const item=stockMap()[expected];if(!item){status.textContent='Barcode স্টকে পাওয়া যায়নি।';return false}
+ const map=stockMap();if(bbbmStagedScan&&expected.startsWith(bbbmStagedScan.sBarcode)&&expected!==bbbmStagedScan.sBarcode){const tail=expected.slice(bbbmStagedScan.sBarcode.length);if(map[tail]){expected=tail;input.value=tail;repeat=true;fillSaleFromBarcode()}}
+ const item=map[expected];if(!item){status.textContent='Barcode স্টকে পাওয়া যায়নি।';return false}
  if(bbbmStagedScan&&(bbbmStagedScan.sBarcode!==expected||repeat)){
   const incoming=bbbmCaptureScan();Object.entries(bbbmStagedScan).forEach(([id,v])=>document.getElementById(id).value=v);
   if(!addCurrentItemToCart()){fillSaleFromBarcode();Object.entries(bbbmStagedScan).forEach(([id,v])=>document.getElementById(id).value=v);status.textContent='আগের পণ্য যোগ হয়নি। Quantity ও দাম ঠিক করুন।';return false}
   bbbmStagedScan=null;input.value=expected;document.getElementById('sQty').value='1';document.getElementById('sDiscount').value='0';document.getElementById('sTotal').value='';document.getElementById('sPrice').value='';fillSaleFromBarcode();
  }
- bbbmStagedScan=bbbmCaptureScan();input.focus();input.select();status.textContent='এই পণ্য স্ক্রিনে আছে। পরের Scan করলে bill-এ যোগ হবে।';return true;
+ bbbmStagedScan=bbbmCaptureScan();bbbmNewScanStarted=false;input.focus();input.select();status.textContent='এই পণ্য স্ক্রিনে আছে। পরের Scan করলে bill-এ যোগ হবে।';return true;
 }
-(function(){const input=document.getElementById('sBarcode');input.addEventListener('input',()=>{clearTimeout(bbbmAutoScanTimer);const code=input.value.trim();if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmAutoScanTimer=setTimeout(()=>bbbmAutoAddScan(code),300)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();clearTimeout(bbbmAutoScanTimer);if(document.getElementById('saleAutoScanAdd').checked)bbbmAutoAddScan(input.value.trim(),true);else fillSaleFromBarcode()}});['sQty','sPrice','sDiscount','sTotal'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(bbbmStagedScan&&input.value.trim()===bbbmStagedScan.sBarcode)bbbmStagedScan=bbbmCaptureScan()}));document.getElementById('saleAutoScanAdd').addEventListener('change',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;document.getElementById('saleAutoScanStatus').textContent=''});const clear=clearSaleItemFields;clearSaleItemFields=function(){bbbmStagedScan=null;clearTimeout(bbbmAutoScanTimer);clear()}})();
+(function(){const input=document.getElementById('sBarcode');
+ input.addEventListener('beforeinput',e=>{if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&bbbmStagedScan&&!bbbmNewScanStarted&&e.inputType&&e.inputType.startsWith('insert')){bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true}},true);
+ input.addEventListener('input',()=>{clearTimeout(bbbmAutoScanTimer);let code=input.value.trim();if(bbbmStagedScan&&code.startsWith(bbbmStagedScan.sBarcode)&&code!==bbbmStagedScan.sBarcode){const tail=code.slice(bbbmStagedScan.sBarcode.length);if(stockMap()[tail]){input.value=tail;code=tail;bbbmNewScanStarted=true;fillSaleFromBarcode()}}if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmAutoScanTimer=setTimeout(()=>bbbmAutoAddScan(code,bbbmNewScanStarted),180)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();clearTimeout(bbbmAutoScanTimer);if(document.getElementById('saleAutoScanAdd').checked)bbbmAutoAddScan(input.value.trim(),true);else fillSaleFromBarcode()}});['sQty','sPrice','sDiscount','sTotal'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(bbbmStagedScan&&input.value.trim()===bbbmStagedScan.sBarcode)bbbmStagedScan=bbbmCaptureScan()}));document.getElementById('saleAutoScanAdd').addEventListener('change',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;document.getElementById('saleAutoScanStatus').textContent=''});const clear=clearSaleItemFields;clearSaleItemFields=function(){bbbmStagedScan=null;bbbmNewScanStarted=false;clearTimeout(bbbmAutoScanTimer);clear()}})();
 </script>
 </body>
 </html>
