@@ -1453,7 +1453,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   if (!pad || !display) return;
 
   const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','sTotal','saleServiceCharge','saleCartFinalTotal'];
-  let active = document.getElementById('sQty') || null;
+  let active = document.getElementById('sBarcode') || null;
   let raw = active ? String(active.value || '') : '';
 
   function labelFor(el){
@@ -1511,7 +1511,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     e.stopPropagation();
 
     if(!active){
-      const first=document.getElementById('sQty');
+      const first=document.getElementById('sBarcode');
       if(first) selectField(first);
     }
     if(!active) return;
@@ -1548,7 +1548,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 </script>
 
 <div class="full sale-add-step">
-                  <label style="display:flex;align-items:center;gap:8px"><input id="saleAutoScanAdd" type="checkbox" checked style="width:auto"> পরের Scan → আগের পণ্য Add</label><small id="saleAutoScanStatus" role="status" aria-live="polite"></small>
+                  <label style="display:flex;align-items:center;gap:8px"><input id="saleAutoScanAdd" type="checkbox" checked style="width:auto"> পরের Scan → আগের পণ্য Add</label><small id="saleAutoScanStatus" role="status" aria-live="polite">Scan ready · v7.74</small>
                   <button type="button" class="btn add-cart-btn" id="addSaleItemBtn">＋ Add Item to Bill</button>
                   <div class="sale-step-note">একটি item যোগ করুন, তারপর পরের barcode scan করে আবার Add Item চাপুন।</div>
                 </div>
@@ -3873,6 +3873,7 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='stockalerts')bbbmRenderStockAlerts(bbbmLowStockItems(Object.values(stockMap())));
+ if(tab==='sales')requestAnimationFrame(()=>{const input=$('sBarcode');input.focus({preventScroll:true});input.select();});
  if(tab==='barcode')refreshBarcodeItems();
  if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
       if(tab==='accounts')renderAccounts();
@@ -5834,6 +5835,7 @@ function bbbmAutoAddScan(expected,repeat=false){
  bbbmStagedScan=bbbmCaptureScan();bbbmNewScanStarted=false;input.focus();input.select();status.textContent='এই পণ্য স্ক্রিনে আছে। পরের Scan করলে bill-এ যোগ হবে।';return true;
 }
 (function(){const input=document.getElementById('sBarcode');
+ input.addEventListener('keydown',e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&bbbmStagedScan&&!bbbmNewScanStarted){bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true}},true);
  input.addEventListener('beforeinput',e=>{if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&bbbmStagedScan&&!bbbmNewScanStarted&&e.inputType&&e.inputType.startsWith('insert')){bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true}},true);
  input.addEventListener('input',()=>{clearTimeout(bbbmAutoScanTimer);let code=input.value.trim();if(bbbmStagedScan&&code.startsWith(bbbmStagedScan.sBarcode)&&code!==bbbmStagedScan.sBarcode){const tail=code.slice(bbbmStagedScan.sBarcode.length);if(stockMap()[tail]){input.value=tail;code=tail;bbbmNewScanStarted=true;fillSaleFromBarcode()}}if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmAutoScanTimer=setTimeout(()=>bbbmAutoAddScan(code,bbbmNewScanStarted),180)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();clearTimeout(bbbmAutoScanTimer);if(document.getElementById('saleAutoScanAdd').checked)bbbmAutoAddScan(input.value.trim(),true);else fillSaleFromBarcode()}});['sQty','sPrice','sDiscount','sTotal'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(bbbmStagedScan&&input.value.trim()===bbbmStagedScan.sBarcode)bbbmStagedScan=bbbmCaptureScan()}));document.getElementById('saleAutoScanAdd').addEventListener('change',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;document.getElementById('saleAutoScanStatus').textContent=''});const clear=clearSaleItemFields;clearSaleItemFields=function(){bbbmStagedScan=null;bbbmNewScanStarted=false;clearTimeout(bbbmAutoScanTimer);clear()}})();
 </script>
