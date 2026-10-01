@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.71</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.72</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1548,6 +1548,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 </script>
 
 <div class="full sale-add-step">
+                  <label style="display:flex;align-items:center;gap:8px"><input id="saleAutoScanAdd" type="checkbox" checked style="width:auto"> পরের Scan → আগের পণ্য Add</label><small id="saleAutoScanStatus" role="status" aria-live="polite"></small>
                   <button type="button" class="btn add-cart-btn" id="addSaleItemBtn">＋ Add Item to Bill</button>
                   <div class="sale-step-note">একটি item যোগ করুন, তারপর পরের barcode scan করে আবার Add Item চাপুন।</div>
                 </div>
@@ -2250,7 +2251,7 @@ function fillSaleFromBarcode(){
   const code=$('sBarcode').value.trim(),x=stockMap()[code];
   $('sItem').value=x?x.item:'';$('sAvailable').value=x?fmtQty(x.current):'';$('sUnit').value=x?(x.unit||unitFor(code)):'';
   $('showSalePurchasePrice').disabled=!x;
-  if(x){const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===code);const mp=metaFor(code);const rate=mp.sellPrice!=null?mp.sellPrice:(lastSale?lastSale.price:'');if(rate!==''&&rate!=null)$('sPrice').value=Number(rate);calcS()}
+  if(x){const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===code);const mp=metaFor(code);const rate=mp.sellPrice!=null?mp.sellPrice:(lastSale?lastSale.price:'');$('sPrice').value=rate!==''&&rate!=null?Number(rate):'';calcS()}
 }
 let saleCostRevealTimer=null;
 function hideSalePurchasePrice(){
@@ -2302,7 +2303,7 @@ async function stopScanner(){
 function acceptScannedValue(value,isPurchase){
   value=String(value||'').replace(/\s+/g,'').trim();
   if(!value)return false;
-  if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode()}
+  if(isPurchase){$('pBarcode').value=value;fillPurchaseFromBarcode()}else{$('sBarcode').value=value;fillSaleFromBarcode();bbbmAutoAddScan(value)}
   if(navigator.vibrate)try{navigator.vibrate(80)}catch(e){}
   return true
 }
@@ -5411,7 +5412,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.71';
+  const POS_VERSION='POS Safe v7.72';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5813,6 +5814,25 @@ document.addEventListener('click',function(e){
 </script>
 <script>
 (function(){const form=document.getElementById('purchaseForm'),unit=document.getElementById('pUnit');unit.addEventListener('change',()=>document.getElementById('pAlertUnit').textContent='('+unit.value+')');['pItem','pBarcode'].forEach(id=>document.getElementById(id).addEventListener('change',bbbmLoadPurchaseAlert));form.addEventListener('reset',()=>setTimeout(bbbmLoadPurchaseAlert,0));const panel=document.querySelector('#dashboard #dashLowStock');if(panel)panel.addEventListener('click',()=>goTab('stockalerts'));})();
+</script>
+<script id="bbbm-auto-scan-add-js">
+let bbbmAutoScanTimer=null,bbbmStagedScan=null;
+function bbbmCaptureScan(){
+ const ids=['sBarcode','sQty','sPrice','sDiscount','sTotal'];return Object.fromEntries(ids.map(id=>[id,document.getElementById(id).value]));
+}
+function bbbmAutoAddScan(expected,repeat=false){
+ clearTimeout(bbbmAutoScanTimer);
+ const input=document.getElementById('sBarcode'),toggle=document.getElementById('saleAutoScanAdd'),status=document.getElementById('saleAutoScanStatus');
+ if(!toggle.checked||editingCartIndex!=null||input.value.trim()!==expected||!expected)return false;
+ const item=stockMap()[expected];if(!item){status.textContent='Barcode স্টকে পাওয়া যায়নি।';return false}
+ if(bbbmStagedScan&&(bbbmStagedScan.sBarcode!==expected||repeat)){
+  const incoming=bbbmCaptureScan();Object.entries(bbbmStagedScan).forEach(([id,v])=>document.getElementById(id).value=v);
+  if(!addCurrentItemToCart()){fillSaleFromBarcode();Object.entries(bbbmStagedScan).forEach(([id,v])=>document.getElementById(id).value=v);status.textContent='আগের পণ্য যোগ হয়নি। Quantity ও দাম ঠিক করুন।';return false}
+  bbbmStagedScan=null;input.value=expected;document.getElementById('sQty').value='1';document.getElementById('sDiscount').value='0';document.getElementById('sTotal').value='';document.getElementById('sPrice').value='';fillSaleFromBarcode();
+ }
+ bbbmStagedScan=bbbmCaptureScan();input.focus();input.select();status.textContent='এই পণ্য স্ক্রিনে আছে। পরের Scan করলে bill-এ যোগ হবে।';return true;
+}
+(function(){const input=document.getElementById('sBarcode');input.addEventListener('input',()=>{clearTimeout(bbbmAutoScanTimer);const code=input.value.trim();if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmAutoScanTimer=setTimeout(()=>bbbmAutoAddScan(code),300)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();clearTimeout(bbbmAutoScanTimer);if(document.getElementById('saleAutoScanAdd').checked)bbbmAutoAddScan(input.value.trim(),true);else fillSaleFromBarcode()}});['sQty','sPrice','sDiscount','sTotal'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(bbbmStagedScan&&input.value.trim()===bbbmStagedScan.sBarcode)bbbmStagedScan=bbbmCaptureScan()}));document.getElementById('saleAutoScanAdd').addEventListener('change',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;document.getElementById('saleAutoScanStatus').textContent=''});const clear=clearSaleItemFields;clearSaleItemFields=function(){bbbmStagedScan=null;clearTimeout(bbbmAutoScanTimer);clear()}})();
 </script>
 </body>
 </html>
