@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.82</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.83</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -5443,7 +5443,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.82';
+  const POS_VERSION='POS Safe v7.83';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5692,7 +5692,7 @@ window.bbbmRodRingConfig={
  const VARIANTS={
   'ইলেকট্রিক ইনসুলেশন টেপ':['1/2 inch × 10m','3/4 inch × 10m','3/4 inch × 18m','1 inch × 20m'],
   'মাস্কিং টেপ':['1/2 inch × 20m','1 inch × 20m','1 inch × 40m','1-1/2 inch × 40m','2 inch × 40m'],
-  'প্যাকিং / কার্টন টেপ':['1 inch × 50m','2 inch × 50m','2 inch × 100m','3 inch × 100m'],
+  'প্যাকিং / কার্টন টেপ':['1 inch × 50m','2 inch × 32m','2 inch × 50m','2 inch × 60m','2 inch × 70m','2 inch × 100m','3 inch × 100m'],
   'ডাবল সাইড ফোম টেপ':['1/2 inch × 5m','1 inch × 5m','1 inch × 10m','2 inch × 10m'],
   'ডাবল সাইড টিস্যু টেপ':['1/2 inch × 10m','1 inch × 10m','1 inch × 20m','2 inch × 20m'],
   'ডাক্ট / ক্লথ টেপ':['1 inch × 10m','2 inch × 25m','2 inch × 50m','3 inch × 50m'],
@@ -5829,7 +5829,7 @@ window.bbbmRodRingConfig={
  const CAT=['রড','পাইপ','পেরেক / স্ক্রু','তার','নাট-বোল্ট','জিআই তার','এঙ্গেল','স্কয়ার বার','ব্র্যাকেট','শাটার','রিং','চেইন/শিকল','ক্ল্যাম্প','রশি','টেপ','প্লাস্টিক','শিট/জালি','সিমেন্ট','অন্যান্য'];const ROD_COMP=['BSRM','BSRM CHINA','BZS (বাংলা)','Anwar','AKS','KSML','KSRM','GPH Ispat','RSRM','Rahim Steel','Baizid Steel','SARM'];const ROD_MM=['6','8','10','12','16','20','25','32'];const PIPE_TYPES=['PVC/uPVC','PPR','HDPE','GI','MS','SS Pipe','Channel','CPVC','Conduit','Conduit Black Roof','Hose Pipe','Garden Hose Pipe','Braided Hose Pipe','Suction Hose Pipe'];const PIPE_SIZES=['1/2','3/4','1','1-1/4','1-1/2','2','3','4'];const HOSE_SIZES={'Hose Pipe':['3/8','1/2','3/4','1','1-1/4','1-1/2','2','3','4'],'Garden Hose Pipe':['1/2','3/4','1','1-1/4','1-1/2','2'],'Braided Hose Pipe':['3/8','1/2','3/4','1','1-1/4'],'Suction Hose Pipe':['1','1-1/4','1-1/2','2','2-1/2','3','4','6']};const SQUARE_BRANDS=['BSRM','BZS (বাংলা)','AKS','GPH Ispat','KSRM','Anwar','RSRM','KSML','Local / No Brand','Other company'];const SQUARE_SIZES=['6mm','8mm','10mm','12mm','14mm','16mm','18mm','20mm','22mm','25mm','28mm','30mm','32mm','40mm','1/4 inch','3/8 inch','1/2 inch','5/8 inch','3/4 inch','1 inch'];function squareSizes(brand){setItem((brand==='Local / No Brand'?'':brand+' ')+'MS Square Bar','KG')}const ANGLE_BRANDS=['BSRM','AKS','GPH Ispat','KSRM','Anwar','RSRM','Local / No Brand','Other company'];const ANGLE_SIZES=['3/4 inch × 3/4 inch','1 inch × 1 inch','1-1/4 inch × 1-1/4 inch','1-1/2 inch × 1-1/2 inch','2 inch × 2 inch','2-1/2 inch × 2-1/2 inch','3 inch × 3 inch','4 inch × 4 inch'];const ANGLE_THICKNESS=['2mm','3mm','4mm','5mm','6mm','8mm','10mm'];let angleBrand='',angleSize='';function angleName(thick){return (angleBrand==='Local / No Brand'?'':angleBrand+' ')+'MS Angle '+angleSize+(thick?' × '+thick:'')}function angleSizes(){setItem((angleBrand==='Local / No Brand'?'':angleBrand+' ')+'MS Angle','KG')}function angleThick(){opts.innerHTML='';title(angleBrand+' · '+angleSize+' — পুরুত্ব নির্বাচন করুন');ANGLE_THICKNESS.forEach(t=>ob(t,()=>setItem(angleName(t),'KG')));ob('পুরুত্ব ছাড়া',()=>setItem(angleName(''),'KG'));ob('অন্য পুরুত্ব',()=>{const t=prompt('পুরুত্ব লিখুন, যেমন 4mm');if(t&&t.trim())setItem(angleName(t.trim()),'KG')})}const BRACKET_TYPES=['L/Angle Bracket','Shelf Bracket','Corner Bracket','T Bracket','Flat Bracket','U Bracket','Pipe Bracket','Wall Bracket','AC Bracket','Other Bracket'];const BRACKET_SIZES=['1','1-1/2','2','3','4','6'];const SHUTTER_TYPES=['Shutter Patti/Slat','Shutter Guide/Channel','Bottom Patti','Top Patti','Shutter Spring','Spring Box','Shutter Shaft/Rod','Shutter Bearing','Pulley/Wheel','Side Bracket','Center Lock','Shutter Lock','Shutter Handle','Shutter Stopper','Hook/Clip'];const SHUTTER_SIZES=['1','1-1/2','2','2-1/2','3','4','5','6'];const RING_TYPES=['Rubber Ring / O-Ring','GI Ring','MS Ring','SS Ring','Washer Ring','Lock Ring','Snap Ring / Circlip','Pipe Ring','PVC Pipe Ring','PPR Ring','Bearing Ring','Welding Ring','Curtain Ring','Hook Ring'];const RING_SIZES=['1/2','3/4','1','1-1/4','1-1/2','2','2-1/2','3','4','5','6'];const CHAIN_TYPES=['GI Chain','MS Chain','SS Chain','Link Chain','Welded Chain','Twisted Chain','Jack Chain','Safety Chain','Lock Chain','Swing Chain','Gate Chain','Heavy Duty Chain','Plastic Chain'];const CHAIN_SIZES=['2','3','4','5','6','8','10','12'];const CLAMP_TYPES=['U Clamp / U-Bolt Clamp','Pipe Clamp','GI Pipe Clamp','PVC Pipe Clamp','PPR Pipe Clamp','Hose Clamp','Saddle Clamp','Omega Clamp','C Clamp','G Clamp','T Clamp','Cable Clamp','Conduit Clamp','Heavy Duty Pipe Clamp','SS Clamp','MS Clamp','Door Clamp'];const CLAMP_SIZES=['1/2','3/4','1','1-1/4','1-1/2','2','2-1/2','3','4','5','6'];const TAPE_BRANDS=['Walton','Vigo','Osaka','Local / No Brand'];const TAPE_VARIANTS={
 'ইলেকট্রিক ইনসুলেশন টেপ':['1/2 inch × 10m','3/4 inch × 10m','3/4 inch × 18m','1 inch × 20m'],
 'মাস্কিং টেপ':['1/2 inch × 20m','1 inch × 20m','1 inch × 40m','1-1/2 inch × 40m','2 inch × 40m'],
-'প্যাকিং / কার্টন টেপ':['1 inch × 50m','2 inch × 50m','2 inch × 100m','3 inch × 100m'],
+'প্যাকিং / কার্টন টেপ':['1 inch × 50m','2 inch × 32m','2 inch × 50m','2 inch × 60m','2 inch × 70m','2 inch × 100m','3 inch × 100m'],
 'ডাবল সাইড ফোম টেপ':['1/2 inch × 5m','1 inch × 5m','1 inch × 10m','2 inch × 10m'],
 'ডাবল সাইড টিস্যু টেপ':['1/2 inch × 10m','1 inch × 10m','1 inch × 20m','2 inch × 20m'],
 'ডাক্ট / ক্লথ টেপ':['1 inch × 10m','2 inch × 25m','2 inch × 50m','3 inch × 50m'],
