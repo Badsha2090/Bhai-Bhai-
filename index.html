@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.93</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.94</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -4671,23 +4671,8 @@ window.addEventListener('DOMContentLoaded', function(){
  const $=id=>document.getElementById(id);
  function findBrand(name,sale){
    const norm=v=>String(v||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase();
-   const target=norm(name);
-   // Inventory is the visible source of truth: use its exact barcode first.
-   // The old code required a stockMap match before reading Inventory, so a
-   // visible item could incorrectly be reported missing.
-   const trs=document.querySelectorAll('#stockRows tr');
-   for(const tr of trs){
-     const cells=tr.querySelectorAll('td');
-     if(cells.length<7 || norm(cells[1].textContent)!==target)continue;
-     const code=String(cells[2].textContent||'').trim();
-     const qty=Number(String(cells[6].textContent||'').replace(/,/g,'').match(/-?\d+(?:\.\d+)?/)?.[0]||0);
-     if(!code || (sale && qty<=0))continue;
-     let map={};try{map=stockMap()||{}}catch(e){console.warn('Cement map:',e)}
-     const x=map[code];
-     return x&&(!sale||Number(x.current||0)>0)?x:{barcode:code,item:cells[1].textContent.trim(),unit:cells[3].textContent.trim(),current:qty,fromInventory:true};
-   }
-   let map={};try{map=stockMap()||{}}catch(e){console.warn('Cement map:',e)}
-   const rows=Object.values(map).filter(x=>x && (norm(x.item)===target||norm(metaFor(x.barcode).item)===target) && (!sale||Number(x.current||0)>0));
+   let map={};try{map=window.stockMap()||{}}catch(e){console.warn('Cement stock:',e)}
+   const rows=Object.values(map).filter(x=>x&&x.barcode&&norm(x.item)===norm(name)&&(!sale||Number(x.current)>0));
    rows.sort((x,y)=>Number(y.current||0)-Number(x.current||0));
    return rows[0]||null;
  }
@@ -4708,15 +4693,11 @@ window.addEventListener('DOMContentLoaded', function(){
          if(!x){alert(name+'-এর স্টক এই POS-এ এখন পাওয়া যাচ্ছে না। Inventory-তে স্টক থাকলে Barcode স্ক্যান করুন অথবা POS Update দিয়ে আবার চেষ্টা করুন।');return}
          $('sBarcode').value=String(x.barcode||'').trim();
          if(typeof fillSaleFromBarcode==='function')fillSaleFromBarcode();
-         // Populate the chosen inventory row directly, including when its barcode is blank.
-         $('sItem').value=x.item||name;
-         $('sAvailable').value=typeof fmtQty==='function'?fmtQty(x.current):String(x.current);
-         $('sUnit').value=x.unit||'Bag';
-         const saved=metaFor(x.barcode).sellPrice;
-         const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===String(x.barcode||''));
-         const rate=saved!=null&&saved!==''?saved:lastSale?lastSale.price:null;
-         if(rate!=null&&rate!=='')$('sPrice').value=String(rate);
-         $('sQty').value='1'; if(typeof calcS==='function')calcS();
+         $('sQty').value='1';
+         $('sDiscount').value='0';
+         if(typeof calcS==='function')calcS();
+         // Use the normal barcode staging flow for the selected cement.
+         $('sBarcode').dispatchEvent(new Event('input',{bubbles:true}));
        }else{
          if(x){
            $('pBarcode').value=x.barcode||''; if(typeof fillPurchaseFromBarcode==='function')fillPurchaseFromBarcode();
@@ -5509,7 +5490,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.93';
+  const POS_VERSION='POS Safe v7.94';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
