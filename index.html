@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.88</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.89</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2007,6 +2007,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
               <div class="inventory-search-wrap">
                 <span class="inventory-search-icon">🔎</span>
                 <input id="inventorySearch" type="text" inputmode="search" autocomplete="off" placeholder="Item name বা Barcode লিখে search করুন">
+                <select id="inventorySort" aria-label="Inventory সাজান" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="all">সব পণ্য</option><option value="cables">Cable সাজান (RM)</option></select>
                 <button type="button" id="inventorySearchClear" class="btn gray inventory-search-clear">Clear</button>
               </div>
               <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
@@ -5111,6 +5112,10 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  const qEl=document.getElementById('inventorySearch');
  const clearBtn=document.getElementById('inventorySearchClear');
  const countEl=document.getElementById('inventorySearchCount');
+ const sortEl=document.getElementById('inventorySort');
+ function cableInfo(item){const name=String(item||'');const match=name.match(/(\d+(?:\.\d+)?)\s*RM\b/i);const brand=name.split(/cables?|কেবল|ক্যাবল/i)[0].trim();return {brand,rm:match?Number(match[1]):Infinity,name}}
+ function cableCompare(a,b){const x=cableInfo(a.item),y=cableInfo(b.item);return x.brand.localeCompare(y.brand,undefined,{numeric:true,sensitivity:'base'})||(x.rm===y.rm?0:x.rm-y.rm)||x.name.localeCompare(y.name,undefined,{numeric:true,sensitivity:'base'})||String(a.barcode).localeCompare(String(b.barcode))}
+
 
  function esc(v){return String(v==null?'':v).toLowerCase().trim()}
  function rowHtml(x,idx){
@@ -5141,10 +5146,12 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    if(!body)return;
    const vals=Array.isArray(window.__bbbmStockVals)?window.__bbbmStockVals:[];
    const q=esc(qEl?qEl.value:'');
-   const filtered=!q?vals:vals.filter(x=>{
+   const filtered=!q?vals.slice():vals.filter(x=>{
      const item=esc(x.item), code=esc(x.barcode);
      return item.includes(q)||code.includes(q);
    });
+   const cablesOnly=sortEl&&sortEl.value==='cables';
+   if(cablesOnly){for(let i=filtered.length-1;i>=0;i--)if(!/cables?|কেবল|ক্যাবল/i.test(String(filtered[i].item||'')))filtered.splice(i,1);filtered.sort(cableCompare);}
    const totalTypes=document.getElementById('inventoryTotalTypes');
    if(totalTypes) totalTypes.textContent=`Total Items: ${vals.length} Types`;
    body.innerHTML=filtered.length?filtered.map(rowHtml).join(''):'<tr><td colspan="9" class="inventory-no-result">কোনো item পাওয়া যায়নি</td></tr>';
@@ -5152,9 +5159,10 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
      if(typeof editStockSellingRate==='function')editStockSellingRate(btn.dataset.rateCode,btn.dataset.rateItem);
    });
    if(countEl){
-     countEl.textContent=q ? `${filtered.length} টি item পাওয়া গেছে` : `সব ${vals.length} টি item দেখানো হচ্ছে`;
+     countEl.textContent=cablesOnly ? `${filtered.length} টি Cable — কোম্পানি ও RM অনুযায়ী সাজানো` : q ? `${filtered.length} টি item পাওয়া গেছে` : `সব ${vals.length} টি item দেখানো হচ্ছে`;
    }
  }
+ if(sortEl)sortEl.addEventListener('change',apply);
  window.__bbbmApplyInventorySearch=apply;
  if(qEl){
    qEl.addEventListener('input',apply);
@@ -5452,7 +5460,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.88';
+  const POS_VERSION='POS Safe v7.89';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
