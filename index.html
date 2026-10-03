@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.13</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.14</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2017,10 +2017,11 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
               <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
             </div>
             <form id="stockNameForm" class="card hidden" style="margin-bottom:16px;padding:16px">
-<h3>Edit Item Name</h3><p id="stockNameInfo"></p>
+<h3>Edit Item Name / Unit</h3><p id="stockNameInfo"></p>
 <label for="stockNameInput">Item Name</label><input id="stockNameInput" type="text" maxlength="200" required autocomplete="off" style="width:100%;margin:10px 0">
+<label for="stockUnitInput">Unit</label><select id="stockUnitInput" style="width:100%;margin:10px 0"><option value="PCS">PCS</option><option value="KG">KG</option><option value="Gram">Gram</option><option value="Bag">Bag</option><option value="CFT">CFT</option><option value="Feet">Feet</option><option value="Meter">Meter</option><option value="ROLL">ROLL</option></select><p class="muted">শুধু Unit-এর ভুল সংশোধন: Quantity ও দাম একই থাকবে। আগের বিলের Unit বদলাবে না।</p>
 <p id="stockNameError" role="alert" style="color:#b91c1c"></p>
-<button id="stockNameSave" type="submit" class="btn primary">Save Name</button> <button id="stockNameCancel" type="button" class="btn gray">Cancel</button>
+<button id="stockNameSave" type="submit" class="btn primary">Save Changes</button> <button id="stockNameCancel" type="button" class="btn gray">Cancel</button>
 </form><div class="card history-card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
@@ -2500,29 +2501,29 @@ $('stockRows').addEventListener('click',e=>{
  const record=db.purchases.slice().reverse().find(p=>String(p.barcode)===code);
  if(!record||!record.id){alert('এই পণ্যের Purchase / Opening Stock record পাওয়া যায়নি। Reload করে চেষ্টা করুন।');return}
  stockNameRecord={...record};$('stockNameInfo').textContent='Barcode: '+code;
- $('stockNameInput').value=record.item||'';$('stockNameError').textContent='';
+ $('stockNameInput').value=record.item||'';$('stockUnitInput').value=record.unit||'PCS';$('stockNameError').textContent='';
  $('stockNameForm').classList.remove('hidden');$('stockNameForm').scrollIntoView({block:'center'});$('stockNameInput').focus();$('stockNameInput').select();
 });
 $('stockNameCancel').onclick=()=>{if(stockNameSaving)return;stockNameRecord=null;$('stockNameForm').classList.add('hidden')};
 $('stockNameForm').addEventListener('submit',async e=>{
  e.preventDefault();if(stockNameSaving||!stockNameRecord)return;
- const name=$('stockNameInput').value.trim().replace(/\s+/g,' '),r=stockNameRecord;
+ const name=$('stockNameInput').value.trim().replace(/\s+/g,' '),r=stockNameRecord;const unit=$('stockUnitInput').value;
  const error=$('stockNameError');error.textContent='';
  if(!name||name.length>200){error.textContent='১–২০০ অক্ষরের একটি নাম লিখুন।';return}
  const duplicate=bbbmExistingItemWithName(name);
  if(duplicate&&String(duplicate.barcode)!==String(r.barcode)){error.textContent='এই নাম অন্য barcode-এ আছে। আলাদা নাম দিন।';return}
- if(name===r.item){$('stockNameCancel').click();return}
+ if(name===r.item&&unit===(r.unit||'PCS')){$('stockNameCancel').click();return}
  stockNameSaving=true;$('stockNameSave').disabled=true;$('stockNameCancel').disabled=true;
  try{
   // Change only the latest purchase label. Stock uses this label for this barcode.
-  let query=cloud.from('bbbm_purchases').update({item:name}).eq('id',r.id).eq('barcode',r.barcode).eq('item',r.item);
+  let query=cloud.from('bbbm_purchases').update({item:name,unit}).eq('id',r.id).eq('barcode',r.barcode).eq('item',r.item);
   if(r.userId)query=query.eq('user_id',r.userId);
-  const saved=await query.select('id,item');if(saved.error)throw saved.error;
+  const saved=await query.select('id,item,unit');if(saved.error)throw saved.error;
   if(!saved.data||saved.data.length!==1)throw new Error('নাম Save হয়নি। Reload করুন; update permission-ও পরীক্ষা করতে হতে পারে।');
-  const local=db.purchases.find(p=>p.id===r.id);if(local)local.item=name;
-  saveMeta(r.barcode,{item:name});render();
-  for(const prefix of ['p','o'])if(String($(prefix+'Barcode').value||'').trim()===String(r.barcode))$(prefix+'Item').value=name;
-  if(String($('sBarcode').value||'').trim()===String(r.barcode))$('sItem').value=name;
+  const local=db.purchases.find(p=>p.id===r.id);if(local){local.item=name;local.unit=unit;}
+  saveMeta(r.barcode,{item:name,unit});render();
+  for(const prefix of ['p','o'])if(String($(prefix+'Barcode').value||'').trim()===String(r.barcode)){$(prefix+'Item').value=name;$(prefix+'Unit').value=unit;}
+  if(String($('sBarcode').value||'').trim()===String(r.barcode)){$('sItem').value=name;$('sUnit').value=unit;}
   stockNameRecord=null;$('stockNameForm').classList.add('hidden');
  }catch(err){error.textContent=err.message||'নাম Save করা যায়নি। আবার চেষ্টা করুন।'}
  finally{stockNameSaving=false;$('stockNameSave').disabled=false;$('stockNameCancel').disabled=false}
@@ -2741,7 +2742,7 @@ function render(){
  if(typeof renderReturnRecentBills==='function')renderReturnRecentBills();
  window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map((x,i)=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
 <td><b>${i+1}</b></td>
-<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name</button></td>
+<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name / Unit</button></td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
 <td>${fmtQty(x.purchased)} ${x.unit||'PCS'}</td>
@@ -5259,7 +5260,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
    return `<tr>
 <td><b>${idx+1}</b></td>
-<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name</button></td>
+<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name / Unit</button></td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
 <td>${fmtFn(x.purchased)} ${x.unit||'PCS'}</td>
@@ -5590,7 +5591,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.13';
+  const POS_VERSION='POS Safe v8.14';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
