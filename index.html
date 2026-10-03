@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.91</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.92</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2014,7 +2014,12 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 <div id="inventoryCablePanel" class="hidden" style="margin-top:12px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><strong>Cables</strong><select id="inventorySort" aria-label="Inventory সাজান" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="cables">BRB + Bizli Cable (RM)</option><option value="brb">BRB Cable (RM)</option><option value="bizli">Bizli Cable (RM)</option></select><input id="inventoryCableSearch" placeholder="Cable name / RM / Barcode" style="flex:1;min-width:160px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><button type="button" id="inventoryAllBtn" class="btn gray">সব পণ্য</button></div></div>
               <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
             </div>
-            <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+            <form id="stockNameForm" class="card hidden" style="margin-bottom:16px;padding:16px">
+<h3>Edit Item Name</h3><p id="stockNameInfo"></p>
+<label for="stockNameInput">Item Name</label><input id="stockNameInput" type="text" maxlength="200" required autocomplete="off" style="width:100%;margin:10px 0">
+<p id="stockNameError" role="alert" style="color:#b91c1c"></p>
+<button id="stockNameSave" type="submit" class="btn primary">Save Name</button> <button id="stockNameCancel" type="button" class="btn gray">Cancel</button>
+</form><div class="card history-card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
           </section>
         </div>
       </main>
@@ -2132,7 +2137,7 @@ async function loadCloudData(){
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;if(prr.error)throw prr.error;
   openingCredits=(sr.data||[]).filter(x=>x.barcode==='__OPENING_CREDIT__').map(x=>({id:x.id,item:'Previous Due',barcode:x.barcode,qty:1,price:+x.total,total:+x.total,date:x.sale_date,by:x.by_name,unit:'PCS',paymentMethod:'Credit',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',saleTime:x.sale_time||''}));
   db={
-    purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price,openingStock:String(x.by_name||'').startsWith('OPENING STOCK •')})),
+    purchases:(pr.data||[]).map(x=>({id:x.id,userId:x.user_id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price,openingStock:String(x.by_name||'').startsWith('OPENING STOCK •')})),
     sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({id:x.id,userId:x.user_id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,listPrice:x.list_price==null?+x.price:+x.list_price,discountPct:+x.discount_pct||0,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
     returns:(rr.data||[]).map(x=>({id:x.id,userId:x.user_id,billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
@@ -2479,6 +2484,43 @@ function isOpeningStock(p){return !!(p&&(p.openingStock||String(p.by||'').starts
 function realPurchases(){return (db.purchases||[]).filter(p=>!isOpeningStock(p))}
 function openingPurchases(){return (db.purchases||[]).filter(isOpeningStock)}
 
+
+function bbbmEscapeStockName(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+window.bbbmEscapeStockName=bbbmEscapeStockName;
+let stockNameRecord=null,stockNameSaving=false;
+$('stockRows').addEventListener('click',e=>{
+ const button=e.target.closest('.stock-name-edit');if(!button||stockNameSaving)return;
+ const code=decodeURIComponent(button.dataset.nameCode);
+ const record=db.purchases.slice().reverse().find(p=>String(p.barcode)===code);
+ if(!record||!record.id){alert('এই পণ্যের Purchase / Opening Stock record পাওয়া যায়নি। Reload করে চেষ্টা করুন।');return}
+ stockNameRecord={...record};$('stockNameInfo').textContent='Barcode: '+code;
+ $('stockNameInput').value=record.item||'';$('stockNameError').textContent='';
+ $('stockNameForm').classList.remove('hidden');$('stockNameForm').scrollIntoView({block:'center'});$('stockNameInput').focus();$('stockNameInput').select();
+});
+$('stockNameCancel').onclick=()=>{if(stockNameSaving)return;stockNameRecord=null;$('stockNameForm').classList.add('hidden')};
+$('stockNameForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(stockNameSaving||!stockNameRecord)return;
+ const name=$('stockNameInput').value.trim().replace(/\s+/g,' '),r=stockNameRecord;
+ const error=$('stockNameError');error.textContent='';
+ if(!name||name.length>200){error.textContent='১–২০০ অক্ষরের একটি নাম লিখুন।';return}
+ const duplicate=bbbmExistingItemWithName(name);
+ if(duplicate&&String(duplicate.barcode)!==String(r.barcode)){error.textContent='এই নাম অন্য barcode-এ আছে। আলাদা নাম দিন।';return}
+ if(name===r.item){$('stockNameCancel').click();return}
+ stockNameSaving=true;$('stockNameSave').disabled=true;$('stockNameCancel').disabled=true;
+ try{
+  // Change only the latest purchase label. Stock uses this label for this barcode.
+  let query=cloud.from('bbbm_purchases').update({item:name}).eq('id',r.id).eq('barcode',r.barcode).eq('item',r.item);
+  if(r.userId)query=query.eq('user_id',r.userId);
+  const saved=await query.select('id,item');if(saved.error)throw saved.error;
+  if(!saved.data||saved.data.length!==1)throw new Error('নাম Save হয়নি। Reload করুন; update permission-ও পরীক্ষা করতে হতে পারে।');
+  const local=db.purchases.find(p=>p.id===r.id);if(local)local.item=name;
+  saveMeta(r.barcode,{item:name});render();
+  for(const prefix of ['p','o'])if(String($(prefix+'Barcode').value||'').trim()===String(r.barcode))$(prefix+'Item').value=name;
+  if(String($('sBarcode').value||'').trim()===String(r.barcode))$('sItem').value=name;
+  stockNameRecord=null;$('stockNameForm').classList.add('hidden');
+ }catch(err){error.textContent=err.message||'নাম Save করা যায়নি। আবার চেষ্টা করুন।'}
+ finally{stockNameSaving=false;$('stockNameSave').disabled=false;$('stockNameCancel').disabled=false}
+});
 function stockMap(){
  let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[p.barcode].purchased+=+p.qty;m[p.barcode].cost+=+p.total;m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode);m[p.barcode].purchaseBatches.push({qty:+p.qty||0,unit:p.unit||m[p.barcode].unit||unitFor(p.barcode),date:p.date||''})});
  (db.purchaseReturns||[]).forEach(r=>{if(m[r.barcode]){m[r.barcode].purchased-=+r.qty||0;m[r.barcode].cost-=+r.total||0}});
@@ -2687,7 +2729,7 @@ function render(){
  if(typeof renderReturnRecentBills==='function')renderReturnRecentBills();
  window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map((x,i)=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
 <td><b>${i+1}</b></td>
-<td>${x.item}</td>
+<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name</button></td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
 <td>${fmtQty(x.purchased)} ${x.unit||'PCS'}</td>
@@ -5134,7 +5176,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    const itemSafe=String(x.item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
    return `<tr>
 <td><b>${idx+1}</b></td>
-<td>${x.item}</td>
+<td>${bbbmEscapeStockName(x.item)}<br><button type="button" class="btn smallbtn stock-name-edit" data-name-code="${encodeURIComponent(x.barcode)}">✏️ Edit Name</button></td>
 <td>${x.barcode}</td>
 <td><span class="unit-badge">${x.unit||'PCS'}</span></td>
 <td>${fmtFn(x.purchased)} ${x.unit||'PCS'}</td>
@@ -5278,6 +5320,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  rateInput.addEventListener('focus',()=>show(rateInput,'numeric'));
  rateInput.addEventListener('click',()=>show(rateInput,'numeric'));
 
+ document.getElementById('stockNameInput').addEventListener('click',()=>show(document.getElementById('stockNameInput'),'text'));
  // Search keyboard opens on tap/focus.
 
  // Selling Rate Edit: delegated handler so the floating numeric keyboard
@@ -5464,7 +5507,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.91';
+  const POS_VERSION='POS Safe v7.92';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
