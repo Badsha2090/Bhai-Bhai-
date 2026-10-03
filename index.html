@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.95</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.96</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1785,7 +1785,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
    <div class="full"><button class="btn primary" type="submit">Save Collection</button></div>
   </form>
  </div>
- <div class="card history-card"><div class="panel-head"><h3>Credit Collection History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Customer</th><th>Amount</th><th>Method</th><th>By</th></tr></thead><tbody id="collectionRows"></tbody></table></div></div>
+ <div class="card history-card"><div class="panel-head"><h3>Credit Collection History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Customer</th><th>Amount</th><th>Method</th><th>By</th><th>Print</th></tr></thead><tbody id="collectionRows"></tbody></table></div></div>
 </section>
 
 <section id="reports" class="section">
@@ -2717,7 +2717,7 @@ function render(){
  const opening=openingPurchases(); if($('openingStockRows'))$('openingStockRows').innerHTML=opening.length?opening.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${String(p.by||'').replace('OPENING STOCK • ','')}</td><td><button type="button" class="btn primary smallbtn" data-history-barcode-print="1" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No opening stock yet.</td></tr>'; if($('openingStockCount'))$('openingStockCount').textContent=opening.length+' items';
  $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.billNo?'BBBM-'+String(s.billNo).padStart(6,'0'):'-'}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="10">No sale yet.</td></tr>';
  const collections=db.collections||[];
- if($('collectionRows'))$('collectionRows').innerHTML=collections.length?collections.slice().reverse().map(c=>`<tr><td>${c.date}</td><td>${c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-'}</td><td>${c.customerName||c.customerPhone||'-'}</td><td>${money(c.amount)}</td><td>${c.paymentMethod}</td><td>${c.by||''}</td></tr>`).join(''):'<tr><td colspan="6">No collection yet.</td></tr>';
+ if($('collectionRows'))$('collectionRows').innerHTML=collections.length?collections.slice().reverse().map((c,i)=>`<tr><td>${c.date}</td><td>${c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-'}</td><td>${c.customerName||c.customerPhone||'-'}</td><td>${money(c.amount)}</td><td>${c.paymentMethod}</td><td>${c.by||''}</td><td><button type="button" class="btn primary smallbtn" data-collection-print="${collections.length-1-i}">🖨️ Print Receipt</button> <button type="button" class="btn smallbtn" data-collection-bill="${collections.length-1-i}">Print Bill</button></td></tr>`).join(''):'<tr><td colspan="7">No collection yet.</td></tr>';
  const expenses=db.expenses||[];
  const todayStr=today();
  const todayExp=expenses.filter(x=>x.date===todayStr).reduce((a,x)=>a+(+x.amount||0),0);
@@ -2996,6 +2996,32 @@ function directPrintHtml(html){
     return false;
   }
 }
+
+function collectionReceiptHtml(c,settings,currentDue){
+ const esc=bbbmEscapeStockName;
+ const label=c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-';
+ return `<!doctype html><html><head><meta charset="utf-8"><title>Credit Collection Receipt</title><style>
+ @page{margin:3mm}body{font-family:Arial,sans-serif;color:#000;margin:0;font-size:13px}.receipt{max-width:74mm;margin:auto;overflow-wrap:anywhere}h2{font-size:17px;text-align:center;margin:5px 0}h3{text-align:center;font-size:15px;margin:8px 0}p{margin:7px 0}.amount{border-top:1px dashed #000;border-bottom:1px dashed #000;padding:10px 0;margin:12px 0;font-size:20px;font-weight:bold;text-align:center}</style></head><body><div class="receipt">
+ <h2>${esc(settings.receiptHeader||settings.shopName||'Bhai Bhai Building Materials')}</h2><h3>Credit Collection Receipt</h3>
+ <p>Date: ${esc(c.date)}</p><p>Bill: ${esc(label)}</p>
+ <p>Customer: ${esc(c.customerName||c.customerPhone||'-')}</p>
+ ${c.customerPhone?`<p>Mobile: ${esc(c.customerPhone)}</p>`:''}
+ <div class="amount">Amount Collected<br>${esc(money(c.amount))}</div>
+ <p>Payment: ${esc(c.paymentMethod||'Cash')}</p>
+ <p>Collected By: ${esc(c.by||'-')}</p>
+ ${currentDue!=null?`<p>Current Bill Due: <b>${esc(money(currentDue))}</b></p>`:''}
+ ${c.note?`<p>Note: ${esc(c.note)}</p>`:''}
+ </div></body></html>`;
+}
+$('collectionRows').addEventListener('click',e=>{
+ const button=e.target.closest('[data-collection-print],[data-collection-bill]');if(!button)return;
+ const receipt=button.hasAttribute('data-collection-print');
+ const index=Number(receipt?button.dataset.collectionPrint:button.dataset.collectionBill);
+ const c=(db.collections||[])[index];if(!c)return;
+ const rows=[...(db.sales||[]),...openingCredits].filter(x=>String(x.billNo)===String(c.billNo)&&x.paymentMethod==='Credit');
+ if(!receipt){if(!rows.length){alert('এই Bill-এর বিস্তারিত পাওয়া যায়নি।');return}printBillSearchRows(rows);return}
+ directPrintHtml(collectionReceiptHtml(c,safeGet('bbbm_settings_v1',{}),rows.length?invoiceDue(c.billNo):null));
+});
 
 function creditDuePrintHtml(data){
  const esc=bbbmEscapeStockName;
@@ -5516,7 +5542,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.95';
+  const POS_VERSION='POS Safe v7.96';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
