@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.96</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.97</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1646,6 +1646,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <h2 id="creditDetailName">💳 Customer Credit Details</h2>
                   <p id="creditDetailPhone"></p>
                 </div>
+                <button type="button" id="creditDetailCollectBtn" class="btn primary smallbtn">💰 মোট বকেয়া থেকে টাকা আদায়</button>
                 <button type="button" id="creditDetailPrintBtn" class="btn primary smallbtn">🖨️ Print Total Due</button>
                 <button type="button" id="creditDetailBackBtn" class="btn gray smallbtn">← Credit Customers</button>
               </div>
@@ -2656,6 +2657,7 @@ function renderDashboardCreditDetail(key){
  $('creditDetailName').textContent='💳 '+name;
  $('creditDetailPhone').textContent=phone||'No mobile number';
  $('creditDetailTotalDue').textContent=money(totalDue);
+ $('creditDetailCollectBtn').disabled=totalDue<=0;
  $('creditDetailBillCount').textContent=String(groups.length);
 
  const target=$('creditDetailBills');
@@ -2851,7 +2853,30 @@ if($('openingCreditForm'))$('openingCreditForm').onsubmit=async function(e){
   alert('✅ Previous Due saved. Sales / Stock unchanged.');
  }catch(err){alert('Previous Due save হয়নি: '+(err.message||err)+'\nইন্টারনেট ও Supabase connection চেক করুন।')}finally{btn.disabled=false}
 };
-let selectedCreditSale=null;
+let selectedCreditSale=null, selectedCreditCustomerKey=null, creditCollectionSaving=false;
+function customerDueBills(key){
+ const seen=new Set();
+ return [...(db.sales||[]),...openingCredits].filter(x=>{
+  const bill=String(x.billNo);
+  if(x.paymentMethod!=='Credit'||creditCustomerKey(x)!==key||seen.has(bill))return false;
+  seen.add(bill);return invoiceDue(x.billNo)>0;
+ }).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||Number(a.billNo)-Number(b.billNo));
+}
+function allocateCreditCollection(bills,amount,dueFor){
+ let remaining=Math.round(amount*100);const parts=[];
+ for(const x of bills){const cents=Math.min(remaining,Math.round(dueFor(x.billNo)*100));if(cents>0){parts.push({sale:x,amount:cents/100});remaining-=cents;}if(!remaining)break;}
+ if(remaining)throw new Error('Collection amount মোট বকেয়ার বেশি।');
+ return parts;
+}
+$('creditDetailCollectBtn').onclick=async function(){
+ const key=creditDetailPrintKey;if(!key)return;
+ const bills=customerDueBills(key);if(!bills.length){alert('এই customer-এর কোনো due নেই।');return;}
+ await goTab('credit');selectedCreditSale=null;selectedCreditCustomerKey=key;
+ const x=bills[bills.length-1],due=bills.reduce((sum,b)=>sum+invoiceDue(b.billNo),0);
+ $('cSearch').value='';$('cCustomer').value=x.creditName||x.creditPhone||'Customer';$('cDue').value=money(due);$('cAmount').value='';$('cDate').value=today();$('cNote').value='';
+ $('creditInfo').textContent=(x.creditName||'Customer')+' · '+(x.creditPhone||'')+' · মোট বকেয়া: '+money(due)+' · '+bills.length+' বিল। টাকা পুরোনো বিল থেকে সমন্বয় হবে।';
+ $('creditInfo').classList.remove('hidden');$('creditForm').classList.remove('hidden');$('cAmount').focus();
+};
 function invoiceSales(billNo){return [...(db.sales||[]),...openingCredits].filter(s=>String(s.billNo)===String(billNo))}
 function invoiceTotal(billNo){return invoiceSales(billNo).reduce((a,s)=>a+(+s.total||0),0)}
 function invoiceReturned(billNo){return (db.returns||[]).filter(r=>String(r.billNo)===String(billNo)).reduce((a,r)=>a+(+r.refund||0),0)}
@@ -2862,6 +2887,7 @@ function creditCollected(x){return invoiceCollected(x.billNo)}
 function creditDue(x){return invoiceDue(x.billNo)}
 $('cDate').value=today();
 $('cFindBtn').onclick=function(){
+ selectedCreditCustomerKey=null;selectedCreditSale=null;$('creditForm').classList.add('hidden');$('creditInfo').classList.add('hidden');
  const q=$('cSearch').value.trim();if(!q){alert('Bill No or mobile number দিন।');return}
  const all=[...(db.sales||[]),...openingCredits].slice().reverse();
  const digits=q.replace(/\D/g,'');
@@ -2881,10 +2907,26 @@ $('cFindBtn').onclick=function(){
  $('creditInfo').classList.remove('hidden');$('creditForm').classList.remove('hidden');
 };
 $('creditForm').onsubmit=async function(e){
- e.preventDefault();const x=selectedCreditSale;if(!x)return;const due=invoiceDue(x.billNo),amount=+$('cAmount').value;
- if(!amount||amount<=0||amount>due){alert('Collection amount ঠিক করুন। Maximum: '+money(due));return}
- const r=await cloud.from('bbbm_credit_collections').insert({user_id:currentUser.id,sale_bill_no:x.billNo,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,amount,payment_method:$('cMethod').value,collection_date:$('cDate').value,note:$('cNote').value.trim()||null,by_name:currentUser.name});
- if(r.error){alert(r.error.message);return}await loadCloudData();selectedCreditSale=null;this.reset();$('cDate').value=today();this.classList.add('hidden');$('creditInfo').classList.add('hidden');$('cSearch').value='';render();renderReport();alert('Credit collection saved.');
+ e.preventDefault();if(creditCollectionSaving)return;
+ const x=selectedCreditSale,key=selectedCreditCustomerKey;if(!x&&!key)return;
+ const amount=Number($('cAmount').value),method=$('cMethod').value,date=$('cDate').value,note=$('cNote').value.trim();
+ if(!Number.isFinite(amount)||amount<=0||Math.round(amount*100)<=0){alert('Collection amount ঠিক করুন।');return;}
+ const btn=this.querySelector('button[type="submit"]');creditCollectionSaving=true;btn.disabled=true;
+ let saved=false;
+ try{
+  await loadCloudData();
+  const bills=key?customerDueBills(key):[x],due=bills.reduce((sum,b)=>sum+invoiceDue(b.billNo),0);
+  if(Math.round(amount*100)>Math.round(due*100))throw new Error('Maximum collection: '+money(due));
+  const parts=allocateCreditCollection(bills,amount,invoiceDue);
+  if(!parts.length)throw new Error('এই customer-এর কোনো due নেই।');
+  const rows=parts.map(p=>({user_id:currentUser.id,sale_bill_no:p.sale.billNo,customer_name:p.sale.creditName||null,customer_phone:p.sale.creditPhone||null,amount:p.amount,payment_method:method,collection_date:date,note:note||null,by_name:currentUser.name}));
+  const r=await cloud.from('bbbm_credit_collections').insert(rows);
+  if(r.error)throw r.error;saved=true;
+  selectedCreditSale=null;selectedCreditCustomerKey=null;this.reset();$('cDate').value=today();this.classList.add('hidden');$('creditInfo').classList.add('hidden');$('cSearch').value='';
+  await loadCloudData();render();renderReport();
+  alert('টাকা আদায় হয়েছে: '+money(amount)+(key?' · '+parts.length+' বিলে সমন্বয় হয়েছে।':''));
+ }catch(err){alert(saved?'টাকা Save হয়েছে। সর্বশেষ বকেয়া দেখতে Reload করুন।':('Collection save হয়নি: '+(err.message||err)));}
+ finally{creditCollectionSaving=false;btn.disabled=false;}
 };
 
 function reportMatch(date){
@@ -5542,7 +5584,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.96';
+  const POS_VERSION='POS Safe v7.97';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
