@@ -1117,6 +1117,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 #sales .sale-service-inline #saleServiceCharge{width:175px!important;max-width:175px!important;min-width:0!important}
 @media(max-width:520px){#sales .sale-date-service-row{gap:8px}#sales .sale-date-compact,#sales .sale-date-compact #sDate{width:145px!important;max-width:145px!important;flex-basis:145px}#sales .sale-service-inline,#sales .sale-service-inline #saleServiceCharge{width:155px!important;max-width:155px!important;flex-basis:155px}}
 </style>
+<style>#inventorySearch{flex:1 1 240px;min-width:160px}.inventory-search-wrap{flex-wrap:wrap}#inventoryCablePanel select{max-width:100%}</style>
 </head>
 <body>
 <header id="legacyHeader">
@@ -1221,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.90</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.91</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2007,9 +2008,10 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
               <div class="inventory-search-wrap">
                 <span class="inventory-search-icon">🔎</span>
                 <input id="inventorySearch" type="text" inputmode="search" autocomplete="off" placeholder="Item name বা Barcode লিখে search করুন">
-                <select id="inventorySort" aria-label="Inventory সাজান" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="all">সব পণ্য</option><option value="cables">BRB + Bizli Cable (RM)</option><option value="brb">BRB Cable (RM)</option><option value="bizli">Bizli Cable (RM)</option></select>
+                <button type="button" id="inventoryCablesBtn" class="btn primary">Cables</button>
                 <button type="button" id="inventorySearchClear" class="btn gray inventory-search-clear">Clear</button>
               </div>
+<div id="inventoryCablePanel" class="hidden" style="margin-top:12px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><strong>Cables</strong><select id="inventorySort" aria-label="Inventory সাজান" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="cables">BRB + Bizli Cable (RM)</option><option value="brb">BRB Cable (RM)</option><option value="bizli">Bizli Cable (RM)</option></select><input id="inventoryCableSearch" placeholder="Cable name / RM / Barcode" style="flex:1;min-width:160px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><button type="button" id="inventoryAllBtn" class="btn gray">সব পণ্য</button></div></div>
               <div id="inventorySearchCount" class="inventory-search-count">সব item দেখানো হচ্ছে</div>
             </div>
             <div class="card history-card"><div class="table-wrap"><table><thead><tr><th>SL</th><th>Item</th><th>Barcode</th><th>Unit</th><th>Purchased</th><th>Sold</th><th>Current</th><th>Selling Rate</th><th>Stock Value</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
@@ -5112,7 +5114,9 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  const qEl=document.getElementById('inventorySearch');
  const clearBtn=document.getElementById('inventorySearchClear');
  const countEl=document.getElementById('inventorySearchCount');
- const sortEl=document.getElementById('inventorySort');
+ const sortEl=document.getElementById('inventorySort'),cablePanel=document.getElementById('inventoryCablePanel'),cableSearch=document.getElementById('inventoryCableSearch');let cableOpen=false;
+ function showAll(){cableOpen=false;cablePanel.classList.add('hidden');apply()}
+ document.getElementById('inventoryCablesBtn').onclick=()=>{cableOpen=true;cablePanel.classList.remove('hidden');apply()};document.getElementById('inventoryAllBtn').onclick=showAll;if(cableSearch)cableSearch.addEventListener('input',apply);
  function cableInfo(item){const name=String(item||'');const match=name.match(/(\d+(?:\.\d+)?)\s*RM\b/i);const brand=/\bBRB\b/i.test(name)?'BRB':/\bBIZLI\b/i.test(name)?'Bizli':'';return {brand,rm:match?Number(match[1]):Infinity,name}}
  function cableCompare(a,b){const x=cableInfo(a.item),y=cableInfo(b.item);return x.brand.localeCompare(y.brand,undefined,{numeric:true,sensitivity:'base'})||(x.rm===y.rm?0:x.rm-y.rm)||x.name.localeCompare(y.name,undefined,{numeric:true,sensitivity:'base'})||String(a.barcode).localeCompare(String(b.barcode))}
 
@@ -5145,12 +5149,12 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
    const body=document.getElementById('stockRows');
    if(!body)return;
    const vals=Array.isArray(window.__bbbmStockVals)?window.__bbbmStockVals:[];
-   const q=esc(qEl?qEl.value:'');
+   const q=esc(cableOpen?(cableSearch?cableSearch.value:''):(qEl?qEl.value:''));
    const filtered=!q?vals.slice():vals.filter(x=>{
      const item=esc(x.item), code=esc(x.barcode);
      return item.includes(q)||code.includes(q);
    });
-   const cableMode=sortEl?sortEl.value:'all',cablesOnly=['cables','brb','bizli'].includes(cableMode);
+   const cableMode=cableOpen&&sortEl?sortEl.value:'all',cablesOnly=['cables','brb','bizli'].includes(cableMode);
    if(cablesOnly){for(let i=filtered.length-1;i>=0;i--){const item=String(filtered[i].item||''),info=cableInfo(item);if(!info.brand||!Number.isFinite(info.rm)||/\b(?:tie|ties|clip|clips)\b/i.test(item)||(cableMode==='brb'&&info.brand!=='BRB')||(cableMode==='bizli'&&info.brand!=='Bizli'))filtered.splice(i,1);}filtered.sort(cableCompare);}
    const totalTypes=document.getElementById('inventoryTotalTypes');
    if(totalTypes) totalTypes.textContent=`Total Items: ${vals.length} Types`;
@@ -5165,12 +5169,12 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
  if(sortEl)sortEl.addEventListener('change',apply);
  window.__bbbmApplyInventorySearch=apply;
  if(qEl){
-   qEl.addEventListener('input',apply);
-   qEl.addEventListener('search',apply);
+   qEl.addEventListener('input',showAll);
+   qEl.addEventListener('search',showAll);
  }
  if(clearBtn)clearBtn.addEventListener('click',()=>{
    if(qEl){qEl.value='';qEl.focus()}
-   apply();
+   showAll();
  });
  document.querySelectorAll('.nav button[data-tab="stock"]').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{
    if(qEl)qEl.focus();
@@ -5460,7 +5464,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.90';
+  const POS_VERSION='POS Safe v7.91';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
