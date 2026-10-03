@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.94</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.95</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1646,6 +1646,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <h2 id="creditDetailName">💳 Customer Credit Details</h2>
                   <p id="creditDetailPhone"></p>
                 </div>
+                <button type="button" id="creditDetailPrintBtn" class="btn primary smallbtn">🖨️ Print Total Due</button>
                 <button type="button" id="creditDetailBackBtn" class="btn gray smallbtn">← Credit Customers</button>
               </div>
               <div class="card credit-detail-summary">
@@ -2634,9 +2635,11 @@ function creditCustomerKey(x){
  const name=String(x.creditName||'').trim().toLowerCase();
  return phone ? 'p:'+phone : 'n:'+name;
 }
+let creditDetailPrintKey=null;
 function renderDashboardCreditDetail(key){
  const all=[...(db.sales||[]),...openingCredits].filter(x=>x.paymentMethod==='Credit'&&creditCustomerKey(x)===key);
  if(!all.length)return;
+ creditDetailPrintKey=key;
  const latest=[...all].reverse().find(x=>x.creditName||x.creditPhone)||all[all.length-1];
  const name=latest.creditName||'Customer', phone=latest.creditPhone||'';
  const seenBills=new Set();const totalDue=all.reduce((a,x)=>{const k=String(x.billNo);if(seenBills.has(k))return a;seenBills.add(k);return a+invoiceDue(x.billNo)},0);
@@ -2699,6 +2702,7 @@ function renderDashboardCreditDetail(key){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function closeDashboardCreditDetail(){
+ creditDetailPrintKey=null;
  if($('creditCustomerDetailView'))$('creditCustomerDetailView').classList.add('hidden');
  if($('creditCustomerListView'))$('creditCustomerListView').classList.remove('hidden');
  if($('pageTitle'))$('pageTitle').textContent='Credit Customers';
@@ -2992,6 +2996,28 @@ function directPrintHtml(html){
     return false;
   }
 }
+
+function creditDuePrintHtml(data){
+ const esc=bbbmEscapeStockName;
+ return `<!doctype html><html><head><meta charset="utf-8"><title>Customer Total Due</title><style>
+ @page{margin:3mm}body{font-family:Arial,sans-serif;color:#000;margin:0;padding:0;font-size:13px}.receipt{max-width:74mm;margin:auto;overflow-wrap:anywhere}h2{font-size:17px;text-align:center;margin:5px 0}h3{text-align:center;font-size:15px;margin:8px 0}p{margin:7px 0}.total{border-top:1px dashed #000;border-bottom:1px dashed #000;padding:12px 0;margin-top:12px;font-size:20px;font-weight:bold;text-align:center}small{font-size:11px}</style></head><body><div class="receipt">
+ <h2>${esc(data.shop)}</h2><h3>Customer Credit Summary</h3>
+ <p><small>${esc(data.date)}</small></p><p><b>Customer:</b> ${esc(data.name)}</p>
+ ${data.phone?`<p><b>Mobile:</b> ${esc(data.phone)}</p>`:''}
+ <p>Credit Bills / Sales: ${esc(data.billCount)}</p>
+ <div class="total">Total Due<br>${esc(data.total)}</div>
+ </div></body></html>`;
+}
+function printCreditCustomerDue(){
+ if(!creditDetailPrintKey)return;
+ const rows=[...(db.sales||[]),...openingCredits].filter(x=>x.paymentMethod==='Credit'&&creditCustomerKey(x)===creditDetailPrintKey);
+ if(!rows.length){alert('এই customer-এর Credit পাওয়া যায়নি।');return}
+ const latest=rows.slice().reverse().find(x=>x.creditName||x.creditPhone)||rows[rows.length-1];
+ const bills=new Set();let due=0;rows.forEach(x=>{const k=String(x.billNo);if(!bills.has(k)){bills.add(k);due+=invoiceDue(x.billNo)}});
+ const settings=safeGet('bbbm_settings_v1',{});
+ directPrintHtml(creditDuePrintHtml({shop:settings.receiptHeader||settings.shopName||'Bhai Bhai Building Materials',name:latest.creditName||'Customer',phone:latest.creditPhone||'',billCount:bills.size,total:money(due),date:new Date().toLocaleString('en-GB',{timeZone:'Asia/Dhaka',hour12:true})}));
+}
+$('creditDetailPrintBtn').onclick=printCreditCustomerDue;
 
 function printBillSearchRows(rows){
   if(!rows||!rows.length)return;
@@ -5490,7 +5516,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.94';
+  const POS_VERSION='POS Safe v7.95';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
