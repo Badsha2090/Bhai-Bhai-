@@ -1221,7 +1221,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.86</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v7.87</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1681,7 +1681,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
    <label id="rItemSelectWrap" class="hidden">Choose Item<select id="rItemSelect"></select></label>
    <label>Item<input id="rItem" readonly></label><label>Available to Return<input id="rSoldQty" readonly></label>
    <label>Return Qty<input id="rQty" type="number" min="0.001" step="0.001" required></label><label>Unit<input id="rUnit" readonly></label>
-   <label>Sale Rate<input id="rRate" readonly></label><label>Refund Amount<input id="rRefund" readonly></label>
+   <label>Sale Rate<input id="rRate" readonly></label><label>Refund Amount (editable)<input id="rRefund" type="number" min="0" step="0.01" required></label>
    <label>Payment<input id="rPayment" readonly></label>
    <label>Reason<select id="rReason"><option>Wrong Item</option><option>Damaged Item</option><option>Extra Quantity</option><option>Customer Changed Mind</option><option>Other</option></select></label>
    <div class="full"><button type="submit" class="btn primary">Confirm Return</button></div>
@@ -1692,7 +1692,8 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
    <div id="returnKbKeys" class="return-kb-grid num"></div>
   </div>
  </div>
- <div class="card history-card" style="margin-top:14px"><div class="panel-head"><h3>↩️ Return History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Qty</th><th>Refund</th><th>Payment</th><th>Reason</th><th>By</th></tr></thead><tbody id="returnRows"></tbody></table></div></div>
+ <div class="card history-card" style="margin-top:14px"><div class="panel-head"><h3>↩️ Return History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Qty</th><th>Refund</th><th>Payment</th><th>Reason</th><th>By</th><th>Action</th></tr></thead><tbody id="returnRows"></tbody></table></div></div>
+ <form id="refundEditForm" class="card hidden" style="margin-top:14px;padding:16px"><h3>Edit Refund Amount</h3><p id="refundEditInfo"></p><label>Actual Refund<input id="rRefundEdit" type="number" min="0" step="0.01" required></label><button class="btn primary" type="submit">Save Refund</button><button class="btn" type="button" id="refundEditCancel">Cancel</button></form>
  <div class="card return-recent-card">
    <div class="panel-head"><h3>🧾 Recent Bills — Click a bill to Return</h3><span class="soft-label" id="returnRecentCount">0 bills</span></div>
    <div id="returnRecentBills" class="return-bill-list"></div>
@@ -2033,6 +2034,12 @@ let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
+let editingRefund=null;
+$('returnRows').addEventListener('click',e=>{const b=e.target.closest('[data-refund-edit]');if(!b)return;const r=(db.returns||[])[Number(b.dataset.refundEdit)];if(!r||!r.id)return alert('Return record reload করে আবার চেষ্টা করুন।');editingRefund={...r};$('refundEditInfo').textContent='Bill '+r.billNo+' · '+r.item+' · '+fmtQty(r.qty)+' '+r.unit;$('rRefundEdit').value=Number(r.refund).toFixed(2);$('refundEditForm').classList.remove('hidden');$('refundEditForm').scrollIntoView({block:'center'});$('rRefundEdit').focus()});
+$('refundEditCancel').onclick=()=>{editingRefund=null;$('refundEditForm').classList.add('hidden')};
+$('refundEditForm').onsubmit=async function(e){e.preventDefault();const r=editingRefund;if(!r)return;const raw=$('rRefundEdit').value,n=Number(raw),max=Math.round(Number(r.qty)*Number(r.rate)*100)/100;if(raw.trim()===''||!Number.isFinite(n)||n<0||n>max)return alert('Refund amount ঠিক করুন। Maximum: '+money(max));const button=this.querySelector('[type="submit"]');button.disabled=true;
+try{let query=cloud.from('bbbm_sales_returns').update({refund_amount:n}).eq('id',r.id);if(r.userId!=null)query=query.eq('user_id',r.userId);const result=await query.eq('refund_amount',r.refund).select('id,refund_amount');if(result.error)throw result.error;if(!result.data||result.data.length!==1)throw new Error('Refund save হয়নি। Permission বা record পরিবর্তন হয়েছে; reload করে চেষ্টা করুন।');await loadCloudData();render();editingRefund=null;this.classList.add('hidden');alert('Refund amount saved.');}catch(err){alert(err.message||'Refund save হয়নি।')}finally{button.disabled=false}};
+
 // ===== POS Safe v7.47: Offline-safe Sale/Purchase queue =====
 const PENDING_SYNC_KEY='bbbm_pending_sync_v1';
 let syncRunning=false;
@@ -2124,7 +2131,7 @@ async function loadCloudData(){
   db={
     purchases:(pr.data||[]).map(x=>({item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.purchase_date,by:x.by_name,unit:x.unit||'PCS',sellingPrice:x.selling_price==null?null:+x.selling_price,openingStock:String(x.by_name||'').startsWith('OPENING STOCK •')})),
     sales:(sr.data||[]).filter(x=>x.barcode!=='__OPENING_CREDIT__').map(x=>({id:x.id,userId:x.user_id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,listPrice:x.list_price==null?+x.price:+x.list_price,discountPct:+x.discount_pct||0,date:x.sale_date,by:x.by_name,unit:x.unit||'PCS',paymentMethod:x.payment_method||'Cash',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',legacyBillNo:x.bill_no||'',saleTime:x.sale_time||''})),
-    returns:(rr.data||[]).map(x=>({billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
+    returns:(rr.data||[]).map(x=>({id:x.id,userId:x.user_id,billNo:x.sale_bill_no||'',item:x.item,barcode:x.barcode,qty:+x.qty,unit:x.unit||'PCS',rate:+x.rate,refund:+x.refund_amount,paymentMethod:x.payment_method||'',reason:x.reason||'',date:x.return_date,by:x.by_name})),
     expenses:(er.data||[]).map(x=>({id:x.id,category:x.category,amount:+x.amount,date:x.expense_date,note:x.note||'',by:x.by_name||''})),
     collections:(cr.data||[]).map(x=>({id:x.id,billNo:x.sale_bill_no||'',customerName:x.customer_name||'',customerPhone:x.customer_phone||'',amount:+x.amount,paymentMethod:x.payment_method||'Cash',date:x.collection_date,note:x.note||'',by:x.by_name||''})),
     purchaseReturns:(prr.data||[]).map(x=>({id:x.id,item:x.item,barcode:x.barcode,qty:+x.qty,price:+x.price,total:+x.total,date:x.return_date,by:x.by_name||'',unit:x.unit||'PCS'}))
@@ -2673,7 +2680,7 @@ function render(){
  if(typeof renderReport==='function')renderReport();
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
- $('returnRows').innerHTML=returns.length?returns.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td></tr>`).join(''):'<tr><td colspan="8">No return yet.</td></tr>';
+ $('returnRows').innerHTML=returns.length?returns.slice().reverse().map((r,i)=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'-'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td><td><button type="button" class="btn" data-refund-edit="${returns.length-1-i}">Edit Refund</button></td></tr>`).join(''):'<tr><td colspan="9">No return yet.</td></tr>';
  if(typeof renderReturnRecentBills==='function')renderReturnRecentBills();
  window.__bbbmStockVals=vals.slice();$('stockRows').innerHTML=vals.length?vals.map((x,i)=>{const sr=metaFor(x.barcode).sellPrice;return `<tr>
 <td><b>${i+1}</b></td>
@@ -3219,11 +3226,11 @@ $('rFindBtn').onclick=function(){
 // v7.26 Sales Return on-screen keyboard (Bill/Barcode + Return Qty)
 (function initReturnKeyboard(){
  const box=$('returnKbKeys'),disp=$('returnKbDisplay'),abc=$('returnKbABC'),num=$('returnKb123');
- const search=$('rSearch'),qty=$('rQty');if(!box||!disp||!search||!qty)return;
+ const search=$('rSearch'),qty=$('rQty'),refund=$('rRefund'),edit=$('rRefundEdit');if(!box||!disp||!search||!qty)return;
  let target=search,mode='num';
- function targetName(){return target===qty?'Return Qty':'Bill No / Barcode'}
+ function targetName(){return target===qty?'Return Qty':target===refund||target===edit?'Refund Amount':'Bill No / Barcode'}
  function update(){disp.innerHTML='<small>'+targetName()+'</small>'+String(target.value||'—')}
- function setTarget(el){target=el;document.querySelectorAll('#returns input.rkb-active').forEach(x=>x.classList.remove('rkb-active'));el.classList.add('rkb-active');if(el===qty)setMode('num');else update()}
+ function setTarget(el){target=el;document.querySelectorAll('#returns input.rkb-active').forEach(x=>x.classList.remove('rkb-active'));el.classList.add('rkb-active');if(el!==search)setMode('num');else update()}
  function key(label,val,cls=''){const b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.onclick=()=>press(val);box.appendChild(b)}
  function render(){box.innerHTML='';box.className='return-kb-grid '+(mode==='num'?'num':'abc');abc.classList.toggle('active',mode==='abc');num.classList.toggle('active',mode==='num');if(mode==='num'){
   ['1','2','3','4','5','6','7','8','9'].forEach(x=>key(x,x));key('C','clear','rkb-clear');key('0','0');key('⌫','back');key('.','.');key('Find / OK','ok','rkb-ok wide2');
@@ -3231,15 +3238,16 @@ $('rFindBtn').onclick=function(){
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(x=>key(x,x));['-','/','.'].forEach(x=>key(x,x));key('SPACE',' ','wide3');key('C','clear','rkb-clear');key('⌫','back');key('123','mode','wide2');key('Find / OK','ok','rkb-ok wide2');
  }update()}
  function setMode(m){mode=m;render()}
- function press(k){let v=String(target.value||'');if(k==='clear')v='';else if(k==='back')v=v.slice(0,-1);else if(k==='mode'){setMode('num');return}else if(k==='ok'){if(target===search)$('rFindBtn').click();else $('rReason').focus();update();return}else if(k==='.'&&target===qty&&v.includes('.'))return;else v+=k;target.value=v;target.dispatchEvent(new Event('input',{bubbles:true}));update()}
+ function press(k){let v=String(target.value||'');if(k==='clear')v='';else if(k==='back')v=v.slice(0,-1);else if(k==='mode'){setMode('num');return}else if(k==='ok'){if(target===search)$('rFindBtn').click();else $('rReason').focus();update();return}else if(k==='.'&&target!==search&&v.includes('.'))return;else v+=k;target.value=v;target.dispatchEvent(new Event('input',{bubbles:true}));update()}
  search.addEventListener('focus',()=>setTarget(search));search.addEventListener('click',()=>setTarget(search));qty.addEventListener('focus',()=>setTarget(qty));qty.addEventListener('click',()=>setTarget(qty));
+ [refund,edit].forEach(el=>{if(el){el.addEventListener('focus',()=>setTarget(el));el.addEventListener('click',()=>setTarget(el))}});
  abc.onclick=()=>setMode('abc');num.onclick=()=>setMode('num');setTarget(search);render();
 })();
-$('rQty').oninput=function(){if(selectedReturnSale)$('rRefund').value=money((+this.value||0)*selectedReturnSale.price)};
+$('rQty').oninput=function(){if(selectedReturnSale)$('rRefund').value=((+this.value||0)*selectedReturnSale.price).toFixed(2)};
 $('returnForm').onsubmit=async function(e){
  e.preventDefault();const x=selectedReturnSale;if(!x)return;const left=(+x.qty||0)-returnedQty(x),q=+$('rQty').value;
  if(!q||q<=0||q>left){alert('Return quantity ঠিক করুন। Maximum: '+fmtQty(left)+' '+x.unit);return}
- const refund=q*x.price;if(!confirm(`Confirm Return?\n${x.item}\n${fmtQty(q)} ${x.unit}\nRefund: ${money(refund)}\nStock will increase automatically.`))return;
+ const refund=Number($('rRefund').value);if($('rRefund').value.trim()===''||!Number.isFinite(refund)||refund<0||refund>Math.round(q*x.price*100)/100){alert('Refund amount ঠিক করুন। Maximum: '+money(q*x.price));return}if(!confirm(`Confirm Return?\n${x.item}\n${fmtQty(q)} ${x.unit}\nRefund: ${money(refund)}\nStock will increase automatically.`))return;
  const r=await cloud.from('bbbm_sales_returns').insert({user_id:currentUser.id,sale_bill_no:x.billNo||null,item:x.item,barcode:x.barcode,qty:q,unit:x.unit,rate:x.price,refund_amount:refund,payment_method:x.paymentMethod,customer_name:x.creditName||null,customer_phone:x.creditPhone||null,reason:$('rReason').value,return_date:today(),by_name:currentUser.name});
  if(r.error){alert(r.error.message);return}
  // Cash sale return = cash is going out from the drawer, so open it even though no receipt is printed.
@@ -5444,7 +5452,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v7.86';
+  const POS_VERSION='POS Safe v7.87';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
