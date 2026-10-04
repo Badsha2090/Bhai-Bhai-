@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.16</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.17</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -3545,9 +3545,10 @@ function buildCurrentSaleItem(excludeIndex=-1){
  if(p<0||$('sPrice').value===''){alert('Enter sale price.');return null}
  if(!Number.isFinite(discountPct)||discountPct<0||discountPct>100){alert('Discount 0 থেকে 100% লিখুন।');$('sDiscount').focus();return null}
  const calculated=discountedLineTotal(q,p,discountPct),raw=$('sTotal').value.trim(),total=raw===''?calculated:Number(raw),manualTotal=total!==calculated;
- if(!Number.isFinite(total)||total<0||total>calculated||Math.abs(Math.round(total*100)-total*100)>0.000001){alert('Item Total 0 থেকে '+money(calculated)+' এর মধ্যে দুই দশমিক পর্যন্ত লিখুন।');$('sTotal').focus();return null}
- const effectivePct=manualTotal&&p>0?Math.round((1-total/(q*p))*1000000)/10000:discountPct;
- return {code,item:x.item,qty:q,price:p,discountPct:effectivePct,enteredDiscountPct:discountPct,manualTotal,netPrice:manualTotal?total/q:discountedUnitPrice(p,discountPct),total,unit:x.unit||'PCS',available:x.current};
+ if(!Number.isFinite(total)||total<0||Math.abs(Math.round(total*100)-total*100)>0.000001){alert('Item Total শূন্য বা তার বেশি, দুই দশমিক পর্যন্ত লিখুন।');$('sTotal').focus();return null}
+ const increased=total>q*p, salePrice=increased?total/q:p;
+ const effectivePct=increased?0:(manualTotal&&p>0?Math.round((1-total/(q*p))*1000000)/10000:discountPct);
+ return {code,item:x.item,qty:q,price:salePrice,discountPct:effectivePct,enteredDiscountPct:discountPct,manualTotal,netPrice:manualTotal?total/q:discountedUnitPrice(p,discountPct),total,unit:x.unit||'PCS',available:x.current};
 }
 function clearSaleItemFields(){
  hideSalePurchasePrice();$('showSalePurchasePrice').disabled=true;
@@ -5591,7 +5592,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.16';
+  const POS_VERSION='POS Safe v8.17';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
