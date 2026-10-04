@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.15</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.16</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2273,7 +2273,7 @@ function fillSaleFromBarcode(){
   const code=$('sBarcode').value.trim(),x=stockMap()[code];
   $('sItem').value=x?x.item:'';$('sAvailable').value=x?fmtQty(x.current):'';$('sUnit').value=x?(x.unit||unitFor(code)):'';
   $('showSalePurchasePrice').disabled=!x;
-  if(x){const lastSale=[...(db.sales||[])].reverse().find(v=>String(v.barcode||'')===code);const mp=metaFor(code);const rate=mp.sellPrice!=null?mp.sellPrice:(lastSale?lastSale.price:'');$('sPrice').value=rate!==''&&rate!=null?Number(rate):'';calcS()}
+  if(x){const known=bbbmKnownBarcode(code);const rate=known&&known.sell!=null?known.sell:'';$('sPrice').value=rate!==''&&rate!=null?Number(rate):'';calcS()}
 }
 let saleCostRevealTimer=null;
 function hideSalePurchasePrice(){
@@ -2578,7 +2578,7 @@ function editStockSellingRate(code,item){
  if(entered===null)return;
  const clean=String(entered).trim();
  if(clean==='' || isNaN(Number(clean)) || Number(clean)<0){alert('Please enter a valid selling rate.');return}
- saveMeta(code,{sellPrice:Number(clean)});
+ saveMeta(code,{sellPrice:Number(clean),sellPriceManual:true});
  render();
  const saleCode=$('sBarcode');
  if(saleCode && String(saleCode.value||'').trim()===code) fillSaleFromBarcode();
@@ -3728,7 +3728,7 @@ async function completeSale(printAfter){
      payment_method:sale.paymentMethod,credit_name:sale.creditName||null,credit_phone:sale.creditPhone||null,
      sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name,invoice_no:invoiceNo
    }));
-   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
+   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item}));
    const saved=await cloud.from('bbbm_sales').insert(rows).select('bill_no,invoice_no,sale_time,barcode');
    if(saved.error)throw saved.error;
    const inserted=saved.data||[];sale.saleTime=(inserted[0]&&inserted[0].sale_time)||saleTime;
@@ -3746,7 +3746,7 @@ async function completeSale(printAfter){
      sale_date:sale.date,sale_time:saleTime,by_name:currentUser.name
    }));
    const localRecords=sale.items.map(x=>({item:x.item,barcode:x.code,qty:+x.qty,price:+x.netPrice,total:+x.total,listPrice:+x.price,discountPct:+x.discountPct||0,serviceCharge:+x.serviceCharge||0,date:sale.date,by:currentUser.name,unit:x.unit||'PCS',paymentMethod:sale.paymentMethod||'Cash',creditName:sale.creditName||'',creditPhone:sale.creditPhone||'',billNo:tempBill,legacyBillNo:'',saleTime,_pending:true}));
-   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item,sellPrice:x.price}));
+   sale.items.forEach(x=>saveMeta(x.code,{unit:x.unit,item:x.item}));
    addPending({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),type:'sale',createdAt:new Date().toISOString(),invoiceNo:invoiceNo||null,rows:syncRows,localRecords});
    db.sales.push(...localRecords);safeSet(DB,db);
    sale.saleTime=saleTime;sale.billNo=tempBill;sale.displayBill=invoiceNo?('BBBM-'+String(invoiceNo).padStart(6,'0')):('OFFLINE-'+String(tempBill).replace('OFF-',''));
@@ -5591,7 +5591,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.15';
+  const POS_VERSION='POS Safe v8.16';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
