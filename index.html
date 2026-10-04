@@ -2134,14 +2134,23 @@ async function usernameEmail(username){
   const hex=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
   return 'u_'+hex.slice(0,48)+'@login.bhaibhai.app';
 }
+async function loadAllCloudRows(table){
+ const data=[],pageSize=500;
+ for(let start=0;;start+=pageSize){
+   const result=await cloud.from(table).select('*').order('created_at',{ascending:true}).order('id',{ascending:true}).range(start,start+pageSize-1);
+   if(result.error)throw result.error;
+   const rows=result.data||[];data.push(...rows);
+   if(rows.length<pageSize)return {data,error:null};
+ }
+}
 async function loadCloudData(){
   const [pr,sr,rr,er,cr,prr]=await Promise.all([
-    cloud.from('bbbm_purchases').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_sales').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_sales_returns').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_expenses').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_credit_collections').select('*').order('created_at',{ascending:true}),
-    cloud.from('bbbm_purchase_returns').select('*').order('created_at',{ascending:true})
+    loadAllCloudRows('bbbm_purchases'),
+    loadAllCloudRows('bbbm_sales'),
+    loadAllCloudRows('bbbm_sales_returns'),
+    loadAllCloudRows('bbbm_expenses'),
+    loadAllCloudRows('bbbm_credit_collections'),
+    loadAllCloudRows('bbbm_purchase_returns')
   ]);
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;if(prr.error)throw prr.error;
   openingCredits=(sr.data||[]).filter(x=>x.barcode==='__OPENING_CREDIT__').map(x=>({id:x.id,item:'Previous Due',barcode:x.barcode,qty:1,price:+x.total,total:+x.total,date:x.sale_date,by:x.by_name,unit:'PCS',paymentMethod:'Credit',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',saleTime:x.sale_time||''}));
