@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.20</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.21</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -5592,7 +5592,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.20';
+  const POS_VERSION='POS Safe v8.21';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
@@ -5805,7 +5805,7 @@ window.bbbmRodRingConfig={
  'তারকাটা / লোহা / স্ক্রু':{unit:'KG',types:['সাধারণ পেরেক','স্টিল পেরেক','সাধারণ স্ক্রু','স্টেইনলেস স্টিল স্ক্রু','জিপসাম স্ক্রু','ওয়াশার','Katmistry Patti','Rubban Sheet','লাল মোরগ','সাদা মোরগ','Guna','Apple Guna'],sizes:['1/2','3/4','1','1-1/4','1-1/2','2','2-1/2','3','4'],suffix:' inch'},
  'রশি':{unit:'KG',types:['নাইলন রশি','প্লাস্টিক রশি','পিপি রশি','পাটের রশি','সুতার রশি','কটন রশি','পলিয়েস্টার রশি','ব্রেইডেড রশি','মোটা রশি','কাপড় শুকানোর রশি','রাজমিস্ত্রির লাইন রশি'],sizes:['2','3','4','5','6','8','10','12','16','20'],suffix:'mm'},
  'নাট-বোল্ট':{unit:'KG',types:['Nut Bolt'],sizes:[],suffix:''},
- 'জিআই তার':{unit:'KG',types:['জিআই সাধারণ তার','জিআই বাইন্ডিং তার','গুনা তার','জিআই ফেন্সিং তার','জিআই কাঁটাতার','জিআই চেইন লিংক তার','জিআই ওয়েল্ডেড মেশ তার','জিআই চিকেন মেশ তার','জিআই রেজর তার','জিআই স্টে তার','জিআই হাই টেনসাইল তার'],sizes:['8','10','12','14','16','18','20','22'],suffix:' Gauge'},
+ 'জিআই তার':{unit:'KG',types:['জিআই সাধারণ তার','গুনা তার','Jiai Black Ring Tar'],sizes:['8','10','12','14','16','18','20','22'],suffix:' Gauge'},
  'প্লাস্টিক':{unit:'PCS',types:['পলিথিন শিট','ত্রিপল','প্লাস্টিক নেট / জালি','প্লাস্টিক দড়ি / সুতা','প্লাস্টিক বস্তা','প্লাস্টিক শিট','পিভিসি শিট','প্লাস্টিক কর্নার / এঙ্গেল','প্লাস্টিক ক্লিপ','প্লাস্টিক ওয়াল প্লাগ','প্লাস্টিক টেপ','Foam','Gio Bag'],sizes:['1','2','3','4','5','6','8','10','12'],suffix:'mm'},
  'Paper':{unit:'PCS',types:['Paper'],sizes:[],suffix:''},
  'শিট/জালি':{unit:'PCS',types:['জিআই শিট','প্লেইন শিট','কালার শিট','ঢেউটিন / করুগেটেড শিট','অ্যালুমিনিয়াম শিট','স্টেইনলেস স্টিল শিট','এমএস শিট','পারফোরেটেড শিট','এক্সপান্ডেড মেটাল জালি','ওয়েল্ডেড জালি','চিকেন জালি','মশার জালি','প্লাস্টিক জালি','ফাইবার জালি','ডায়মন্ড জালি'],sizes:['0.3','0.4','0.5','0.6','0.8','1','1.2','1.5','2'],suffix:'mm'}
@@ -6011,7 +6011,7 @@ window.bbbmRodRingConfig={
 'তারকাটা / লোহা / স্ক্রু':{unit:'KG',types:['সাধারণ পেরেক','স্টিল পেরেক','সাধারণ স্ক্রু','স্টেইনলেস স্টিল স্ক্রু','জিপসাম স্ক্রু','ওয়াশার','Katmistry Patti','Rubban Sheet','লাল মোরগ','সাদা মোরগ','Guna','Apple Guna'],sizes:['1/2','3/4','1','1-1/4','1-1/2','2','2-1/2','3','4'],suffix:' inch'},
 'রশি':{unit:'KG',types:['নাইলন রশি','প্লাস্টিক রশি','পিপি রশি','পাটের রশি','সুতার রশি','কটন রশি','পলিয়েস্টার রশি','ব্রেইডেড রশি','মোটা রশি','কাপড় শুকানোর রশি','রাজমিস্ত্রির লাইন রশি'],sizes:['2','3','4','5','6','8','10','12','16','20'],suffix:'mm'},
 'নাট-বোল্ট':{unit:'KG',types:['Nut Bolt'],sizes:[],suffix:''},
-'জিআই তার':{unit:'KG',types:['জিআই সাধারণ তার','জিআই বাইন্ডিং তার','গুনা তার','জিআই ফেন্সিং তার','জিআই কাঁটাতার','জিআই চেইন লিংক তার','জিআই ওয়েল্ডেড মেশ তার','জিআই চিকেন মেশ তার','জিআই রেজর তার','জিআই স্টে তার','জিআই হাই টেনসাইল তার'],sizes:['8','10','12','14','16','18','20','22'],suffix:' Gauge'},
+'জিআই তার':{unit:'KG',types:['জিআই সাধারণ তার','গুনা তার','Jiai Black Ring Tar'],sizes:['8','10','12','14','16','18','20','22'],suffix:' Gauge'},
 'প্লাস্টিক':{unit:'PCS',types:['পলিথিন শিট','ত্রিপল','প্লাস্টিক নেট / জালি','প্লাস্টিক দড়ি / সুতা','প্লাস্টিক বস্তা','প্লাস্টিক শিট','পিভিসি শিট','প্লাস্টিক কর্নার / এঙ্গেল','প্লাস্টিক ক্লিপ','প্লাস্টিক ওয়াল প্লাগ','প্লাস্টিক টেপ','Foam','Gio Bag'],sizes:['1','2','3','4','5','6','8','10','12'],suffix:'mm'},
 'Paper':{unit:'PCS',types:['Paper'],sizes:[],suffix:''},
  'শিট/জালি':{unit:'PCS',types:['জিআই শিট','প্লেইন শিট','কালার শিট','ঢেউটিন / করুগেটেড শিট','অ্যালুমিনিয়াম শিট','স্টেইনলেস স্টিল শিট','এমএস শিট','পারফোরেটেড শিট','এক্সপান্ডেড মেটাল জালি','ওয়েল্ডেড জালি','চিকেন জালি','মশার জালি','প্লাস্টিক জালি','ফাইবার জালি','ডায়মন্ড জালি'],sizes:['0.3','0.4','0.5','0.6','0.8','1','1.2','1.5','2'],suffix:'mm'}};let extraType='';const CEMENT=['Seven Ring Special','Shah Special','Crown Cement','Bashundhara Cement','Premier Cement','Akij Cement','Aman Cement','Anwar Cement','Confidence Cement','Diamond Cement','Mir Cement','Metrocem Cement','Royal Cement','Bengal Cement','Deshbandhu Cement','Aramit Cement','S. Alam Cement','ScanCement','RubyCement','Holcim Cement','Meghna Cement'];let active='রড',rodCompany='',pipeType='',bracketType='',shutterType='',ringType='',chainType='',clampType='';
