@@ -1456,6 +1456,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','sTotal','saleServiceCharge','saleCartFinalTotal'];
   let active = document.getElementById('sBarcode') || null;
   let raw = active ? String(active.value || '') : '';
+  let replaceTotal = false;
 
   function labelFor(el){
     if(!el) return 'Select a field';
@@ -1484,6 +1485,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     active = el;
     active.classList.add('pad-active');
     raw = String(active.value || '');
+    replaceTotal = active.id==='saleCartFinalTotal';
     refreshDisplay();
   }
 
@@ -1496,14 +1498,15 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     }
   }
 
-  fieldIds.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('click', ()=>selectField(el));
-    el.addEventListener('focus', ()=>selectField(el));
-    el.addEventListener('pointerdown', ()=>selectField(el));
-    el.addEventListener('touchstart', ()=>selectField(el), {passive:true});
+  // Some fields appear later in this HTML, so resolve targets at interaction time.
+  ['click','focusin','pointerdown'].forEach(eventName=>{
+    document.addEventListener(eventName,e=>{
+      if(e.target&&fieldIds.includes(e.target.id))selectField(e.target);
+    });
   });
+  document.addEventListener('touchstart',e=>{
+    if(e.target&&fieldIds.includes(e.target.id))selectField(e.target);
+  },{passive:true});
 
   pad.addEventListener('click', function(e){
     const btn=e.target.closest('[data-sidekey]');
@@ -1518,6 +1521,8 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     if(!active) return;
 
     const k=btn.getAttribute('data-sidekey');
+    if(replaceTotal&&(k==='.'||/^\d$/.test(k))){raw='';replaceTotal=false;}
+    if(k==='clear'||k==='back')replaceTotal=false;
 
     if(k==='clear'){
       raw='';
