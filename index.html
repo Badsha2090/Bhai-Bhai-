@@ -1591,6 +1591,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <label>Customer Name<input id="creditName" type="text" placeholder="Customer name"></label>
                   <label>Mobile Number<input id="creditPhone" type="tel" placeholder="01XXXXXXXXX"></label>
                 </div>
+                <div id="creditSaleCustomerList" hidden style="max-height:220px;overflow:auto;margin-bottom:12px;display:none"></div>
                 <div id="creditCustomerKeyboard" class="credit-kb">
                   <div class="credit-kb-head">
                     <strong>⌨️ Customer Keyboard</strong>
@@ -3786,6 +3787,36 @@ $('creditBackBtn').onclick=function(){
  $('creditCustomerBox').classList.add('hidden');$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');pendingSale=null;
 };
 function normalizeCustomerPhone(v){return String(v||'').replace(/\D/g,'')}
+function creditSaleCustomerChoices(){
+ const unique=new Map();
+ [...(db.sales||[]),...openingCredits].forEach(x=>{
+   if(x.paymentMethod!=='Credit')return;
+   const name=String(x.creditName||'').trim(),phone=String(x.creditPhone||'').trim();
+   if(!name&&!phone)return;
+   const key=normalizeCustomerPhone(phone)||name.toLowerCase();
+   unique.set(key,{name,phone});
+ });
+ return [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
+}
+function showCreditSaleCustomers(){
+ const box=$('creditSaleCustomerList');if(!box)return;
+ const q=$('creditName').value.trim().toLowerCase();
+ const rows=creditSaleCustomerChoices().filter(x=>!q||x.name.toLowerCase().includes(q)||x.phone.includes(q));
+ box.replaceChildren();box.hidden=false;box.style.display='block';
+ const caption=document.createElement('div');caption.textContent=rows.length?'আগের কাস্টমার নির্বাচন করুন':'নতুন কাস্টমারের নাম ও নম্বর লিখে Continue চাপুন';caption.style.padding='8px';box.appendChild(caption);
+ rows.forEach(x=>{
+   const btn=document.createElement('button');btn.type='button';btn.className='btn gray';btn.style.cssText='display:block;width:100%;text-align:left;margin:4px 0';btn.textContent=x.name+(x.phone?' · '+x.phone:'');
+   btn.addEventListener('click',()=>{
+     $('creditName').value=x.name;$('creditPhone').value=x.phone;
+     $('creditName').dispatchEvent(new Event('input',{bubbles:true}));
+     $('creditPhone').dispatchEvent(new Event('input',{bubbles:true}));
+     $('creditPhone').focus();box.hidden=true;box.style.display='none';
+   });box.appendChild(btn);
+ });
+}
+if($('creditName')){
+ ['focus','click','input'].forEach(event=>$('creditName').addEventListener(event,showCreditSaleCustomers));
+}
 function autoFillCreditCustomerName(){
  const phoneEl=$('creditPhone'),nameEl=$('creditName');
  if(!phoneEl||!nameEl)return;
