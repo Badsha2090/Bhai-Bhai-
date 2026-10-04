@@ -3827,8 +3827,20 @@ function fillBarcodePrintCode(){
  const q=$('bSearch').value.trim();
  if(!q)return;
  const stock=Object.values(stockMap());
- const x=stock.find(z=>String(z.barcode)===q)||stock.find(z=>z.item.toLowerCase()===q.toLowerCase());
- if(x)$('bCode').value=String(x.barcode);
+ const x=stock.find(z=>String(z.barcode).trim()===q)||stock.find(z=>String(z.item||'').toLowerCase()===q.toLowerCase());
+ if(x){$('bCode').value=String(x.barcode);$('bSearch').value=x.item||'';$('bSearch').dataset.barcodeResolved='1';}
+}
+function fillBarcodePrintItem(){
+ if(!$('bSearch')||!$('bCode'))return;
+ const code=$('bCode').value.trim();
+ const x=Object.values(stockMap()).find(z=>String(z.barcode).trim()===code);
+ if(code&&x){$('bSearch').value=x.item||'';$('bSearch').dataset.barcodeResolved='1';}
+ else if($('bSearch').dataset.barcodeResolved==='1'){$('bSearch').value='';delete $('bSearch').dataset.barcodeResolved;}
+}
+if($('bCode')){
+ $('bCode').addEventListener('input',fillBarcodePrintItem);
+ $('bCode').addEventListener('change',fillBarcodePrintItem);
+ $('bCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fillBarcodePrintItem();}});
 }
 if($('bSearch')){
  $('bSearch').addEventListener('change',fillBarcodePrintCode);
@@ -3837,10 +3849,12 @@ if($('bSearch')){
 if($('bGenBtn'))$('bGenBtn').onclick=function(){
  const code=generateBarcode();
  $('bCode').value=code;
+ delete $('bSearch').dataset.barcodeResolved;
  $('bCode').focus();
 };
 if($('barcodeForm'))$('barcodeForm').onsubmit=function(e){
  e.preventDefault();
+ if($('bCode').value.trim()&&Object.values(stockMap()).some(z=>String(z.barcode).trim()===$('bCode').value.trim()))fillBarcodePrintItem();
  const q=$('bSearch').value.trim();
  if(!q){alert('আগে Item Name / Barcode লিখুন বা list থেকে item select করুন।');$('bSearch').focus();return}
  const stock=Object.values(stockMap());
