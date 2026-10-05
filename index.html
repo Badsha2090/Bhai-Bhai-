@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.37</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.38</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -3067,7 +3067,13 @@ function directPrintHtml(html){
   }
 }
 
-function collectionReceiptHtml(c,settings,currentDue){
+function collectionCustomerDue(c,rows){
+ const first=(rows||[])[0];
+ const key=creditCustomerKey(first||{creditName:c.customerName,creditPhone:c.customerPhone});
+ const customer=dashboardCreditCustomers().find(x=>x.key===key);
+ return customer?customer.due:0;
+}
+function collectionReceiptHtml(c,settings,currentDue,totalDue){
  const esc=bbbmEscapeStockName;
  const label=c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-';
  return `<!doctype html><html><head><meta charset="utf-8"><title>Credit Collection Receipt</title><style>
@@ -3079,7 +3085,8 @@ function collectionReceiptHtml(c,settings,currentDue){
  <div class="amount">Amount Collected<br>${esc(money(c.amount))}</div>
  <p>Payment: ${esc(c.paymentMethod||'Cash')}</p>
  <p>Collected By: ${esc(c.by||'-')}</p>
- ${currentDue!=null?`<p>Current Bill Due: <b>${esc(money(currentDue))}</b></p>`:''}
+ ${currentDue!=null?`<p>এই বিলের বকেয়া / Bill Due: <b>${esc(money(currentDue))}</b></p>`:''}
+ ${totalDue!=null?`<div class="amount">কাস্টমারের মোট বকেয়া<br>Total Customer Due<br>${esc(money(totalDue))}</div>`:''}
  ${c.note?`<p>Note: ${esc(c.note)}</p>`:''}
  </div></body></html>`;
 }
@@ -3090,7 +3097,7 @@ $('collectionRows').addEventListener('click',e=>{
  const c=(db.collections||[])[index];if(!c)return;
  const rows=[...(db.sales||[]),...openingCredits].filter(x=>String(x.billNo)===String(c.billNo)&&x.paymentMethod==='Credit');
  if(!receipt){if(!rows.length){alert('এই Bill-এর বিস্তারিত পাওয়া যায়নি।');return}printBillSearchRows(rows);return}
- directPrintHtml(collectionReceiptHtml(c,safeGet('bbbm_settings_v1',{}),rows.length?invoiceDue(c.billNo):null));
+ directPrintHtml(collectionReceiptHtml(c,safeGet('bbbm_settings_v1',{}),rows.length?invoiceDue(c.billNo):null,collectionCustomerDue(c,rows)));
 });
 
 function creditDuePrintHtml(data){
@@ -5678,7 +5685,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.37';
+  const POS_VERSION='POS Safe v8.38';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
