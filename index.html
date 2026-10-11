@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.39</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.40</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1630,7 +1630,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
               </div>
               <div id="sScannerBox" class="scanner-box hidden"><div class="scanner-title"><strong>Sales Barcode Scanner</strong><button class="btn gray smallbtn" type="button" id="sStopScan">Close</button></div><div class="scan-tools"><span id="sScanStatus" class="scan-status">Point the full barcode at the camera.</span><button type="button" id="sZoom1">1×</button><button type="button" id="sZoom15">1.5×</button><button type="button" id="sZoom2">2×</button><button type="button" id="sTorch">Torch</button><label class="photo-scan-label">📷 Photo Scan<input id="sPhotoScan" type="file" accept="image/*" capture="environment"></label></div><div id="sReader" class="scanner-reader"></div></div>
             </div>
-            <div class="card history-card"><div class="panel-head"><h3>Sales History</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Bill</th><th>Item</th><th>Barcode</th><th>Qty</th><th>Unit</th><th>Payment</th><th>Customer</th><th>Total</th><th>By</th></tr></thead><tbody id="saleRows"></tbody></table></div></div>
+            <div class="card history-card" id="salesBillHistoryCard"><div class="panel-head"><h3>Sales History</h3><span id="salesBillCount"></span></div><input id="salesBillSearch" placeholder="Bill No. / Customer / Date" style="width:100%;margin:10px 0"><div id="salesBillHistoryList"></div></div>
           </section>
 
 <section id="openingcredit" class="section">
@@ -1665,10 +1665,26 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 <div><span>Total Due</span><b id="creditDetailTotalDue">৳0.00</b></div>
                 <div><span>Credit Bills / Sales</span><b id="creditDetailBillCount">0</b></div>
               </div>
-              <div id="creditDetailBills"></div>
+              <div class="credit-detail-columns"><div id="creditDetailBills"></div><aside class="card credit-payments-panel"><div class="panel-head"><h3>টাকা জমার ইতিহাস</h3><b id="creditDetailPaidTotal"></b></div><div id="creditDetailPayments"></div></aside></div>
             </div>
           </section>
 
+
+<style id="compact-credit-history-css">
+.sales-history-bill{width:100%;text-align:left;font:inherit;color:inherit;background:var(--card,#fff);cursor:pointer}
+.credit-detail-columns{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px;align-items:start}
+.credit-payments-panel{position:sticky;top:15px;padding:14px;max-height:75vh;overflow:auto}
+.credit-payment-entry{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #dbe3ec;font-size:12px}
+.credit-payment-entry small{display:block;margin-top:4px;color:#64748b}.credit-payment-entry strong{white-space:nowrap;color:#15803d}
+#creditCustomerDetailView .credit-bill-card{padding:10px;margin-bottom:8px}
+#creditCustomerDetailView .credit-bill-head{padding:6px;gap:8px}
+#creditCustomerDetailView .credit-item-row{padding:6px;gap:8px;font-size:11px;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
+#creditCustomerDetailView .credit-item-row .item-name b{font-size:11px}
+#creditCustomerDetailView .credit-item-row .item-name span{font-size:9px}
+#creditCustomerDetailView .credit-bill-head .bill-due b{font-size:13px}
+body.bbbm-dark-mode .sales-history-bill{background:#172338}
+@media(max-width:800px){.credit-detail-columns{grid-template-columns:1fr}.credit-payments-panel{position:static;max-height:none}#creditCustomerDetailView .credit-item-row{grid-template-columns:1fr auto}#creditCustomerDetailView .credit-item-row .item-calc{grid-column:1}#creditCustomerDetailView .credit-item-row .item-due{grid-column:2;grid-row:1/3}}
+</style>
 <style id="sale-return-bills-keyboard-css">
 #returns .form-card{position:relative;padding-right:315px;min-height:430px}
 .return-recent-card{margin-top:14px;overflow:hidden}
@@ -2726,6 +2742,10 @@ function renderDashboardCreditDetail(key){
    if(!$('creditForm').classList.contains('hidden'))$('cAmount').focus();
  });
 
+ const customerBills=new Set(all.map(x=>String(x.billNo)));
+ const payments=(db.collections||[]).filter(c=>customerBills.has(String(c.billNo))).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||Number(b.id||0)-Number(a.id||0));
+ $('creditDetailPaidTotal').textContent=money(payments.reduce((n,c)=>n+(+c.amount||0),0));
+ $('creditDetailPayments').innerHTML=payments.length?payments.map(c=>`<div class="credit-payment-entry"><div><b>${openingCreditEscape(c.date||'-')}</b><small>${openingCreditEscape(c.paymentMethod||'Cash')} · BBBM-${openingCreditEscape(c.billNo)}</small>${c.note?`<small>${openingCreditEscape(c.note)}</small>`:''}</div><strong>${money(c.amount)}</strong></div>`).join(''):'<p class="muted">এখনো টাকা জমা দেয়নি।</p>';
  $('creditCustomerListView').classList.add('hidden');
  $('creditCustomerDetailView').classList.remove('hidden');
  if($('pageTitle'))$('pageTitle').textContent='Customer Credit Details';
@@ -2745,7 +2765,7 @@ function render(){
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
  $('purchaseRows').innerHTML=realPurchases().length?realPurchases().slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${p.by}</td><td><button type="button" class="btn primary smallbtn" data-history-barcode-print="1" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No purchase yet.</td></tr>';
  const opening=openingPurchases(); if($('openingStockRows'))$('openingStockRows').innerHTML=opening.length?opening.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${p.item}</td><td>${p.barcode}</td><td>${fmtQty(p.qty)}</td><td><span class="unit-badge">${p.unit||unitFor(p.barcode)}</span></td><td>${money(p.total)}</td><td>${String(p.by||'').replace('OPENING STOCK • ','')}</td><td><button type="button" class="btn primary smallbtn" data-history-barcode-print="1" data-item="${encodeURIComponent(p.item||'')}" data-barcode="${encodeURIComponent(p.barcode||'')}">🖨️ Print</button></td></tr>`).join(''):'<tr><td colspan="8">No opening stock yet.</td></tr>'; if($('openingStockCount'))$('openingStockCount').textContent=opening.length+' items';
- $('saleRows').innerHTML=db.sales.length?db.sales.slice().reverse().map(s=>`<tr><td>${s.date}</td><td>${s.billNo?'BBBM-'+String(s.billNo).padStart(6,'0'):'-'}</td><td>${s.item}</td><td>${s.barcode}</td><td>${fmtQty(s.qty)}</td><td><span class="unit-badge">${s.unit||unitFor(s.barcode)}</span></td><td><span class="pay-badge">${s.paymentMethod||'Cash'}</span></td><td>${(s.paymentMethod||'')==='Credit'?`<span class="credit-customer"><b>${s.creditName||'-'}</b><span>${s.creditPhone||''}</span></span>`:'-'}</td><td>${money(s.total)}</td><td>${s.by}</td></tr>`).join(''):'<tr><td colspan="10">No sale yet.</td></tr>';
+ renderSalesBillHistory();
  const collections=db.collections||[];
  if($('collectionRows'))$('collectionRows').innerHTML=collections.length?collections.slice().reverse().map((c,i)=>`<tr><td>${c.date}</td><td>${c.billNo?'BBBM-'+String(c.billNo).padStart(6,'0'):'-'}</td><td>${c.customerName||c.customerPhone||'-'}</td><td>${money(c.amount)}</td><td>${c.paymentMethod}</td><td>${c.by||''}</td><td><button type="button" class="btn primary smallbtn" data-collection-print="${collections.length-1-i}">🖨️ Print Receipt</button> <button type="button" class="btn smallbtn" data-collection-bill="${collections.length-1-i}">Print Bill</button></td></tr>`).join(''):'<tr><td colspan="7">No collection yet.</td></tr>';
  const expenses=db.expenses||[];
@@ -3207,7 +3227,18 @@ function renderBillHistoryPage(q){
     el.onclick=()=>showBillHistoryDetail(bills[i]);
   });
 }
-function showBillHistoryDetail(rows){
+let billDetailSource='billhistory';
+function renderSalesBillHistory(){
+ const list=$('salesBillHistoryList');if(!list)return;
+ const q=String($('salesBillSearch').value||'').trim().toLowerCase();
+ const bills=allBillTransactions().map(rows=>rows.filter(x=>x.barcode!=='__OPENING_CREDIT__')).filter(rows=>rows.length&&(!q||rows.some(x=>[x.billNo,x.creditName,x.creditPhone,x.date].some(v=>String(v||'').toLowerCase().includes(q)))));
+ $('salesBillCount').textContent=bills.length+' bills';
+ list.innerHTML=bills.length?bills.map((rows,i)=>{const first=rows[0];return `<button type="button" class="bill-history-row sales-history-bill" data-sales-bill="${i}"><div class="bill-history-main"><div class="bill-history-no">Bill #${openingCreditEscape(billNoLabel(rows))}</div><div class="bill-history-meta">${openingCreditEscape(first.date||'')} ${openingCreditEscape(first.saleTime||'')} · ${openingCreditEscape(first.creditName||first.paymentMethod||'Cash')}</div></div><div class="bill-history-total">${money(rows.reduce((n,x)=>n+(+x.total||0),0))}</div></button>`}).join(''):'<p class="muted">কোনো bill পাওয়া যায়নি।</p>';
+ list.querySelectorAll('[data-sales-bill]').forEach(button=>button.onclick=async()=>{const rows=bills[Number(button.dataset.salesBill)];await goTab('billhistory');showBillHistoryDetail(rows,'sales')});
+}
+$('salesBillSearch').addEventListener('input',renderSalesBillHistory);
+function showBillHistoryDetail(rows,source='billhistory'){
+ billDetailSource=source;
   const box=$('billHistoryDetail');
   if(!box||!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
@@ -3225,6 +3256,7 @@ function showBillHistoryDetail(rows){
   <div class="bill-detail-total">Total: ${money(total)}${first.paymentMethod==='Credit'?` · জমা: ${money(invoiceCollected(first.billNo))} · বাকি: ${money(invoiceDue(first.billNo))}`:''}</div>
   <div id="savedSaleDiscountPanel" class="hidden" style="margin:12px 0;padding:12px;border:1px solid #bfd1e5;border-radius:8px">
     <b id="savedSaleDiscountTitle"></b><p style="margin:5px 0">আইটেমের সঠিক মোট দাম লিখুন—বাড়ানো বা কমানো যাবে। Quantity ও Stock একই থাকবে। Credit বিল হলে বাকি টাকাও বদলাবে; টাকা পেলে Credit Collection-এ জমা দিন।</p>
+    <label>Rate / Unit (৳) <input id="savedSaleRate" type="number" inputmode="decimal" step="any" min="0" style="width:155px;padding:8px;margin:0 8px"></label>
     <label>New item total (৳) <input id="savedSaleDiscountAmount" type="number" inputmode="decimal" step="0.01" min="0" style="width:155px;padding:8px;margin:0 8px"></label>
     <button type="button" class="btn primary" id="savedSaleDiscountSave">Save corrected price</button>
     <button type="button" class="btn gray" id="savedSaleDiscountCancel">Cancel</button>
@@ -3232,15 +3264,21 @@ function showBillHistoryDetail(rows){
   box.classList.remove('hidden');
   $('billHistoryList').closest('.card').classList.add('hidden');
   $('billHistorySearchInput').closest('.card').classList.add('hidden');
-  $('billDetailCloseBtn').onclick=()=>{
+  $('billDetailCloseBtn').textContent=source==='sales'?'← Sales History':'← Back to Bills';
+  $('billDetailCloseBtn').onclick=async()=>{
     box.classList.add('hidden');box.innerHTML='';
     $('billHistoryList').closest('.card').classList.remove('hidden');
     $('billHistorySearchInput').closest('.card').classList.remove('hidden');
+    if(source==='sales'){await goTab('sales');$('salesBillHistoryCard').scrollIntoView({behavior:'smooth',block:'start'})}
   };
   $('billDetailPrintBtn').onclick=()=>printBillSearchRows(rows);
   box.querySelectorAll('[data-saved-discount]').forEach(btn=>btn.onclick=()=>{
     const x=rows[Number(btn.dataset.savedDiscount)],panel=$('savedSaleDiscountPanel');
     panel.classList.remove('hidden');$('savedSaleDiscountTitle').textContent=x.item+' · '+fmtQty(x.qty)+' '+x.unit+' · current '+money(x.total);
+    $('savedSaleRate').value=Number(x.price);
+    $('savedSaleRate').oninput=()=>{const rate=Number($('savedSaleRate').value);$('savedSaleDiscountAmount').value=$('savedSaleRate').value!==''&&Number.isFinite(rate)?(rate*Number(x.qty)).toFixed(2):''};
+    $('savedSaleDiscountAmount').oninput=()=>{const amount=Number($('savedSaleDiscountAmount').value);$('savedSaleRate').value=$('savedSaleDiscountAmount').value!==''&&Number.isFinite(amount)&&Number(x.qty)>0?amount/Number(x.qty):''};
+    ['savedSaleRate','savedSaleDiscountAmount'].forEach(id=>{$(id).onclick=()=>{if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard($(id),'numeric')}});
     $('savedSaleDiscountAmount').value=Number(x.total).toFixed(2);$('savedSaleDiscountAmount').removeAttribute('max');
     $('savedSaleDiscountCancel').onclick=()=>panel.classList.add('hidden');
     $('savedSaleDiscountSave').onclick=()=>saveExistingSaleDiscount(x,rows);
@@ -3249,6 +3287,7 @@ function showBillHistoryDetail(rows){
 }
 
 async function saveExistingSaleDiscount(x,billRows){
+ const source=billDetailSource;
  const input=$('savedSaleDiscountAmount'),button=$('savedSaleDiscountSave'),raw=input.value.trim(),amount=Number(raw);
  if(!x.id||!raw||!Number.isFinite(amount)||amount<0||amount===Number(x.total)||Math.abs(Math.round(amount*100)-amount*100)>0.000001){alert('বর্তমান '+money(x.total)+' থেকে আলাদা সঠিক নতুন মোট টাকা লিখুন।');input.focus();return}
  if(returnedQty(x)>0){alert('এই আইটেমের Return আগেই হয়েছে। Return থাকা বিলের দাম এখানে বদলানো যাবে না।');return}
@@ -3266,7 +3305,7 @@ async function saveExistingSaleDiscount(x,billRows){
   await loadCloudData();render();
   const fresh=[...(db.sales||[]),...openingCredits].filter(r=>String(r.billNo)===String(x.billNo));
   renderBillHistoryPage($('billHistorySearchInput').value);
-  if(fresh.length)showBillHistoryDetail(fresh);
+  if(fresh.length)showBillHistoryDetail(fresh,source);
   alert('দাম সংশোধন সেভ হয়েছে। নতুন বিল '+money(newBillTotal)+'। Stock বদলায়নি।'+(String(x.paymentMethod).toLowerCase()==='credit'?' টাকা পেলে Credit Collection-এ জমা দিন।':''));
  }catch(err){alert('দাম সংশোধন সেভ হয়নি: '+(err.message||err))}
  finally{button.disabled=false}
@@ -4115,6 +4154,7 @@ async function goTab(tab){
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
  const target=$(tab);if(target)target.classList.add('active');
  if(tab==='stockalerts')bbbmRenderStockAlerts(bbbmLowStockItems(Object.values(stockMap())));
+ if(tab==='sales')renderSalesBillHistory();
  if(tab==='sales')requestAnimationFrame(()=>{const input=$('sBarcode');input.focus({preventScroll:true});input.select();});
  if(tab==='barcode')refreshBarcodeItems();
  if(tab==='billhistory')renderBillHistoryPage(($('billHistorySearchInput')&&$('billHistorySearchInput').value)||'');
@@ -5686,7 +5726,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.39';
+  const POS_VERSION='POS Safe v8.40';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
