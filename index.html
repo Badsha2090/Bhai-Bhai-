@@ -26,11 +26,12 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 #sales .sale-cost-heading{position:relative;min-height:48px}
 #sales .sale-cost-lookup{position:absolute;left:29%;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #sales .sale-cost-lookup button{cursor:pointer;min-height:34px}
+#sales #salesPhoneBtn{position:absolute;left:58%;top:50%;transform:translateY(-50%)}
 #sales .sale-cost-lookup button:disabled{cursor:not-allowed;opacity:.55}
 #sales .sale-cost-value{display:inline-block;background:#fef3c7;color:#78350f;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:900}
 #sales .sale-cost-value[hidden]{display:none!important}
 body.bbbm-dark-mode #sales .sale-cost-value{background:#78350f;color:#fff7ed}
-@media(max-width:760px){#sales .sale-cost-heading{display:block}#sales .sale-cost-lookup{position:static;transform:none;margin-top:8px}}
+@media(max-width:760px){#sales .sale-cost-heading{display:block}#sales .sale-cost-lookup{position:static;transform:none;margin-top:8px}#sales #salesPhoneBtn{position:static;transform:none}#sales .sale-phone-actions{margin-top:8px}}
 </style>
 
 <style>
@@ -1167,7 +1168,6 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
         <div class="nav side-nav">
           <button class="active" data-tab="dashboard"><span>◉</span> Dashboard</button>
           <button data-tab="sales"><span>🛒</span> POS / Sales</button>
-          <button data-tab="phonesale" id="phoneSalesNav"><span>📱</span> Phone Sale</button>
           <button data-tab="purchase"><span>📦</span> Purchase</button>
           <button data-tab="openingstock"><span>🏁</span> Opening Stock</button>
           <button data-tab="purchasereturn"><span>↩️</span> Purchase Return</button>
@@ -1185,6 +1185,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
           <button class="coming"><span>🛡️</span> Users & Security <small>Soon</small></button>
           <button data-tab="billhistory"><span>🧾</span> Bill History</button>
 <button data-tab="settings"><span>⚙️</span> Settings</button>
+          <button data-tab="phonesale" id="phoneSalesNav"><span>📱</span> Phone Sale</button>
           <button data-tab="backup"><span>☁️</span> Backup & Sync</button>
         </div>
 
@@ -1223,7 +1224,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.49</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.50</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -5887,7 +5888,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.49';
+  const POS_VERSION='POS Safe v8.50';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
