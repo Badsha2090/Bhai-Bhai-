@@ -757,7 +757,7 @@ section#sales label, section#pos label{
 
 
 <style id="secure-stock-summary-css">
-#secureStockSummaryCard{border:1px solid #fdba74;background:linear-gradient(145deg,#fff7ed,#ffedd5);padding:0;overflow:hidden;text-align:left;cursor:pointer;min-height:118px;grid-column:span 2;color:#7c2d12}
+#secureStockSummaryCard{border:1px solid #fdba74;background:linear-gradient(145deg,#fff7ed,#ffedd5);padding:0;overflow:hidden;text-align:left;cursor:pointer;min-height:118px;grid-column:span 1;color:#7c2d12}
 #secureStockSummaryCard .secure-summary-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid rgba(234,88,12,.18);font-size:11px;font-weight:900;letter-spacing:.35px}
 #secureStockSummaryCard .secure-summary-head>div{display:flex;align-items:center;gap:7px}.secure-summary-icon{font-size:16px}
 .secure-summary-state{font-size:9px;padding:4px 7px;border-radius:999px;background:#9a3412;color:#fff;letter-spacing:.5px}
@@ -779,7 +779,7 @@ body.bbbm-dark-mode #secureStockSummaryCard.unlocked{background:linear-gradient(
 #secureSummaryPinMsg{min-height:20px;margin-top:8px;font-size:11px;font-weight:800;color:#b91c1c}
 #secureSummaryPinActions{display:flex;gap:8px;margin-top:6px}#secureSummaryPinActions button{flex:1}
 body.bbbm-dark-mode #secureSummaryPinBox{background:#0f172a;border-color:#334155;color:#f8fafc}body.bbbm-dark-mode #secureSummaryPinBox p{color:#94a3b8}body.bbbm-dark-mode #secureSummaryPinInput{background:#111827;color:#fff;border-color:#475569}
-@media(max-width:760px){#secureStockSummaryCard{grid-column:span 2}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
+@media(max-width:760px){#secureStockSummaryCard{grid-column:span 1}.secure-summary-cell{padding:9px 8px}.secure-summary-cell b{font-size:14px}.secure-summary-cell span{font-size:8px}}
 </style>
 
 <style id="dashboard-quick-actions-colorful-css">
@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.43</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.46</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1236,7 +1236,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <div><span class="secure-summary-icon">🔐</span><span>PROFIT & STOCK</span></div>
                   <span id="secureSummaryState" class="secure-summary-state">LOCKED</span>
                 </div>
-                <div class="secure-summary-grid">
+                <div class="secure-summary-grid" style="display:none">
                   <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
                   <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mSecurePurchase" class="secure-value">••••••</b></div>
                   <div class="secure-summary-cell" id="dailyProfitCell" role="button" tabindex="0" style="cursor:pointer"><span>TODAY PROFIT · 📅</span><b id="mTodayProfit" class="secure-value">••••••</b><small>Tap to choose date</small></div>
@@ -1861,7 +1861,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
   <div class="stat-card"><div><span>Sales Return</span><strong id="repReturn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Cash In</span><strong id="repCashIn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
-  <div class="stat-card"><div><span>💵 Total Cash / মোট নগদ ব্যালেন্স</span><strong id="repTotalCash">৳0</strong><small style="display:block;margin-top:6px">সব দিনের Cash Sales + Cash Collection − Cash Refund − Expenses</small></div></div>
+  <div class="stat-card"><div><span>💵 Total Cash / মোট নগদ ব্যালেন্স</span><strong id="repTotalCash">৳0</strong><small style="display:block;margin-top:6px">সব দিনের Cash Sales + Cash Collection − Cash Refund − Expenses − Purchase</small></div></div>
  </div>
 </section>
 
@@ -2788,14 +2788,19 @@ function closeDashboardCreditDetail(){
 function dailySalesProfit(date,stock=stockMap()){
  return (db.sales||[]).filter(s=>String(s.date||'').slice(0,10)===date).reduce((total,s)=>total+(+s.total||0)-(+s.qty||0)*(stock[s.barcode]?.avg||0),0);
 }
+function dailyProfitBreakdown(date){
+ const gross=dailySalesProfit(date);
+ const expense=(db.expenses||[]).filter(x=>String(x.date||'').slice(0,10)===date).reduce((sum,x)=>sum+(+x.amount||0),0);
+ return {gross,expense,net:gross-expense};
+}
 window.__bbbmOpenDailyProfit=function(){
  let modal=$('dailyProfitDialog');
  if(!modal){
   modal=document.createElement('div');modal.id='dailyProfitDialog';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Daily Profit');
   modal.style.cssText='position:fixed;inset:0;z-index:2147483600;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px';
-  modal.innerHTML='<div class="card" style="width:min(420px,95vw);padding:22px"><h3>📅 দিনের লাভ / Daily Profit</h3><label>তারিখ নির্বাচন<input id="dailyProfitDate" type="date" style="width:100%;margin:12px 0"></label><strong id="dailyProfitAmount" style="display:block;font-size:28px;margin:14px 0"></strong><p style="font-size:12px">বিক্রয়মূল্য − পণ্যের গড় ক্রয়মূল্য।</p><button type="button" class="btn gray" id="dailyProfitClose">Close</button></div>';
+  modal.innerHTML='<div class="card" style="width:min(780px,95vw);padding:22px;max-height:90vh;overflow:auto"><h3>📅 দিনের লাভ / Daily Profit</h3><label>তারিখ নির্বাচন<input id="dailyProfitDate" type="date" style="width:100%;margin:12px 0"></label><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0"><div class="stat-card"><div><span>মোট লাভ / Gross Profit</span><strong id="dailyProfitAmount">—</strong></div></div><div class="stat-card"><div><span>খরচ / Expenses</span><strong id="dailyProfitExpense">—</strong></div></div><div class="stat-card"><div><span>খরচ বাদে লাভ / Net Profit</span><strong id="dailyProfitNet">—</strong></div></div></div><p style="font-size:12px">মোট লাভ = বিক্রয়মূল্য − পণ্যের গড় ক্রয়মূল্য। খরচ বাদে লাভ = মোট লাভ − ওই দিনের খরচ।</p><button type="button" class="btn gray" id="dailyProfitClose">Close</button></div>';
   document.body.appendChild(modal);
-  $('dailyProfitDate').onchange=()=>{$('dailyProfitAmount').textContent=$('dailyProfitDate').value?money(dailySalesProfit($('dailyProfitDate').value)):'—'};
+  $('dailyProfitDate').onchange=()=>{const date=$('dailyProfitDate').value,data=date?dailyProfitBreakdown(date):null;[['dailyProfitAmount','gross'],['dailyProfitExpense','expense'],['dailyProfitNet','net']].forEach(([id,key])=>{$(id).textContent=data?money(data[key]):'—'})};
   $('dailyProfitClose').onclick=()=>modal.remove();
   modal.onclick=e=>{if(e.target===modal)modal.remove()};
  }
@@ -3369,7 +3374,7 @@ function renderReport(){
  $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
  $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
  $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
- $('repTotalCash').textContent=money(cashBalance());
+ $('repTotalCash').textContent=money(cashBalance()-realPurchases().reduce((sum,p)=>sum+(+p.total||0),0));
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
@@ -5766,11 +5771,21 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   const msg=document.getElementById('secureSummaryPinMsg');
   const state=document.getElementById('secureSummaryState');
   const hint=document.getElementById('secureSummaryHint');
+  const details=document.createElement('div');details.id='profitStockDetails';details.setAttribute('role','dialog');details.setAttribute('aria-modal','true');details.setAttribute('aria-label','Profit & Stock');
+  details.style.cssText='display:none;position:fixed;inset:0;z-index:10010;background:#0008;align-items:center;justify-content:center;padding:16px';
+  details.innerHTML='<div class="card" style="width:min(620px,95vw);padding:20px;max-height:85vh;overflow:auto"><div class="panel-head"><h3>Profit & Stock</h3><button type="button" id="profitStockClose" class="btn gray">← Back / Close</button></div><div id="profitStockDetailContent"></div></div>';
+  document.body.appendChild(details);
+  const grid=card.querySelector('.secure-summary-grid');document.getElementById('profitStockDetailContent').appendChild(grid);grid.style.display='grid';
+  document.getElementById('profitStockClose').onclick=()=>setLocked(true);
+  details.addEventListener('click',e=>{if(e.target===details)setLocked(true)});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setLocked(true)});
+  grid.addEventListener('click',e=>{if(unlocked&&e.target.closest('#dailyProfitCell')&&window.__bbbmOpenDailyProfit)window.__bbbmOpenDailyProfit()});
   function setLocked(on){
     unlocked=!on; card.classList.toggle('locked',on); card.classList.toggle('unlocked',!on);
+    details.style.display=on?'none':'flex';
     if(on)document.getElementById('dailyProfitDialog')?.remove();
     if(state)state.textContent=on?'LOCKED':'OPEN';
-    if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Tap again to lock';
+    if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Details open';
   }
   function closeModal(){modal.style.display='none'; input.value=''; msg.textContent='';}
   function verify(){
@@ -5784,7 +5799,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
     modal.style.display='flex'; input.value=''; msg.textContent='';
     setTimeout(()=>{try{input.focus()}catch(e){}; if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric')},30);
   }
-  card.addEventListener('click',function(e){if(unlocked&&e.target.closest('#dailyProfitCell')){if(window.__bbbmOpenDailyProfit)window.__bbbmOpenDailyProfit();return}if(unlocked){setLocked(true);return}openModal()});
+  card.addEventListener('click',function(){if(unlocked){details.style.display='flex';return}openModal()});
   document.getElementById('dailyProfitCell').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.click()}});
   input.addEventListener('input',function(){
     const clean=String(this.value||'').replace(/\D/g,'').slice(0,4); if(this.value!==clean)this.value=clean;
@@ -5804,7 +5819,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.43';
+  const POS_VERSION='POS Safe v8.46';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
