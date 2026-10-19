@@ -1223,7 +1223,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.47</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.49</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1416,7 +1416,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
           </section>
 
 <section id="sales" class="section">
-            <div class="section-heading sale-cost-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div><div class="sale-cost-lookup"><button type="button" id="showSalePurchasePrice" class="btn gray smallbtn" disabled>👁 Show Purchase Price</button><span id="salePurchasePriceValue" class="sale-cost-value" hidden></span></div></div>
+            <div class="section-heading sale-cost-heading"><div><h2>POS / Sales</h2><p>Scan a barcode to load item, stock, unit and saved selling rate.</p></div><div class="sale-cost-lookup"><button type="button" id="showSalePurchasePrice" class="btn gray smallbtn" disabled>👁 Show Purchase Price</button><span id="salePurchasePriceValue" class="sale-cost-value" hidden></span></div><div class="sale-phone-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button type="button" id="salesPhoneBtn" class="btn primary">📱 Phone</button></div></div>
             
 <div class="card form-card">
               <form id="saleForm" class="dataform">
@@ -1637,6 +1637,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
           </section>
 
 <section id="phonesale" class="section"><div class="section-heading"><h2>📱 Phone Sale</h2><button type="button" id="phoneRefreshInbox" class="btn primary">Refresh Phone Bills</button></div><div class="card" style="padding:18px"><p>Staff-এর ফোনে <a href="Bhai_Bhai_Phone_Sale.html" target="_blank" rel="noopener">Phone Sale খুলুন</a>। শুধু আলাদা Staff username/password দিন।</p><button type="button" id="phoneSyncCatalog" class="btn primary">Sync Products to Phone</button><button type="button" id="phoneRecover" class="btn gray">Restore unfinished Phone Bill</button><p>ফোনে Send to POS করার পর নিচে Receive চাপুন। Payment, Save ও Print হবে POS থেকে।</p></div><div class="card" style="padding:18px;margin-top:14px"><h3>Staff Login</h3><form id="phoneStaffForm" class="form-grid"><label>Username<input id="phoneStaffUser" required pattern="[a-z0-9_-]{3,40}" placeholder="staff01" autocomplete="off"></label><label>Password (10+ characters)<input id="phoneStaffPass" required minlength="10" type="password" autocomplete="new-password"></label><label><input id="phoneStaffActive" type="checkbox" checked> Active (বন্ধ করতে uncheck করুন)</label><button type="submit" id="phoneStaffSave" class="btn primary">Create / Reset Staff Login</button></form><pre id="phoneStaffList" style="white-space:pre-wrap"></pre></div><div id="phoneInbox"></div></section>
+<dialog id="salesPhoneDialog" aria-labelledby="salesPhoneTitle" style="width:min(900px,94vw);max-height:85vh;padding:20px;border:1px solid #aabbcc;border-radius:14px;background:var(--card,#fff);color:var(--text,#17243b);box-shadow:0 15px 60px #0005"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 id="salesPhoneTitle" style="margin:0">📱 Phone Bills</h2><small id="salesPhoneCount">Pending bills</small></div><div style="display:flex;gap:8px"><button type="button" id="salesPhoneRefresh" class="btn primary">Refresh</button><button type="button" id="salesPhoneClose" class="btn gray">✕ Close</button></div></div><div id="salesPhoneInbox" style="margin-top:12px"></div></dialog>
 <section id="openingcredit" class="section">
  <div class="section-heading"><div><h2>🧾 Opening Credit / Previous Due</h2><p>আগের বকেয়া যোগ করুন — Sales, Purchase ও Stock অপরিবর্তিত থাকবে।</p></div></div>
  <div class="card form-card"><form id="openingCreditForm" class="dataform">
@@ -4430,24 +4431,54 @@ async function syncPhoneCatalog(){
  const signature=currentUser.id+JSON.stringify(items);if(signature===phoneCatalogSignature)return;
  await phoneOwnerRpc('catalog_save',{items});phoneCatalogSignature=signature;
 }
+let phoneBillActionBusy=false;
+async function renderPhoneInbox(boxId){
+ const box=$(boxId);box.textContent='Phone Bills লোড হচ্ছে…';
+ try{
+  let rows=await phoneOwnerRpc('inbox');rows.sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at))||String(a.id).localeCompare(String(b.id)));
+  function paint(){const stock=stockMap();
+   if(boxId==='salesPhoneInbox')$('salesPhoneCount').textContent=rows.length+' pending bills';
+   box.innerHTML=rows.length?rows.map((x,i)=>`<article class="card" style="padding:14px;margin-top:10px;border:1px solid #bccbda"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>#${i+1} · ${openingCreditEscape(x.username)}</b><span>${openingCreditEscape(new Date(x.created_at).toLocaleString())}</span></div><p style="margin:8px 0">${x.payload.items.length} items · <b>${money(x.payload.items.reduce((n,z)=>n+Number(z.total),0))}</b></p><details><summary style="cursor:pointer">পণ্যের তালিকা</summary><ol style="padding-left:24px">${x.payload.items.map(z=>`<li style="padding:4px 0">${openingCreditEscape(stock[z.code]?.item||z.code)} · ${fmtQty(z.qty)} ${openingCreditEscape(stock[z.code]?.unit||'')} · ${money(z.total)}</li>`).join('')}</ol></details><div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="btn primary" data-phone-action="receive" data-phone-index="${i}">Receive</button><button type="button" class="btn danger" data-phone-action="delete" data-phone-index="${i}">Delete</button></div></article>`).join(''):'<p>নতুন Phone Bill নেই। Refresh চাপুন।</p>';
+  }
+  paint();
+  box.onclick=async e=>{
+   const b=e.target.closest('[data-phone-action]');if(!b||!box.contains(b)||phoneBillActionBusy)return;
+   const action=b.dataset.phoneAction,row=rows[+b.dataset.phoneIndex];if(!row)return;
+   if(action==='delete'&&!confirm('এই Phone Bill মুছে ফেলবেন? এটি Sale বা Stock-এর হিসাব বদলাবে না।'))return;
+   if(action==='receive'){
+    if(saleCart.length||pendingSale||$('sBarcode').value.trim()){alert('আগের Sales বিলটি আগে শেষ করুন।');return}
+    const stock=stockMap(),counts={};row.payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
+    if(row.payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current)){alert('Stock পরিবর্তন হয়েছে/কম আছে। পণ্য ও stock পরীক্ষা করুন।');return}
+   }
+   phoneBillActionBusy=true;box.querySelectorAll('[data-phone-action]').forEach(x=>x.disabled=true);$('salesPhoneRefresh').disabled=true;
+   let claimed=false,previousRecovery=null;
+   try{
+    if(action==='receive'){
+     previousRecovery=localStorage.getItem('bbbm_phone_recovery');localStorage.setItem('bbbm_phone_recovery',JSON.stringify(row.payload));
+     const payload=await phoneOwnerRpc('receive',{id:row.id});claimed=true;
+     if($('salesPhoneDialog').open)$('salesPhoneDialog').close();await importPhoneBill(payload);
+    }else await phoneOwnerRpc('delete',{id:row.id});
+    rows=rows.filter(x=>x.id!==row.id);paint();
+   }catch(error){
+    if(action==='receive'&&!claimed&&error.code==='P0001'){if(previousRecovery==null)localStorage.removeItem('bbbm_phone_recovery');else localStorage.setItem('bbbm_phone_recovery',previousRecovery)}
+    alert(error.message);
+   }finally{phoneBillActionBusy=false;$('salesPhoneRefresh').disabled=false;box.querySelectorAll('[data-phone-action]').forEach(x=>x.disabled=false)}
+  };
+ }catch(e){box.textContent=e.message}
+}
 async function openPhoneSales(){
  await goTab('phonesale');
- try{await syncPhoneCatalog();const staff=await phoneOwnerRpc('staff_list');$('phoneStaffList').textContent=staff.map(x=>x.username+(x.active?' · Active':' · Disabled')).join('\n')||'এখনো Staff নেই।';const rows=await phoneOwnerRpc('inbox');const box=$('phoneInbox');
- box.innerHTML=rows.length?rows.map((x,i)=>`<div class="card" style="padding:14px;margin-top:10px"><b>${openingCreditEscape(x.username)}</b> · ${openingCreditEscape(new Date(x.created_at).toLocaleString())}<p>${x.payload.items.length} items · ${money(x.payload.items.reduce((n,z)=>n+Number(z.total),0))}</p><button type="button" class="btn primary" data-phone-receive="${i}">Receive to Sales</button></div>`).join(''):'<p>নতুন Phone Bill নেই। Refresh চাপুন।</p>';
- box.querySelectorAll('[data-phone-receive]').forEach(b=>b.onclick=async()=>{
-  if(saleCart.length||pendingSale||$('sBarcode').value.trim()){alert('আগের Sales বিলটি আগে শেষ করুন।');return}
-  const row=rows[+b.dataset.phoneReceive],stock=stockMap(),counts={};row.payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
-  if(row.payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current)){alert('Stock পরিবর্তন হয়েছে/কম আছে। পণ্য ও stock পরীক্ষা করুন।');return}
-  b.disabled=true;
-  try{localStorage.setItem('bbbm_phone_recovery',JSON.stringify(row.payload));await phoneOwnerRpc('receive',{id:row.id});await importPhoneBill(row.payload)}catch(e){alert(e.message)}finally{b.disabled=false}
- });
- }catch(e){$('phoneInbox').textContent=e.message}
+ try{await syncPhoneCatalog();const staff=await phoneOwnerRpc('staff_list');$('phoneStaffList').textContent=staff.map(x=>x.username+(x.active?' · Active':' · Disabled')).join('\n')||'এখনো Staff নেই।';await renderPhoneInbox('phoneInbox')}catch(e){$('phoneInbox').textContent=e.message}
 }
+$('salesPhoneBtn').onclick=async()=>{if(phoneBillActionBusy)return;const dialog=$('salesPhoneDialog');if(!dialog.open)dialog.showModal();await renderPhoneInbox('salesPhoneInbox')};
+$('salesPhoneClose').onclick=()=>{if(!phoneBillActionBusy)$('salesPhoneDialog').close()};
+$('salesPhoneRefresh').onclick=()=>{if(!phoneBillActionBusy)return renderPhoneInbox('salesPhoneInbox')};
+$('salesPhoneDialog').addEventListener('cancel',e=>{if(phoneBillActionBusy)e.preventDefault()});
 async function importPhoneBill(payload){
  const stock=stockMap(),counts={};payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
  if(payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current))throw Error('Stock কম আছে। পণ্য ও stock পরীক্ষা করুন।');
  saleCart=payload.items.map(x=>{const s=stock[x.code];const price=Number(x.total)/Number(x.qty);return {code:x.code,item:s.item,unit:s.unit,qty:Number(x.qty),price,netPrice:price,total:Number(x.total),discountPct:0,manualTotal:true,available:s.current}});
- $('saleServiceCharge').value='0';resetBillDiscount();clearSaleItemFields();renderSaleCart();await goTab('sales');alert('Phone Bill এসেছে। দাম মিলিয়ে Payment বেছে Continue করুন।');
+ $('saleServiceCharge').value='0';resetBillDiscount();clearSaleItemFields();renderSaleCart();$('saleForm').classList.remove('hidden');$('saleCartBox').classList.remove('hidden');$('creditCustomerBox').classList.add('hidden');$('saleFinishBox').classList.add('hidden');await goTab('sales');alert('Phone Bill এসেছে। Edit/Remove করতে পারবেন। Cash বা Credit বেছে Continue করুন।');
 }
 $('phoneSalesNav').onclick=openPhoneSales;$('phoneRefreshInbox').onclick=openPhoneSales;
 $('phoneSyncCatalog').onclick=async()=>{try{phoneCatalogSignature='';await syncPhoneCatalog();alert('Products synced')}catch(e){alert(e.message)}};
@@ -4939,7 +4970,7 @@ window.addEventListener('DOMContentLoaded', function(){
       '<div class="bbbm-nb-panel">'+
       '<input class="bbbm-nb-search" placeholder="পণ্যের নাম লিখে খুঁজুন…">'+
       '<div class="bbbm-nb-cats"></div><div class="bbbm-nb-items"></div></div>';
-    heading.appendChild(wrap);
+    if(mode==='sale'&&byId('salesPhoneBtn'))byId('salesPhoneBtn').parentElement.appendChild(wrap);else heading.appendChild(wrap);
     const btn=wrap.querySelector('.bbbm-nb-btn'), panel=wrap.querySelector('.bbbm-nb-panel');
     const search=wrap.querySelector('.bbbm-nb-search'), catbox=wrap.querySelector('.bbbm-nb-cats'), items=wrap.querySelector('.bbbm-nb-items');
     let active='রড';
@@ -5856,7 +5887,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.47';
+  const POS_VERSION='POS Safe v8.49';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
