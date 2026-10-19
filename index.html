@@ -1167,6 +1167,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
         <div class="nav side-nav">
           <button class="active" data-tab="dashboard"><span>◉</span> Dashboard</button>
           <button data-tab="sales"><span>🛒</span> POS / Sales</button>
+          <button data-tab="phonesale" id="phoneSalesNav"><span>📱</span> Phone Sale</button>
           <button data-tab="purchase"><span>📦</span> Purchase</button>
           <button data-tab="openingstock"><span>🏁</span> Opening Stock</button>
           <button data-tab="purchasereturn"><span>↩️</span> Purchase Return</button>
@@ -1222,7 +1223,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.46</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.47</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1635,6 +1636,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
             <div class="card history-card" id="salesBillHistoryCard"><div class="panel-head"><h3>Sales History</h3><span id="salesBillCount"></span></div><input id="salesBillSearch" placeholder="Bill No. / Customer / Date" style="width:100%;margin:10px 0"><div id="salesBillHistoryList"></div></div>
           </section>
 
+<section id="phonesale" class="section"><div class="section-heading"><h2>📱 Phone Sale</h2><button type="button" id="phoneRefreshInbox" class="btn primary">Refresh Phone Bills</button></div><div class="card" style="padding:18px"><p>Staff-এর ফোনে <a href="Bhai_Bhai_Phone_Sale.html" target="_blank" rel="noopener">Phone Sale খুলুন</a>। শুধু আলাদা Staff username/password দিন।</p><button type="button" id="phoneSyncCatalog" class="btn primary">Sync Products to Phone</button><button type="button" id="phoneRecover" class="btn gray">Restore unfinished Phone Bill</button><p>ফোনে Send to POS করার পর নিচে Receive চাপুন। Payment, Save ও Print হবে POS থেকে।</p></div><div class="card" style="padding:18px;margin-top:14px"><h3>Staff Login</h3><form id="phoneStaffForm" class="form-grid"><label>Username<input id="phoneStaffUser" required pattern="[a-z0-9_-]{3,40}" placeholder="staff01" autocomplete="off"></label><label>Password (10+ characters)<input id="phoneStaffPass" required minlength="10" type="password" autocomplete="new-password"></label><label><input id="phoneStaffActive" type="checkbox" checked> Active (বন্ধ করতে uncheck করুন)</label><button type="submit" id="phoneStaffSave" class="btn primary">Create / Reset Staff Login</button></form><pre id="phoneStaffList" style="white-space:pre-wrap"></pre></div><div id="phoneInbox"></div></section>
 <section id="openingcredit" class="section">
  <div class="section-heading"><div><h2>🧾 Opening Credit / Previous Due</h2><p>আগের বকেয়া যোগ করুন — Sales, Purchase ও Stock অপরিবর্তিত থাকবে।</p></div></div>
  <div class="card form-card"><form id="openingCreditForm" class="dataform">
@@ -2829,6 +2831,7 @@ function render(){
  if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
  if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
  if(typeof renderReport==='function')renderReport();
+ clearTimeout(phoneCatalogTimer);phoneCatalogTimer=setTimeout(()=>syncPhoneCatalog().catch(e=>console.warn('Phone catalog sync',e.message)),3000);
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
  $('returnRows').innerHTML=returns.length?returns.slice().reverse().map((r,i)=>`<tr><td>${r.date}</td><td>${r.billNo?'BBBM-'+String(r.billNo).padStart(6,'0'):'বিল ছাড়া'}</td><td>${r.item}</td><td>${fmtQty(r.qty)} ${r.unit}</td><td>${money(r.refund)}</td><td>${r.paymentMethod}</td><td>${r.reason}</td><td>${r.by||''}</td><td><button type="button" class="btn" data-refund-edit="${returns.length-1-i}">Edit Refund</button></td></tr>`).join(''):'<tr><td colspan="9">No return yet.</td></tr>';
@@ -3804,6 +3807,7 @@ function showSaleFinish(sale){
  $('saleForm').classList.add('hidden');$('saleCartBox').classList.add('hidden');
 }
 function resetSaleForm(){
+ try{localStorage.removeItem('bbbm_phone_recovery')}catch(_){}
  $('saleForm').reset();$('saleServiceCharge').value='0';saleCart=[];editingCartIndex=null;resetBillDiscount();renderSaleCart();
  $('sDate').value=today();
  const cash=document.querySelector('input[name="paymentMethod"][value="Cash"]');if(cash)cash.checked=true;
@@ -4242,7 +4246,7 @@ async function goTab(tab){
       if(tab==='accounts')renderAccounts();
       if(tab==='purchasereturn')renderPurchaseReturnHistory();
  if(tab==='openingcredit')renderOpeningCreditHistory();
- const names={openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
+ const names={phonesale:'Phone Sale',openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -4416,6 +4420,39 @@ async function clearDemoDataForLiveStart(){
   }
 }
 if($('clearDemoDataBtn'))$('clearDemoDataBtn').onclick=clearDemoDataForLiveStart;
+
+async function phoneOwnerRpc(action,data={}){const r=await cloud.rpc('bbbm_phone',{p_action:action,p_data:data});if(r.error)throw r.error;return r.data}
+let phoneCatalogSignature='',phoneCatalogTimer;
+async function syncPhoneCatalog(){
+ if(!currentUser)return;
+ const latestRates={};(db.purchases||[]).forEach(p=>{if(p.sellingPrice!=null)latestRates[String(p.barcode)]=Number(p.sellingPrice)});
+ const items=Object.values(stockMap()).map(x=>{const code=String(x.barcode),meta=metaFor(code);return {code,item:x.item,unit:x.unit,current:x.current,price:meta.sellPrice!=null&&meta.sellPrice!==''?Number(meta.sellPrice):latestRates[code]||0,cost:x.avg}});
+ const signature=currentUser.id+JSON.stringify(items);if(signature===phoneCatalogSignature)return;
+ await phoneOwnerRpc('catalog_save',{items});phoneCatalogSignature=signature;
+}
+async function openPhoneSales(){
+ await goTab('phonesale');
+ try{await syncPhoneCatalog();const staff=await phoneOwnerRpc('staff_list');$('phoneStaffList').textContent=staff.map(x=>x.username+(x.active?' · Active':' · Disabled')).join('\n')||'এখনো Staff নেই।';const rows=await phoneOwnerRpc('inbox');const box=$('phoneInbox');
+ box.innerHTML=rows.length?rows.map((x,i)=>`<div class="card" style="padding:14px;margin-top:10px"><b>${openingCreditEscape(x.username)}</b> · ${openingCreditEscape(new Date(x.created_at).toLocaleString())}<p>${x.payload.items.length} items · ${money(x.payload.items.reduce((n,z)=>n+Number(z.total),0))}</p><button type="button" class="btn primary" data-phone-receive="${i}">Receive to Sales</button></div>`).join(''):'<p>নতুন Phone Bill নেই। Refresh চাপুন।</p>';
+ box.querySelectorAll('[data-phone-receive]').forEach(b=>b.onclick=async()=>{
+  if(saleCart.length||pendingSale||$('sBarcode').value.trim()){alert('আগের Sales বিলটি আগে শেষ করুন।');return}
+  const row=rows[+b.dataset.phoneReceive],stock=stockMap(),counts={};row.payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
+  if(row.payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current)){alert('Stock পরিবর্তন হয়েছে/কম আছে। পণ্য ও stock পরীক্ষা করুন।');return}
+  b.disabled=true;
+  try{localStorage.setItem('bbbm_phone_recovery',JSON.stringify(row.payload));await phoneOwnerRpc('receive',{id:row.id});await importPhoneBill(row.payload)}catch(e){alert(e.message)}finally{b.disabled=false}
+ });
+ }catch(e){$('phoneInbox').textContent=e.message}
+}
+async function importPhoneBill(payload){
+ const stock=stockMap(),counts={};payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
+ if(payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current))throw Error('Stock কম আছে। পণ্য ও stock পরীক্ষা করুন।');
+ saleCart=payload.items.map(x=>{const s=stock[x.code];const price=Number(x.total)/Number(x.qty);return {code:x.code,item:s.item,unit:s.unit,qty:Number(x.qty),price,netPrice:price,total:Number(x.total),discountPct:0,manualTotal:true,available:s.current}});
+ $('saleServiceCharge').value='0';resetBillDiscount();clearSaleItemFields();renderSaleCart();await goTab('sales');alert('Phone Bill এসেছে। দাম মিলিয়ে Payment বেছে Continue করুন।');
+}
+$('phoneSalesNav').onclick=openPhoneSales;$('phoneRefreshInbox').onclick=openPhoneSales;
+$('phoneSyncCatalog').onclick=async()=>{try{phoneCatalogSignature='';await syncPhoneCatalog();alert('Products synced')}catch(e){alert(e.message)}};
+$('phoneStaffForm').onsubmit=async e=>{e.preventDefault();const button=$('phoneStaffSave');button.disabled=true;try{await phoneOwnerRpc('staff_save',{username:$('phoneStaffUser').value.trim().toLowerCase(),password:$('phoneStaffPass').value,active:$('phoneStaffActive').checked});$('phoneStaffPass').value='';await openPhoneSales();alert('Staff login saved. Reset করলে আগের login বন্ধ হবে।')}catch(e){alert(e.message)}finally{button.disabled=false}};
+$('phoneRecover').onclick=async()=>{if(saleCart.length||pendingSale)return alert('আগের বিলটি শেষ করুন।');const raw=localStorage.getItem('bbbm_phone_recovery');if(!raw)return alert('কোনো recovery bill নেই।');if(confirm('শুধু অসম্পূর্ণ বিল হলে Restore করুন। আগেই Sale হয়ে থাকলে করবেন না।'))await importPhoneBill(JSON.parse(raw))};
 
 // ===== Accounts =====
 const ACC_OPENING_KEY='bbbm_accounts_opening_cash_v1';
@@ -5819,7 +5856,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.46';
+  const POS_VERSION='POS Safe v8.47';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
