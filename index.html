@@ -1222,7 +1222,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.41</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.43</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1238,6 +1238,8 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                 </div>
                 <div class="secure-summary-grid">
                   <div class="secure-summary-cell"><span>TOTAL PROFIT</span><b id="mProfit" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell"><span>TOTAL PURCHASE</span><b id="mSecurePurchase" class="secure-value">••••••</b></div>
+                  <div class="secure-summary-cell" id="dailyProfitCell" role="button" tabindex="0" style="cursor:pointer"><span>TODAY PROFIT · 📅</span><b id="mTodayProfit" class="secure-value">••••••</b><small>Tap to choose date</small></div>
                   <div class="secure-summary-cell"><span>CURRENT STOCK</span><b id="mStock" class="secure-value">••••••</b></div>
                   <div class="secure-summary-cell"><span>STOCK VALUE</span><b id="mStockValue" class="secure-value">••••••</b></div>
                 </div>
@@ -1859,6 +1861,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
   <div class="stat-card"><div><span>Sales Return</span><strong id="repReturn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Cash In</span><strong id="repCashIn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
+  <div class="stat-card"><div><span>💵 Total Cash / মোট নগদ ব্যালেন্স</span><strong id="repTotalCash">৳0</strong><small style="display:block;margin-top:6px">সব দিনের Cash Sales + Cash Collection − Cash Refund − Expenses</small></div></div>
  </div>
 </section>
 
@@ -2782,8 +2785,26 @@ function closeDashboardCreditDetail(){
  if($('pageTitle'))$('pageTitle').textContent='Credit Customers';
  window.scrollTo({top:0,behavior:'smooth'});
 }
+function dailySalesProfit(date,stock=stockMap()){
+ return (db.sales||[]).filter(s=>String(s.date||'').slice(0,10)===date).reduce((total,s)=>total+(+s.total||0)-(+s.qty||0)*(stock[s.barcode]?.avg||0),0);
+}
+window.__bbbmOpenDailyProfit=function(){
+ let modal=$('dailyProfitDialog');
+ if(!modal){
+  modal=document.createElement('div');modal.id='dailyProfitDialog';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Daily Profit');
+  modal.style.cssText='position:fixed;inset:0;z-index:2147483600;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML='<div class="card" style="width:min(420px,95vw);padding:22px"><h3>📅 দিনের লাভ / Daily Profit</h3><label>তারিখ নির্বাচন<input id="dailyProfitDate" type="date" style="width:100%;margin:12px 0"></label><strong id="dailyProfitAmount" style="display:block;font-size:28px;margin:14px 0"></strong><p style="font-size:12px">বিক্রয়মূল্য − পণ্যের গড় ক্রয়মূল্য।</p><button type="button" class="btn gray" id="dailyProfitClose">Close</button></div>';
+  document.body.appendChild(modal);
+  $('dailyProfitDate').onchange=()=>{$('dailyProfitAmount').textContent=$('dailyProfitDate').value?money(dailySalesProfit($('dailyProfitDate').value)):'—'};
+  $('dailyProfitClose').onclick=()=>modal.remove();
+  modal.onclick=e=>{if(e.target===modal)modal.remove()};
+ }
+ $('dailyProfitDate').value=today();$('dailyProfitDate').onchange();
+};
 function render(){
  const m=stockMap(), vals=Object.values(m),tp=realPurchases().reduce((a,b)=>a+ +b.total,0),ts=db.sales.reduce((a,b)=>a+ +b.total,0);
+ $('mSecurePurchase').textContent=money(tp);
+ $('mTodayProfit').textContent=money(dailySalesProfit(today(),m));
  const cs=vals.reduce((a,b)=>a+b.current,0),sv=vals.reduce((a,b)=>a+b.value,0),tdp=realPurchases().filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0),tds=db.sales.filter(x=>x.date===today()).reduce((a,b)=>a+ +b.total,0);
  let cogs=0;db.sales.forEach(s=>{let x=m[s.barcode];if(x)cogs+=+s.qty*x.avg});
  $('mPurchase').textContent=money(tp);$('mSales').textContent=money(ts);$('mStock').textContent=fmtQty(cs);$('mStockValue').textContent=money(sv);$('mTodaySales').textContent=money(tds);$('mTodayPurchase').textContent=money(tdp);$('mLow').textContent=vals.filter(x=>x.current<=5).length;$('mProfit').textContent=money(ts-cogs);
@@ -3348,6 +3369,7 @@ function renderReport(){
  $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
  $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
  $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
+ $('repTotalCash').textContent=money(cashBalance());
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
@@ -5746,6 +5768,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
   const hint=document.getElementById('secureSummaryHint');
   function setLocked(on){
     unlocked=!on; card.classList.toggle('locked',on); card.classList.toggle('unlocked',!on);
+    if(on)document.getElementById('dailyProfitDialog')?.remove();
     if(state)state.textContent=on?'LOCKED':'OPEN';
     if(hint)hint.textContent=on?'Tap and enter Admin PIN to view':'Tap again to lock';
   }
@@ -5761,7 +5784,8 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
     modal.style.display='flex'; input.value=''; msg.textContent='';
     setTimeout(()=>{try{input.focus()}catch(e){}; if(window.__bbbmOpenFloatingKeyboard)window.__bbbmOpenFloatingKeyboard(input,'numeric')},30);
   }
-  card.addEventListener('click',function(){if(unlocked){setLocked(true);return}openModal()});
+  card.addEventListener('click',function(e){if(unlocked&&e.target.closest('#dailyProfitCell')){if(window.__bbbmOpenDailyProfit)window.__bbbmOpenDailyProfit();return}if(unlocked){setLocked(true);return}openModal()});
+  document.getElementById('dailyProfitCell').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.click()}});
   input.addEventListener('input',function(){
     const clean=String(this.value||'').replace(/\D/g,'').slice(0,4); if(this.value!==clean)this.value=clean;
     if(clean.length===4)setTimeout(verify,60);
@@ -5780,7 +5804,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.41';
+  const POS_VERSION='POS Safe v8.43';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
