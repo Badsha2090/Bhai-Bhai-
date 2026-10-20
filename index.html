@@ -1224,7 +1224,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.50</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.51</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1267,6 +1267,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
                   <div class="metric-note">Click to see recent & old bills</div>
                 </div>
               </button>
+              <button type="button" id="dashReviewBillsMetric" class="card metric metric-gold" style="text-align:left;cursor:pointer"><div class="metric-icon">🔎</div><div><div class="l">REVIEW BILL</div><div class="v dash-report-open">OPEN</div><div class="metric-note">Loss bills &amp; higher selling rates</div></div></button>
               <button type="button" id="dashDailyReportMetric" class="card metric metric-purple dash-daily-report-metric">
                 <div class="metric-icon">📊</div>
                 <div><div class="l">DAILY REPORT</div><div class="v dash-report-open">OPEN</div><div class="metric-note">Click to view daily report</div></div>
@@ -1639,6 +1640,12 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
 <section id="phonesale" class="section"><div class="section-heading"><h2>📱 Phone Sale</h2><button type="button" id="phoneRefreshInbox" class="btn primary">Refresh Phone Bills</button></div><div class="card" style="padding:18px"><p>Staff-এর ফোনে <a href="Bhai_Bhai_Phone_Sale.html" target="_blank" rel="noopener">Phone Sale খুলুন</a>। শুধু আলাদা Staff username/password দিন।</p><button type="button" id="phoneSyncCatalog" class="btn primary">Sync Products to Phone</button><button type="button" id="phoneRecover" class="btn gray">Restore unfinished Phone Bill</button><p>ফোনে Send to POS করার পর নিচে Receive চাপুন। Payment, Save ও Print হবে POS থেকে।</p></div><div class="card" style="padding:18px;margin-top:14px"><h3>Staff Login</h3><form id="phoneStaffForm" class="form-grid"><label>Username<input id="phoneStaffUser" required pattern="[a-z0-9_-]{3,40}" placeholder="staff01" autocomplete="off"></label><label>Password (10+ characters)<input id="phoneStaffPass" required minlength="10" type="password" autocomplete="new-password"></label><label><input id="phoneStaffActive" type="checkbox" checked> Active (বন্ধ করতে uncheck করুন)</label><button type="submit" id="phoneStaffSave" class="btn primary">Create / Reset Staff Login</button></form><pre id="phoneStaffList" style="white-space:pre-wrap"></pre></div><div id="phoneInbox"></div></section>
 <dialog id="salesPhoneDialog" aria-labelledby="salesPhoneTitle" style="width:min(900px,94vw);max-height:85vh;padding:20px;border:1px solid #aabbcc;border-radius:14px;background:var(--card,#fff);color:var(--text,#17243b);box-shadow:0 15px 60px #0005"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 id="salesPhoneTitle" style="margin:0">📱 Phone Bills</h2><small id="salesPhoneCount">Pending bills</small></div><div style="display:flex;gap:8px"><button type="button" id="salesPhoneRefresh" class="btn primary">Refresh</button><button type="button" id="salesPhoneClose" class="btn gray">✕ Close</button></div></div><div id="salesPhoneInbox" style="margin-top:12px"></div></dialog>
+<section id="reviewbills" class="section">
+ <div class="section-heading"><div><h2>🔎 Review Bill</h2><p>লোকসান ও নির্ধারিত রেটের চেয়ে বেশি দামে বিক্রি যাচাই করুন</p></div><button type="button" class="btn gray" id="reviewBackBtn">← Dashboard</button></div>
+ <div class="card" style="padding:16px;margin-bottom:16px"><input id="reviewBillSearch" placeholder="Bill No. / পণ্য / Customer / Date" style="width:100%;margin-bottom:10px"><button type="button" class="btn primary" id="reviewRecalculateBtn">আবার হিসাব করুন</button><p style="font-size:12px;line-height:1.6;margin-bottom:0">লোকসান: বিলের মোট বিক্রি − পণ্যের বর্তমান গড় ক্রয়মূল্য; Expense ও Return সমন্বয়ের আগে। ডান পাশে Discount-এর পরের বিক্রির Rate এই POS-এর বর্তমান নির্ধারিত Sale Rate-এর সঙ্গে মিলবে। নির্ধারিত Rate বদলালে তালিকাও বদলাতে পারে।</p><p id="reviewBillCoverage" style="font-size:12px;margin-bottom:0"></p></div>
+ <div class="review-bill-columns"><div class="card" style="padding:16px;min-width:0"><div class="panel-head"><h3>লোকসানের বিল</h3><span id="reviewLossCount" class="soft-label"></span></div><div id="reviewLossList" class="review-bill-list"></div></div><div class="card" style="padding:16px;min-width:0"><div class="panel-head"><h3>নির্ধারিত রেটের চেয়ে বেশি</h3><span id="reviewHigherCount" class="soft-label"></span></div><div id="reviewHigherList" class="review-bill-list"></div></div></div>
+ <style>.review-bill-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.review-bill-list{max-height:68vh;overflow:auto;padding:2px}.review-bill-entry{border:1px solid var(--line,#dfe7ef);border-radius:10px;margin:10px 0;padding:12px}.review-bill-entry header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.review-bill-entry p{margin:7px 0;font-size:13px}.review-bill-entry summary{cursor:pointer;font-size:13px;margin:8px 0}.review-bill-entry li{padding:6px 0;font-size:13px;overflow-wrap:anywhere}.review-bill-entry ul{padding-left:20px}.review-bill-entry strong{font-size:16px}.review-loss{color:#dc2626}.review-higher{color:#b45309}@media(max-width:800px){.review-bill-columns{grid-template-columns:1fr}.review-bill-list{max-height:60vh}}</style>
+</section>
 <section id="openingcredit" class="section">
  <div class="section-heading"><div><h2>🧾 Opening Credit / Previous Due</h2><p>আগের বকেয়া যোগ করুন — Sales, Purchase ও Stock অপরিবর্তিত থাকবে।</p></div></div>
  <div class="card form-card"><form id="openingCreditForm" class="dataform">
@@ -2833,6 +2840,7 @@ function render(){
  if($('dashTotalExpense'))$('dashTotalExpense').textContent=money(totalExpenses());
  if($('expenseRows'))$('expenseRows').innerHTML=expenses.length?expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.category}</td><td>${money(e.amount)}</td><td>${e.note||'-'}</td><td>${e.by||''}</td></tr>`).join(''):'<tr><td colspan="5">No expense yet.</td></tr>';
  if(typeof renderReport==='function')renderReport();
+ if($('reviewbills')?.classList.contains('active'))renderReviewBills();
  clearTimeout(phoneCatalogTimer);phoneCatalogTimer=setTimeout(()=>syncPhoneCatalog().catch(e=>console.warn('Phone catalog sync',e.message)),3000);
  if(typeof renderDashboardCredit==='function')renderDashboardCredit();
  const returns=db.returns||[];
@@ -3320,10 +3328,12 @@ function showBillHistoryDetail(rows,source='billhistory'){
   $('billHistoryList').closest('.card').classList.add('hidden');
   $('billHistorySearchInput').closest('.card').classList.add('hidden');
   $('billDetailCloseBtn').textContent=source==='sales'?'← Sales History':'← Back to Bills';
+  if(source==='review')$('billDetailCloseBtn').textContent='← Review Bill';
   $('billDetailCloseBtn').onclick=async()=>{
     box.classList.add('hidden');box.innerHTML='';
     $('billHistoryList').closest('.card').classList.remove('hidden');
     $('billHistorySearchInput').closest('.card').classList.remove('hidden');
+    if(source==='review')await goTab('reviewbills');
     if(source==='sales'){await goTab('sales');$('salesBillHistoryCard').scrollIntoView({behavior:'smooth',block:'start'})}
   };
   $('billDetailPrintBtn').onclick=()=>printBillSearchRows(rows);
@@ -4248,7 +4258,8 @@ async function goTab(tab){
       if(tab==='accounts')renderAccounts();
       if(tab==='purchasereturn')renderPurchaseReturnHistory();
  if(tab==='openingcredit')renderOpeningCreditHistory();
- const names={phonesale:'Phone Sale',openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
+ if(tab==='reviewbills')renderReviewBills();
+ const names={reviewbills:'Review Bill',phonesale:'Phone Sale',openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -4485,6 +4496,50 @@ $('phoneSalesNav').onclick=openPhoneSales;$('phoneRefreshInbox').onclick=openPho
 $('phoneSyncCatalog').onclick=async()=>{try{phoneCatalogSignature='';await syncPhoneCatalog();alert('Products synced')}catch(e){alert(e.message)}};
 $('phoneStaffForm').onsubmit=async e=>{e.preventDefault();const button=$('phoneStaffSave');button.disabled=true;try{await phoneOwnerRpc('staff_save',{username:$('phoneStaffUser').value.trim().toLowerCase(),password:$('phoneStaffPass').value,active:$('phoneStaffActive').checked});$('phoneStaffPass').value='';await openPhoneSales();alert('Staff login saved. Reset করলে আগের login বন্ধ হবে।')}catch(e){alert(e.message)}finally{button.disabled=false}};
 $('phoneRecover').onclick=async()=>{if(saleCart.length||pendingSale)return alert('আগের বিলটি শেষ করুন।');const raw=localStorage.getItem('bbbm_phone_recovery');if(!raw)return alert('কোনো recovery bill নেই।');if(confirm('শুধু অসম্পূর্ণ বিল হলে Restore করুন। আগেই Sale হয়ে থাকলে করবেন না।'))await importPhoneBill(JSON.parse(raw))};
+
+// Review existing loaded bills without making extra cloud requests.
+function buildReviewBillData(groups,stock,purchases,getMeta){
+ const latest={};(purchases||[]).forEach(p=>{latest[String(p.barcode)]=p});
+ const unknownRateCodes=new Set();let unknownCostLines=0,unitMismatchLines=0;
+ const bills=[];
+ groups.forEach(group=>{
+  const rows=group.filter(s=>s.barcode!=='__OPENING_CREDIT__');if(!rows.length)return;
+  let sales=0,cost=0,completeCost=true;const lines=[],higher=[];
+  rows.forEach(s=>{
+   const code=String(s.barcode),qty=Number(s.qty),amount=Number(s.total),st=stock[code],meta=getMeta(code)||{},last=latest[code];
+   const valid=Number.isFinite(qty)&&qty>0&&Number.isFinite(amount);
+   const knownCost=valid&&st&&Number(st.purchased)>0&&Number.isFinite(Number(st.avg))&&Number(st.avg)>=0;
+   const itemCost=knownCost?qty*Number(st.avg):null;
+   if(!knownCost){completeCost=false;unknownCostLines++}
+   if(Number.isFinite(amount))sales+=amount;if(itemCost!=null)cost+=itemCost;
+   const fixedRaw=meta.sellPrice!=null&&meta.sellPrice!==''?meta.sellPrice:last?.sellingPrice;
+   const fixed=fixedRaw!=null&&fixedRaw!==''?Number(fixedRaw):null;
+   const actual=s.price!=null&&s.price!==''&&Number.isFinite(Number(s.price))?Number(s.price):valid?amount/qty:null;
+   const sameUnit=!st?.unit||!s.unit||String(st.unit).toUpperCase()===String(s.unit).toUpperCase();
+   const line={sale:s,qty,amount,cost:itemCost,profit:itemCost!=null?amount-itemCost:null,fixed,actual};lines.push(line);
+   if(!sameUnit)unitMismatchLines++;
+   if(fixed==null||!Number.isFinite(fixed)||fixed<0)unknownRateCodes.add(code);
+   else if(valid&&sameUnit&&actual!=null&&actual>fixed&&Math.round((actual-fixed)*qty*100)>=1){line.extra=(actual-fixed)*qty;higher.push(line)}
+  });
+  bills.push({rows,lines,higher,sales,cost,completeCost,profit:sales-cost,extra:higher.reduce((n,x)=>n+x.extra,0)});
+ });
+ return {loss:bills.filter(b=>b.completeCost&&Math.round(b.profit*100)<0).sort((a,b)=>a.profit-b.profit),higher:bills.filter(b=>b.higher.length).sort((a,b)=>b.extra-a.extra),billCount:bills.length,unknownCostLines,unknownRateCount:unknownRateCodes.size,unitMismatchLines};
+}
+function renderReviewBills(){
+ const data=buildReviewBillData(allBillTransactions(),stockMap(),db.purchases,metaFor),q=$('reviewBillSearch').value.trim().toLowerCase();
+ const matches=b=>!q||b.rows.some(s=>[s.billNo,s.item,s.barcode,s.date,s.creditName,s.creditPhone].some(v=>String(v||'').toLowerCase().includes(q)));
+ const loss=data.loss.filter(matches),higher=data.higher.filter(matches),esc=openingCreditEscape;
+ $('reviewLossCount').textContent=loss.length+' bills';$('reviewHigherCount').textContent=higher.length+' bills · '+higher.reduce((n,b)=>n+b.higher.length,0)+' items';
+ $('reviewBillCoverage').textContent=data.billCount+'টি বিল পরীক্ষা করা হয়েছে।'+(data.unknownRateCount?' '+data.unknownRateCount+'টি পণ্যের নির্ধারিত Rate নেই, তাই বেশি দামের তুলনায় নেই।':'')+(data.unknownCostLines?' '+data.unknownCostLines+'টি লাইনে ক্রয়দর পাওয়া যায়নি; সেই বিলের লোকসান নিশ্চিত করা যায়নি।':'')+(data.unitMismatchLines?' '+data.unitMismatchLines+'টি লাইনের Unit মেলেনি, তাই Rate তুলনায় রাখা হয়নি।':'');
+ const header=b=>`<header><b>Bill #${esc(billNoLabel(b.rows))}</b><span>${esc(b.rows[0].date||'')}</span></header><p>${esc(b.rows[0].creditName||b.rows[0].paymentMethod||'Cash')} · ${b.rows.length} items · বিল ${money(b.sales)}</p>`;
+ $('reviewLossList').innerHTML=loss.length?loss.map((b,i)=>`<article class="review-bill-entry">${header(b)}<p>গড় ক্রয়মূল্য: ${money(b.cost)}</p><strong class="review-loss">লোকসান: ${money(-b.profit)}</strong><details><summary>পণ্যের হিসাব</summary><ul>${b.lines.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>ক্রয় ${money(l.cost)} · বিক্রি ${money(l.amount)} · ${l.profit<0?'লোকসান '+money(-l.profit):'লাভ '+money(l.profit)}</li>`).join('')}</ul></details><button type="button" class="btn primary smallbtn" data-review-kind="loss" data-review-index="${i}">বিল খুলুন / Review</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে লোকসানের বিল নেই।</p>';
+ $('reviewHigherList').innerHTML=higher.length?higher.map((b,i)=>`<article class="review-bill-entry">${header(b)}<strong class="review-higher">নির্ধারিত রেটের চেয়ে বেশি: ${money(b.extra)}</strong><ul>${b.higher.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>নির্ধারিত Rate: ${money(l.fixed)} / ${esc(l.sale.unit||'')}<br>বিক্রির Rate: ${money(l.actual)} / ${esc(l.sale.unit||'')}<br>পার্থক্য: ${money(l.actual-l.fixed)} / Unit · মোট ${money(l.extra)}</li>`).join('')}</ul><button type="button" class="btn primary smallbtn" data-review-kind="higher" data-review-index="${i}">বিল খুলুন / Review</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে নির্ধারিত রেটের বেশি বিক্রি নেই।</p>';
+ ['reviewLossList','reviewHigherList'].forEach(id=>{$(id).onclick=async e=>{const button=e.target.closest('[data-review-kind]');if(!button)return;const group=(button.dataset.reviewKind==='loss'?loss:higher)[Number(button.dataset.reviewIndex)];if(!group)return;await goTab('billhistory');showBillHistoryDetail(group.rows,'review')}});
+}
+$('dashReviewBillsMetric').onclick=()=>goTab('reviewbills');
+$('reviewBackBtn').onclick=()=>goTab('dashboard');
+$('reviewRecalculateBtn').onclick=renderReviewBills;
+$('reviewBillSearch').addEventListener('input',renderReviewBills);
 
 // ===== Accounts =====
 const ACC_OPENING_KEY='bbbm_accounts_opening_cash_v1';
@@ -5888,7 +5943,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.50';
+  const POS_VERSION='POS Safe v8.51';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
