@@ -1128,7 +1128,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
 <div class="wrap">
   <div id="authView" class="auth">
-    <div class="card" id="setupCard">
+    <div class="card hidden" id="setupCard">
       <h2>Connect 2 Logins to Cloud</h2>
       <p class="muted">On the phone that has your old data, check the two users below and connect them once.</p>
       <label>User 1 Name<input id="u1name" placeholder="e.g. Badsha"></label>
@@ -1140,9 +1140,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
       <label>User 2 Password<input id="u2pass" type="password"></label>
       <button class="btn primary" id="createBtn">Connect Logins & Move Data</button>
       <div id="setupMsg" class="msg"></div>
+      <button type="button" class="btn gray" id="setupBackLoginBtn" onclick="document.getElementById('setupCard').classList.add('hidden');document.getElementById('loginCard').classList.remove('hidden')">← আগের অ্যাকাউন্ট দিয়ে Login</button>
     </div>
 
-    <div class="card hidden" id="loginCard">
+    <div class="card" id="loginCard">
       <h2>Login</h2>
       <label>Username<input id="loginUser"></label>
       <label>Password<input id="loginPass" type="password"></label>
@@ -1224,7 +1225,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.52</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.53</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2096,6 +2097,12 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script>
+// Parser-blocking fallback keeps the SDK ready before the POS starts.
+if(!window.supabase||!window.supabase.createClient){
+ document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"><\/script>');
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -2104,6 +2111,11 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
 const USERS='bbbm_users_iphone_v1', DB='bbbm_db_iphone_v1', MIGRATED='bbbm_cloud_migrated_v1', META='bbbm_product_meta_v2';
 const SUPABASE_URL='https://rpyhkgwbhflwbjcsbpiw.supabase.co';
 const SUPABASE_KEY='sb_publishable_wsHzLIr68xt3pQHFIQEuEQ_ZALOHNBk';
+if(!window.supabase||!window.supabase.createClient){
+ document.getElementById('loginMsg').textContent='Cloud login library লোড হয়নি। Internet সংযোগ দেখে নিচের বোতাম চাপুন। নতুন Setup করবেন না।';
+ const retry=document.getElementById('loginBtn');retry.textContent='আবার সংযোগ করুন';retry.onclick=()=>window.location.reload();
+ return;
+}
 const cloud=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10), money=n=>'৳'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_product_meta_v2',{});
@@ -2518,7 +2530,8 @@ async function bootstrap(){
    }
    await cloud.auth.signOut();
   }
-  if(users().length===2&&!safeGet(MIGRATED,false)){prefillLocalUsers();showSetup()}else showLogin();
+  // Existing installations must never be sent to migration by a stale local flag.
+  showLogin();
  }catch(e){showLogin();$('loginMsg').textContent='Cloud connection failed: '+(e.message||e)}
 }
 
@@ -5986,7 +5999,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.52';
+  const POS_VERSION='POS Safe v8.53';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
