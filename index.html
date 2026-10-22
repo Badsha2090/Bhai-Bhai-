@@ -1225,7 +1225,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.53</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.54</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1873,7 +1873,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
   <div class="stat-card"><div><span>Sales Return</span><strong id="repReturn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Cash In</span><strong id="repCashIn">৳0</strong></div></div>
   <div class="stat-card"><div><span>Net Cash Movement</span><strong id="repNetCash">৳0</strong></div></div>
-  <div class="stat-card"><div><span>💵 Total Cash / মোট নগদ ব্যালেন্স</span><strong id="repTotalCash">৳0</strong><small style="display:block;margin-top:6px">সব দিনের Cash Sales + Cash Collection − Cash Refund − Expenses − Net Purchase (Purchase − Purchase Return)</small></div></div>
+  <div class="stat-card"><div><span id="repTotalCashLabel">💵 Total Cash / দিনের শেষের নগদ ব্যালেন্স</span><strong id="repTotalCash">৳0</strong><small id="repTotalCashBasis" style="display:block;margin-top:6px">নির্বাচিত দিনের শেষ পর্যন্ত Cash Sales + Cash Collection − Cash Refund − Expenses − Net Purchase (Purchase − Purchase Return)</small></div></div>
  </div>
 </section>
 
@@ -3432,6 +3432,21 @@ async function saveExistingSaleDiscount(x,billRows){
  finally{button.disabled=false}
 }
 
+function reportCashCutoff(){
+ if($('reportType').value==='daily')return $('reportDate').value;
+ const month=$('reportMonth').value;
+ if(!/^\d{4}-\d{2}$/.test(month))return '';
+ const [year,number]=month.split('-').map(Number);
+ return new Date(Date.UTC(year,number,0)).toISOString().slice(0,10);
+}
+function reportCashThroughDate(data,cutoff){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(cutoff))return null;
+ const through=date=>{const key=String(date||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(key)&&key<=cutoff};
+ const cash=row=>(row.paymentMethod||'Cash')==='Cash';
+ const sum=(rows,field,filter=()=>true)=>(rows||[]).filter(row=>through(row.date)&&filter(row)).reduce((n,row)=>n+purchaseMoneyCents(row[field]),0n);
+ const purchases=purchaseAccounting(data.purchases,data.purchaseReturns).entries.filter(row=>through(row.date)).reduce((n,row)=>n+row.cents,0n);
+ return Number(sum(data.sales,'total',cash)+sum(data.collections,'amount',cash)-sum(data.returns,'refund',cash)-sum(data.expenses,'amount')-purchases)/100;
+}
 function renderReport(){
  if(!$('reportType'))return;
  const sale=sumWhere(db.sales),purchase=netPurchaseTotal(reportMatch),expense=sumWhere(db.expenses,'amount');
@@ -3445,7 +3460,10 @@ function renderReport(){
  $('repSale').textContent=money(sale);$('repPurchase').textContent=money(purchase);$('repExpense').textContent=money(expense);
  $('repCredit').textContent=money(credit);$('repCollection').textContent=money(collection);$('repDue').textContent=money(outstandingCreditAll());
  $('repReturn').textContent=money(ret);$('repCashIn').textContent=money(cashIn);$('repNetCash').textContent=money(netCash);
- $('repTotalCash').textContent=money(cashBalance()-netPurchaseTotal());
+ const cutoff=reportCashCutoff(),cashAsOf=reportCashThroughDate(db,cutoff);
+ $('repTotalCash').textContent=cashAsOf==null?'—':money(cashAsOf);
+ $('repTotalCashLabel').textContent='💵 Total Cash / '+($('reportType').value==='daily'?'দিনের শেষের':'মাসের শেষের')+' নগদ ব্যালেন্স';
+ $('repTotalCashBasis').textContent=(cutoff?cutoff+' দিনের শেষ পর্যন্ত':'তারিখ নির্বাচন করুন।')+(cutoff?' Cash Sales + Cash Collection − Cash Refund − Expenses − Net Purchase (Purchase − Purchase Return)':'');
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
@@ -5999,7 +6017,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.53';
+  const POS_VERSION='POS Safe v8.54';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
