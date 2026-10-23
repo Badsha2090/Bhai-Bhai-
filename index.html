@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.56</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.57</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1506,6 +1506,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
     }
   }
 
+  document.addEventListener('input',e=>{
+    if(e.target===active){raw=String(active.value||'');refreshDisplay()}
+  });
+
   // Some fields appear later in this HTML, so resolve targets at interaction time.
   ['click','focusin','pointerdown'].forEach(eventName=>{
     document.addEventListener(eventName,e=>{
@@ -1543,6 +1547,10 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
         fillSaleFromBarcode();
       }
       refreshDisplay();
+      if(active.id!=='sBarcode'){
+        const barcode=document.getElementById('sBarcode');
+        if(barcode){barcode.focus();barcode.select()}
+      }
       return;
     }else if(k==='.'){
       if(active.id!=='sBarcode' && !raw.includes('.')){
@@ -4885,6 +4893,17 @@ window.addEventListener('beforeunload',()=>{try{saveAutoBackup('Auto')}catch(e){
 // Scanner staging uses the same cart and editing state as Sales.
 
 let bbbmAutoScanTimer=null,bbbmStagedScan=null,bbbmNewScanStarted=false;
+function bbbmResetScanStage(){
+ clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;bbbmNewScanStarted=false;
+ document.getElementById('saleAutoScanStatus').textContent='';
+}
+function bbbmStartNextScan(){
+ const input=document.getElementById('sBarcode');
+ if(bbbmStagedScan&&!bbbmNewScanStarted){
+  if(input.value.trim()!==bbbmStagedScan.sBarcode){bbbmResetScanStage();return}
+  bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true;
+ }
+}
 function bbbmCaptureScan(){
  const ids=['sBarcode','sQty','sPrice','sDiscount','sTotal'];return Object.fromEntries(ids.map(id=>[id,document.getElementById(id).value]));
 }
@@ -4903,9 +4922,13 @@ function bbbmAutoAddScan(expected,repeat=false){
 }
 (function(){const input=document.getElementById('sBarcode');
  document.getElementById('saleAutoScanStatus').textContent='';
- document.getElementById('saleForm').addEventListener('reset',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;bbbmNewScanStarted=false;document.getElementById('saleAutoScanStatus').textContent=''});
- input.addEventListener('keydown',e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&bbbmStagedScan&&!bbbmNewScanStarted){bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true}},true);
- input.addEventListener('beforeinput',e=>{if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&bbbmStagedScan&&!bbbmNewScanStarted&&e.inputType&&e.inputType.startsWith('insert')){bbbmStagedScan=bbbmCaptureScan();input.value='';bbbmNewScanStarted=true}},true);
+ document.getElementById('saleForm').addEventListener('reset',bbbmResetScanStage);
+ input.addEventListener('keydown',e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmStartNextScan()},true);
+ input.addEventListener('beforeinput',e=>{
+  if(e.inputType&&e.inputType.startsWith('delete')){bbbmResetScanStage();return}
+  if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null&&e.inputType&&e.inputType.startsWith('insert'))bbbmStartNextScan();
+ },true);
+ input.addEventListener('input',()=>{if(!input.value.trim())bbbmResetScanStage()},true);
  input.addEventListener('input',()=>{clearTimeout(bbbmAutoScanTimer);let code=input.value.trim();if(bbbmStagedScan&&code.startsWith(bbbmStagedScan.sBarcode)&&code!==bbbmStagedScan.sBarcode){const tail=code.slice(bbbmStagedScan.sBarcode.length);if(stockMap()[tail]){input.value=tail;code=tail;bbbmNewScanStarted=true;fillSaleFromBarcode()}}if(document.getElementById('saleAutoScanAdd').checked&&editingCartIndex==null)bbbmAutoScanTimer=setTimeout(()=>bbbmAutoAddScan(code,bbbmNewScanStarted),180)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();clearTimeout(bbbmAutoScanTimer);if(document.getElementById('saleAutoScanAdd').checked)bbbmAutoAddScan(input.value.trim(),true);else fillSaleFromBarcode()}});['sQty','sPrice','sDiscount','sTotal'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(bbbmStagedScan&&input.value.trim()===bbbmStagedScan.sBarcode)bbbmStagedScan=bbbmCaptureScan()}));document.getElementById('saleAutoScanAdd').addEventListener('change',()=>{clearTimeout(bbbmAutoScanTimer);bbbmStagedScan=null;document.getElementById('saleAutoScanStatus').textContent=''});const clear=clearSaleItemFields;clearSaleItemFields=function(){bbbmStagedScan=null;bbbmNewScanStarted=false;clearTimeout(bbbmAutoScanTimer);clear()}})();
 
 
@@ -6024,7 +6047,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.56';
+  const POS_VERSION='POS Safe v8.57';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
