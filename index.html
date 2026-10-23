@@ -1225,7 +1225,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.54</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.55</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -3356,13 +3356,17 @@ function renderSalesBillHistory(){
  list.querySelectorAll('[data-sales-bill]').forEach(button=>button.onclick=async()=>{const rows=bills[Number(button.dataset.salesBill)];await goTab('billhistory');showBillHistoryDetail(rows,'sales')});
 }
 $('salesBillSearch').addEventListener('input',renderSalesBillHistory);
+function canCorrectSavedSale(row,user=currentUser){
+ const posUsers=['0f5acc29-6db4-43b8-867d-e72df480246d','6daf1391-4d32-49b6-9f2d-a66807cb66b7'];
+ return !!(row?.id&&user?.id&&(row.userId===user.id||(posUsers.includes(user.id)&&posUsers.includes(row.userId))));
+}
 function showBillHistoryDetail(rows,source='billhistory'){
  billDetailSource=source;
   const box=$('billHistoryDetail');
   if(!box||!rows||!rows.length)return;
   const first=rows[0],total=rows.reduce((a,x)=>a+(+x.total||0),0);
   const customer=first.creditName||'',phone=first.creditPhone||'';
-  const tr=rows.map((x,i)=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}${x.discountPct?' • Discount −'+x.discountPct+'%':''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}${x.id&&x.userId===currentUser?.id?`<br><button type="button" class="btn gray smallbtn" data-saved-discount="${i}" style="margin-top:5px">৳ দাম সংশোধন</button>`:''}</td></tr>`).join('');
+  const tr=rows.map((x,i)=>`<tr><td>${x.item||''}<small style="display:block;color:#64748b">${x.barcode||''}${x.discountPct?' • Discount −'+x.discountPct+'%':''}</small></td><td>${fmtQty(+x.qty||0)} ${x.unit||'PCS'}</td><td>${money(x.discountPct?x.listPrice:x.price)}</td><td>${money(+x.total||0)}${canCorrectSavedSale(x)?`<br><button type="button" class="btn gray smallbtn" data-saved-discount="${i}" style="margin-top:5px">৳ দাম সংশোধন</button>`:''}</td></tr>`).join('');
   box.innerHTML=`<div class="bill-detail-head">
     <div><div class="bill-detail-title">Bill #${billNoLabel(rows)}</div>
     <div class="bill-detail-meta">${first.date||''} ${first.saleTime||''}${customer?' • '+customer:''}${phone?' • '+phone:''} • ${first.paymentMethod||'Cash'}</div></div>
@@ -3408,6 +3412,7 @@ function showBillHistoryDetail(rows,source='billhistory'){
 }
 
 async function saveExistingSaleDiscount(x,billRows){
+ if(!canCorrectSavedSale(x)){alert('এই বিল সংশোধনের অনুমতি নেই।');return}
  const source=billDetailSource;
  const input=$('savedSaleDiscountAmount'),button=$('savedSaleDiscountSave'),raw=input.value.trim(),amount=Number(raw);
  if(!x.id||!raw||!Number.isFinite(amount)||amount<0||amount===Number(x.total)||Math.abs(Math.round(amount*100)-amount*100)>0.000001){alert('বর্তমান '+money(x.total)+' থেকে আলাদা সঠিক নতুন মোট টাকা লিখুন।');input.focus();return}
@@ -6017,7 +6022,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.54';
+  const POS_VERSION='POS Safe v8.55';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
