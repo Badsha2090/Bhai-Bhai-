@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.58</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.59</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2012,6 +2012,29 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
     <div><h2>💳 Accounts</h2><p>Cash, credit, purchase and expense হিসাব এক জায়গায়।</p></div>
   </div>
 
+  <div class="card accounts-stats" style="padding:18px"><span>Total Invest / মোট বিনিয়োগ</span><strong id="accInvest" style="display:block;font-size:28px">৳840,400.00</strong><small>আগের মোট বিনিয়োগ ৳840,400 + এরপর Add Cash দিয়ে যোগ করা টাকা</small></div>
+  <div class="stats-grid accounts-stats">
+    <div class="stat-card"><div><span>Stock Value</span><strong id="accAssetStock">—</strong></div></div>
+    <div class="stat-card"><div><span>Credit Balance / পাওনা</span><strong id="accAssetCredit">—</strong></div></div>
+    <div class="stat-card"><div><span>Total Cash / Reports-এর নগদ</span><strong id="accAssetCash">—</strong></div></div>
+  </div>
+  <div class="card accounts-stats" style="padding:18px"><span>Stock Value + Credit Balance + Total Cash</span><strong id="accAssetTotal" style="display:block;font-size:25px">—</strong></div>
+  <div class="card form-card accounts-stats">
+    <h3>Purchase · Expense · Profit</h3>
+    <div class="row" style="gap:12px;flex-wrap:wrap">
+      <label>সময় নির্বাচন<select id="accPeriodMode"><option value="monthly">মাস অনুযায়ী</option><option value="range">নিজের তারিখের সীমা</option></select></label>
+      <label id="accMonthWrap">মাস<input id="accPeriodMonth" type="month"></label>
+      <label id="accFromWrap" hidden>শুরু<input id="accPeriodFrom" type="date"></label>
+      <label id="accToWrap" hidden>শেষ<input id="accPeriodTo" type="date"></label>
+    </div>
+    <p id="accPeriodCaption" class="muted"></p>
+    <div class="stats-grid">
+      <div class="stat-card"><div><span>Total Expense</span><strong id="accPeriodExpense">—</strong></div></div>
+      <div class="stat-card"><div><span>Total Purchase (Return বাদে)</span><strong id="accPeriodPurchase">—</strong></div></div>
+      <div class="stat-card"><div><span>Total Profit / মোট লাভ</span><strong id="accPeriodProfit">—</strong><small id="accPeriodNet" style="display:block"></small></div></div>
+    </div>
+    <p class="muted">মোট লাভ = বিক্রয়মূল্য − পণ্যের বর্তমান গড় ক্রয়মূল্য (Dashboard-এর একই হিসাব)। নিচে খরচ বাদে লাভ দেখানো হয়।</p>
+  </div>
   <div class="stats-grid accounts-stats">
     <div class="stat-card"><div><span>Cash in Hand</span><strong id="accCashInHand">৳0.00</strong></div></div>
     <div class="stat-card"><div><span>Today's Cash Sale</span><strong id="accTodayCashSale">৳0.00</strong></div></div>
@@ -4654,8 +4677,44 @@ function accTodayKey(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function accOpeningMap(){try{return safeGet(ACC_OPENING_KEY,{})||{}}catch(e){return {}}}
+function accAddedCents(){return Object.values(safeGet('bbbm_accounts_added_cash_v1',{})||{}).reduce((n,v)=>n+purchaseMoneyCents(v),0n)}
+function accInvestment(){
+ const key='bbbm_accounts_investment_v1';let state=safeGet(key,null);
+ if(!state){state={base:840400,addedBaseline:accAddedCents().toString()};if(!safeSet(key,state))return null}
+ try{return Number(purchaseMoneyCents(state.base)+accAddedCents()-BigInt(state.addedBaseline))/100}catch(e){return null}
+}
+function accPeriodBounds(mode,month,from,to){
+ if(mode==='monthly'){
+  if(!/^\d{4}-\d{2}$/.test(month))return null;
+  const [y,m]=month.split('-').map(Number);if(m<1||m>12)return null;
+  from=month+'-01';to=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
+ }
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)||from>to)return null;
+ return {from,to};
+}
+function accPeriodTotals(data,stock,from,to){
+ const inRange=date=>{const d=String(date||'').slice(0,10);return d>=from&&d<=to};
+ const expense=(data.expenses||[]).filter(x=>inRange(x.date)).reduce((n,x)=>n+purchaseMoneyCents(x.amount),0n);
+ const purchase=purchaseAccounting(data.purchases,data.purchaseReturns).entries.filter(x=>inRange(x.date)).reduce((n,x)=>n+x.cents,0n);
+ const profit=(data.sales||[]).filter(x=>inRange(x.date)).reduce((n,x)=>n+(Number(x.total)||0)-(Number(x.qty)||0)*(stock[x.barcode]?.avg||0),0);
+ return {expense:Number(expense)/100,purchase:Number(purchase)/100,profit,net:profit-Number(expense)/100};
+}
+function renderAccountsOverview(){
+ const stock=stockMap(),stockValue=Object.values(stock).reduce((n,x)=>n+(Number(x.value)||0),0),credit=outstandingCreditAll(),cash=reportCashThroughDate(db,accTodayKey());
+ const invest=accInvestment();$('accInvest').textContent=invest==null?'সংরক্ষণ হয়নি':accMoney(invest);
+ $('accAssetStock').textContent=accMoney(stockValue);$('accAssetCredit').textContent=accMoney(credit);$('accAssetCash').textContent=accMoney(cash);$('accAssetTotal').textContent=accMoney(stockValue+credit+cash);
+ const monthly=$('accPeriodMode').value==='monthly';$('accMonthWrap').hidden=!monthly;$('accFromWrap').hidden=monthly;$('accToWrap').hidden=monthly;
+ const bounds=accPeriodBounds($('accPeriodMode').value,$('accPeriodMonth').value,$('accPeriodFrom').value,$('accPeriodTo').value);
+ if(!bounds){['accPeriodExpense','accPeriodPurchase','accPeriodProfit'].forEach(id=>$(id).textContent='—');$('accPeriodNet').textContent='';$('accPeriodCaption').textContent='সঠিক শুরু ও শেষ তারিখ দিন।';return}
+ const totals=accPeriodTotals(db,stock,bounds.from,bounds.to);
+ $('accPeriodCaption').textContent=bounds.from+' থেকে '+bounds.to+' পর্যন্ত (দুই দিনসহ)';
+ $('accPeriodExpense').textContent=accMoney(totals.expense);$('accPeriodPurchase').textContent=accMoney(totals.purchase);$('accPeriodProfit').textContent=accMoney(totals.profit);$('accPeriodNet').textContent='খরচ বাদে লাভ: '+accMoney(totals.net);
+}
+$('accPeriodMonth').value=accTodayKey().slice(0,7);$('accPeriodFrom').value=accTodayKey().slice(0,7)+'-01';$('accPeriodTo').value=accTodayKey();
+['accPeriodMode','accPeriodMonth','accPeriodFrom','accPeriodTo'].forEach(id=>$(id).addEventListener('change',renderAccountsOverview));
 function renderAccounts(){
   if(!$('accounts'))return;
+  renderAccountsOverview();
   const today=accTodayKey();
   const sales=db.sales||[], purchases=realPurchases(), expenses=db.expenses||[], collections=db.collections||[];
 
@@ -4713,6 +4772,7 @@ if($('accSaveOpeningCash'))$('accSaveOpeningCash').onclick=function(){
   renderReport();
 };
 if($('accAddCashBtn'))$('accAddCashBtn').onclick=function(){
+ if(accInvestment()==null){alert('বিনিয়োগের হিসাব সংরক্ষণ হয়নি।');return}
  const amount=Number($('accAddCashInput').value),key='bbbm_accounts_added_cash_v1',date=accTodayKey();
  if(!Number.isFinite(amount)||amount<=0||!Number.isSafeInteger(Math.round(amount*100))||Math.abs(amount*100-Math.round(amount*100))>0.000001){alert('যোগ করার সঠিক টাকা লিখুন, সর্বোচ্চ দুই দশমিক পর্যন্ত।');return}
  const map=safeGet(key,{})||{},cents=purchaseMoneyCents(map[date]||0)+purchaseMoneyCents(amount);
@@ -6069,7 +6129,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.58';
+  const POS_VERSION='POS Safe v8.59';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
