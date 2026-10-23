@@ -23,15 +23,17 @@ form.dataform{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-col
 </style>
 
 <style id="sale-purchase-price-reveal-css">
-#sales .sale-cost-heading{position:relative;min-height:48px}
-#sales .sale-cost-lookup{position:absolute;left:29%;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sales .sale-cost-heading{position:relative;min-height:48px;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+#sales .sale-cost-heading>div:first-child{flex:0 0 auto}
+#sales .sale-cost-lookup{position:static;transform:none;display:flex;align-items:center;justify-content:center;gap:8px;flex:1 1 310px;min-width:0;flex-wrap:wrap}
+#sales .sale-phone-actions{flex:0 1 auto;max-width:100%;margin-left:auto}
 #sales .sale-cost-lookup button{cursor:pointer;min-height:34px}
-#sales #salesPhoneBtn{position:absolute;left:58%;top:50%;transform:translateY(-50%)}
+#sales #salesPhoneBtn{position:static;transform:none;flex-shrink:0}
 #sales .sale-cost-lookup button:disabled{cursor:not-allowed;opacity:.55}
-#sales .sale-cost-value{display:inline-block;background:#fef3c7;color:#78350f;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:900}
+#sales .sale-cost-value{display:inline-block;max-width:100%;overflow-wrap:anywhere;background:#fef3c7;color:#78350f;padding:7px 10px;border-radius:8px;font-size:12px;font-weight:900}
 #sales .sale-cost-value[hidden]{display:none!important}
 body.bbbm-dark-mode #sales .sale-cost-value{background:#78350f;color:#fff7ed}
-@media(max-width:760px){#sales .sale-cost-heading{display:block}#sales .sale-cost-lookup{position:static;transform:none;margin-top:8px}#sales #salesPhoneBtn{position:static;transform:none}#sales .sale-phone-actions{margin-top:8px}}
+@media(max-width:760px){#sales .sale-cost-lookup{flex-basis:100%;justify-content:flex-start}#sales .sale-phone-actions{width:100%;margin-left:0}}
 </style>
 
 <style>
@@ -1225,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.55</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.56</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -6022,7 +6024,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.55';
+  const POS_VERSION='POS Safe v8.56';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
