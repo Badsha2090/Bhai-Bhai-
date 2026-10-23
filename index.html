@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.59</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.60</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2012,7 +2012,7 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
     <div><h2>💳 Accounts</h2><p>Cash, credit, purchase and expense হিসাব এক জায়গায়।</p></div>
   </div>
 
-  <div class="card accounts-stats" style="padding:18px"><span>Total Invest / মোট বিনিয়োগ</span><strong id="accInvest" style="display:block;font-size:28px">৳840,400.00</strong><small>আগের মোট বিনিয়োগ ৳840,400 + এরপর Add Cash দিয়ে যোগ করা টাকা</small></div>
+  <div class="card accounts-stats" style="padding:18px"><span>Total Invest / মোট বিনিয়োগ</span><strong id="accInvest" style="display:block;font-size:28px">৳8,282,900.00</strong><small>আগের মোট বিনিয়োগ ৳8,282,900 + এরপর Add Cash দিয়ে যোগ করা টাকা</small></div>
   <div class="stats-grid accounts-stats">
     <div class="stat-card"><div><span>Stock Value</span><strong id="accAssetStock">—</strong></div></div>
     <div class="stat-card"><div><span>Credit Balance / পাওনা</span><strong id="accAssetCredit">—</strong></div></div>
@@ -4361,6 +4361,7 @@ if($('purchaseReturnForm'))$('purchaseReturnForm').onsubmit=async function(e){
 };
 
 async function goTab(tab){
+ if(tab==='accounts' && !askSecureCode('Accounts'))return;
  if(tab==='settings' && !askSecureCode('Settings'))return;
  await stopScanner();
  if(tab!=='creditcustomers'){
@@ -4680,7 +4681,8 @@ function accOpeningMap(){try{return safeGet(ACC_OPENING_KEY,{})||{}}catch(e){ret
 function accAddedCents(){return Object.values(safeGet('bbbm_accounts_added_cash_v1',{})||{}).reduce((n,v)=>n+purchaseMoneyCents(v),0n)}
 function accInvestment(){
  const key='bbbm_accounts_investment_v1';let state=safeGet(key,null);
- if(!state){state={base:840400,addedBaseline:accAddedCents().toString()};if(!safeSet(key,state))return null}
+ if(!state){state={base:8282900,addedBaseline:accAddedCents().toString()};if(!safeSet(key,state))return null}
+ else if(state.base===840400){state={...state,base:8282900};if(!safeSet(key,state))return null}
  try{return Number(purchaseMoneyCents(state.base)+accAddedCents()-BigInt(state.addedBaseline))/100}catch(e){return null}
 }
 function accPeriodBounds(mode,month,from,to){
@@ -6129,7 +6131,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.59';
+  const POS_VERSION='POS Safe v8.60';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
