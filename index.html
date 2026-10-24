@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.60</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.62</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2332,6 +2332,7 @@ function bbbmKnownBarcode(code){
  code=String(code||'').trim();
  if(!code)return null;
  const x=stockMap()[code];
+ if(x)code=String(x.barcode);
  const last=[...(db.purchases||[])].reverse().find(p=>String(p.barcode||'').trim()===code);
  const meta=metaFor(code);
  if(!x&&!last&&!meta.item)return null;
@@ -2648,7 +2649,7 @@ function purchaseAccounting(purchases,returns){
    // Returns have no purchase-row link. Apply to the latest preceding
    // paid purchase of the same barcode/unit; opening stock is not cash out.
    for(let i=batches.length-1;i>=0&&left>0n;i--){
-    const batch=batches[i];if(String(batch.row.barcode)!==String(row.barcode)||String(batch.row.unit||'PCS').toUpperCase()!==String(row.unit||'PCS').toUpperCase())continue;
+    const batch=batches[i],bv=cableVariant(batch.row),rv=cableVariant(row);if((String(batch.row.barcode)!==String(row.barcode)&&!(bv&&rv&&bv.key===rv.key))||String(batch.row.unit||'PCS').toUpperCase()!==String(row.unit||'PCS').toUpperCase())continue;
     const take=left<batch.left?left:batch.left;batch.left-=take;left-=take;applied+=take;
    }
    if(applied)entries.push({date:row.date,cents:-applied});
@@ -2700,12 +2701,45 @@ $('stockNameForm').addEventListener('submit',async e=>{
 });
 // Keep old length-based stock separate from new piece-based GI Chain variants.
 window.bbbmGiPcsName=function(name){const old=bbbmExistingItemWithName(name);if(old&&String(old.unit||unitFor(old.barcode)).toUpperCase()!=='PCS')return name+' (PCS)';return name};
+function cableVariant(row){
+ if(String(row.unit||'PCS').toLowerCase()!=='meter')return null;
+ const name=String(row.item||'').trim().replace(/\.$/,'').replace(/\s+/g,' ');
+ const match=name.match(/^(BIZLI|BRB)\s+(?:CABLES?|CABELS)\s+(\d+(?:\.[\dO]+)?)\s*(?:RM\s*)?(RED|BLACK|YELLOW|GREEN)(?:\s+([12]))?$/i);
+ if(!match)return null;
+ if(match[4]&&match[3].toUpperCase()!=='BLACK')return null;
+ const size=String(Number(match[2].toUpperCase().replace(/O/g,'0')));
+ if(!['1','1.3','1.5','2','2.5','3','3.5','4','6'].includes(size))return null;
+ return {key:match[1].toUpperCase()+'|'+size+'|'+match[3].toUpperCase(),brand:match[1].toUpperCase(),size,color:match[3].toUpperCase()};
+}
+function cableCatalog(){
+ const rows=[];['BIZLI','BRB'].forEach((brand,b)=>['1','1.3','1.5','2','2.5','3','3.5','4','6'].forEach((size,s)=>['RED','BLACK','YELLOW','GREEN'].forEach((color,c)=>{
+  const base='298610'+String(b).padStart(2,'0')+String(s).padStart(2,'0')+String(c).padStart(2,'0');
+  rows.push({key:brand+'|'+size+'|'+color,item:(brand==='BIZLI'?'Bizli':'BRB')+' cables '+size+' RM '+color[0]+color.slice(1).toLowerCase(),barcode:base+ean13Check(base),unit:'Meter'});
+ })));return rows;
+}
+function combineCableStock(map){
+ const groups={};Object.values(map).forEach(row=>{const variant=cableVariant(row);if(variant)(groups[variant.key]??=[]).push(row)});
+ const result={},aliases={};Object.values(map).filter(row=>!cableVariant(row)).forEach(row=>result[row.barcode]=row);
+ cableCatalog().forEach(catalog=>{
+  const rows=(groups[catalog.key]||[]).slice().sort((a,b)=>String(a.barcode).localeCompare(String(b.barcode)));
+  const code=rows.length?String(rows[0].barcode):catalog.barcode;
+  // Reserved catalog codes must never replace an unrelated existing product.
+  if(!rows.length&&map[code])return;
+  const purchased=rows.reduce((n,x)=>n+x.purchased,0),sold=rows.reduce((n,x)=>n+x.sold,0),cost=Number(rows.reduce((n,x)=>n+purchaseMoneyCents(x.cost),0n))/100;
+  const avg=purchased?cost/purchased:0,current=purchased-sold;
+  result[code]={...catalog,barcode:code,purchased,sold,cost,avg,current,value:current*avg,purchaseBatches:rows.flatMap(x=>x.purchaseBatches||[]),cableAliases:rows.map(x=>String(x.barcode)).filter(x=>x!==code)};
+  rows.forEach(row=>{if(String(row.barcode)!==code)aliases[row.barcode]=code});
+ });
+ // Aliases work for scans/history but are not counted as extra inventory rows.
+ Object.entries(aliases).forEach(([alias,code])=>Object.defineProperty(result,alias,{value:result[code],enumerable:false}));return result;
+}
+window.bbbmCableCatalog=cableCatalog;
 function stockMap(){
  let m={}; db.purchases.forEach(p=>{if(!m[p.barcode])m[p.barcode]={item:p.item,barcode:p.barcode,unit:p.unit||unitFor(p.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[p.barcode].purchased+=+p.qty;m[p.barcode]._costCents=(m[p.barcode]._costCents||0n)+purchaseMoneyCents(p.totalExact??p.total);m[p.barcode].item=p.item;m[p.barcode].unit=p.unit||m[p.barcode].unit||unitFor(p.barcode);m[p.barcode].purchaseBatches.push({qty:+p.qty||0,unit:p.unit||m[p.barcode].unit||unitFor(p.barcode),date:p.date||''})});
  (db.purchaseReturns||[]).forEach(r=>{if(m[r.barcode]){m[r.barcode].purchased-=+r.qty||0;m[r.barcode]._costCents=(m[r.barcode]._costCents||0n)-purchaseMoneyCents(r.totalExact??r.total)}});
  db.sales.forEach(s=>{if(!m[s.barcode])m[s.barcode]={item:s.item,barcode:s.barcode,unit:s.unit||unitFor(s.barcode),purchased:0,sold:0,cost:0,purchaseBatches:[]};m[s.barcode].sold+=+s.qty});
  (db.returns||[]).forEach(r=>{if(m[r.barcode])m[r.barcode].sold-=+r.qty});
- Object.values(m).forEach(x=>{x.purchased=Math.max(0,x.purchased);x.cost=Math.max(0,Number(x._costCents||0n)/100);delete x._costCents;x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return m
+ Object.values(m).forEach(x=>{x.purchased=Math.max(0,x.purchased);x.cost=Math.max(0,Number(x._costCents||0n)/100);delete x._costCents;x.current=x.purchased-x.sold;x.avg=x.purchased?x.cost/x.purchased:0;x.value=x.current*x.avg});return combineCableStock(m)
 }
 
 
@@ -3823,7 +3857,7 @@ function cartQtyFor(code,excludeIndex=-1){
  return saleCart.reduce((a,x,i)=>a+(i===excludeIndex||String(x.code)!==String(code)?0:(+x.qty||0)),0);
 }
 function buildCurrentSaleItem(excludeIndex=-1){
- const code=$('sBarcode').value.trim(),x=stockMap()[code],q=+$('sQty').value,p=+$('sPrice').value,discountPct=Number($('sDiscount').value||0);
+ const scanned=$('sBarcode').value.trim(),x=stockMap()[scanned],code=x?String(x.barcode):scanned,q=+$('sQty').value,p=+$('sPrice').value,discountPct=Number($('sDiscount').value||0);
  if(!x){alert('Barcode not found.');return null}
  if(!q||q<=0){alert('Enter sale quantity.');return null}
  const already=cartQtyFor(code,excludeIndex);
@@ -4560,11 +4594,12 @@ let phoneCatalogSignature='',phoneCatalogTimer;
 async function syncPhoneCatalog(){
  if(!currentUser)return;
  const latestRates={};(db.purchases||[]).forEach(p=>{if(p.sellingPrice!=null)latestRates[String(p.barcode)]=Number(p.sellingPrice)});
- const items=Object.values(stockMap()).map(x=>{const code=String(x.barcode),meta=metaFor(code);return {code,item:x.item,unit:x.unit,current:x.current,price:meta.sellPrice!=null&&meta.sellPrice!==''?Number(meta.sellPrice):latestRates[code]||0,cost:x.avg}});
+ const items=Object.values(stockMap()).flatMap(x=>{const code=String(x.barcode),meta=metaFor(code),row={code,item:x.item,unit:x.unit,current:x.current,price:meta.sellPrice!=null&&meta.sellPrice!==''?Number(meta.sellPrice):latestRates[code]||0,cost:x.avg};return [row,...(x.cableAliases||[]).map(alias=>({...row,code:alias}))]});
  const signature=currentUser.id+JSON.stringify(items);if(signature===phoneCatalogSignature)return;
  await phoneOwnerRpc('catalog_save',{items});phoneCatalogSignature=signature;
 }
 let phoneBillActionBusy=false;
+function canonicalPhoneItems(items,stock){return items.map(x=>({...x,code:String(stock[x.code]?.barcode||x.code)}))}
 async function renderPhoneInbox(boxId){
  const box=$(boxId);box.textContent='Phone Bills লোড হচ্ছে…';
  try{
@@ -4580,8 +4615,8 @@ async function renderPhoneInbox(boxId){
    if(action==='delete'&&!confirm('এই Phone Bill মুছে ফেলবেন? এটি Sale বা Stock-এর হিসাব বদলাবে না।'))return;
    if(action==='receive'){
     if(saleCart.length||pendingSale||$('sBarcode').value.trim()){alert('আগের Sales বিলটি আগে শেষ করুন।');return}
-    const stock=stockMap(),counts={};row.payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
-    if(row.payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current)){alert('Stock পরিবর্তন হয়েছে/কম আছে। পণ্য ও stock পরীক্ষা করুন।');return}
+    const stock=stockMap(),items=canonicalPhoneItems(row.payload.items,stock),counts={};items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
+    if(items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current)){alert('Stock পরিবর্তন হয়েছে/কম আছে। পণ্য ও stock পরীক্ষা করুন।');return}
    }
    phoneBillActionBusy=true;box.querySelectorAll('[data-phone-action]').forEach(x=>x.disabled=true);$('salesPhoneRefresh').disabled=true;
    let claimed=false,previousRecovery=null;
@@ -4608,6 +4643,7 @@ $('salesPhoneClose').onclick=()=>{if(!phoneBillActionBusy)$('salesPhoneDialog').
 $('salesPhoneRefresh').onclick=()=>{if(!phoneBillActionBusy)return renderPhoneInbox('salesPhoneInbox')};
 $('salesPhoneDialog').addEventListener('cancel',e=>{if(phoneBillActionBusy)e.preventDefault()});
 async function importPhoneBill(payload){
+ payload={...payload,items:canonicalPhoneItems(payload.items,stockMap())};
  const stock=stockMap(),counts={};payload.items.forEach(x=>counts[x.code]=(counts[x.code]||0)+Number(x.qty));
  if(payload.items.some(x=>!stock[x.code]||counts[x.code]>stock[x.code].current))throw Error('Stock কম আছে। পণ্য ও stock পরীক্ষা করুন।');
  saleCart=payload.items.map(x=>{const s=stock[x.code];const price=Number(x.total)/Number(x.qty);return {code:x.code,item:s.item,unit:s.unit,qty:Number(x.qty),price,netPrice:price,total:Number(x.total),discountPct:0,manualTotal:true,available:s.current}});
@@ -5180,6 +5216,7 @@ window.addEventListener('DOMContentLoaded', function(){
 <script id="bbbm-safe-ui-js">
 (function(){
   const cats=[
+    ['Cables',/\b(?:BIZLI|BRB)\s+(?:CABLES?|CABELS)\b/i],
     ['রড',/rod|rebar|steel bar|রড/i],
     ['পাইপ',/pipe|pvc|gi pipe|পাইপ/i],
     ['তারকাটা / লোহা / স্ক্রু',/nail|perak|perek|screw|পেরেক|স্ক্রু/i],
@@ -5217,7 +5254,7 @@ window.addEventListener('DOMContentLoaded', function(){
     if(mode==='sale'&&byId('salesPhoneBtn'))byId('salesPhoneBtn').parentElement.appendChild(wrap);else heading.appendChild(wrap);
     const btn=wrap.querySelector('.bbbm-nb-btn'), panel=wrap.querySelector('.bbbm-nb-panel');
     const search=wrap.querySelector('.bbbm-nb-search'), catbox=wrap.querySelector('.bbbm-nb-cats'), items=wrap.querySelector('.bbbm-nb-items');
-    let active='রড';
+    let active='রড',selectedCableBrand='',selectedCableSize='';
     cats.forEach(([name])=>{
       const b=document.createElement('button'); b.type='button'; b.className='bbbm-nb-cat'; b.textContent=name;
       if(name===active)b.classList.add('active');
@@ -5227,8 +5264,24 @@ window.addEventListener('DOMContentLoaded', function(){
     function render(){
       let map={}; try{map=stockMap()}catch(e){}
       const q=(search.value||'').trim().toLowerCase();
+      if(active==='Cables'&&!q){
+        items.innerHTML='';
+        const choice=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='bbbm-nb-item';b.textContent=label;b.onclick=fn;items.appendChild(b)};
+        if(!selectedCableBrand){['Bizli cables','BRB cables'].forEach(brand=>choice(brand,()=>{selectedCableBrand=brand;render()}));return}
+        choice('← '+(selectedCableSize?'সাইজ নির্বাচন':'ব্র্যান্ড নির্বাচন'),()=>{if(selectedCableSize)selectedCableSize='';else selectedCableBrand='';render()});
+        if(!selectedCableSize){['1','1.3','1.5','2','2.5','3','3.5','4','6'].forEach(size=>choice(size+' RM',()=>{selectedCableSize=size;render()}));return}
+        ['Red','Black','Yellow','Green'].forEach(color=>{
+          const name=selectedCableBrand+' '+selectedCableSize+' RM '+color,x=Object.values(map).find(row=>String(row.item).toLowerCase()===name.toLowerCase());
+          choice(name+' · Stock: '+(x?x.current:0)+' Meter',()=>{
+            if(!x||(mode==='sale'&&Number(x.current)<=0)){alert('এই Cable-এর স্টক নেই। আগে Purchase করুন।');return}
+            byId(mode==='sale'?'sBarcode':'pBarcode').value=x.barcode;
+            if(mode==='sale'){fillSaleFromBarcode();byId('sQty').value='1';if(typeof calcS==='function')calcS()}else fillPurchaseFromBarcode();
+            panel.classList.remove('open');
+          });
+        });return;
+      }
       const rx=(cats.find(x=>x[0]===active)||cats[cats.length-1])[1];
-      let rows=Object.values(map).filter(x=>x && x.barcode && Number(x.current)>0);
+      let rows=Object.values(map).filter(x=>x && x.barcode && (Number(x.current)>0||(mode==='purchase'&&active==='Cables')));
       rows=rows.filter(x=>{
         const n=String(x.item||'');
         const categoryOK=active==='অন্যান্য'
@@ -6131,7 +6184,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.60';
+  const POS_VERSION='POS Safe v8.62';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
