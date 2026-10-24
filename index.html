@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.64</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.65</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -1464,7 +1464,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
   const fieldIds = ['sBarcode','sQty','sPrice','sDiscount','sTotal','saleServiceCharge','saleCartFinalTotal'];
   let active = document.getElementById('sBarcode') || null;
   let raw = active ? String(active.value || '') : '';
-  let replaceTotal = false;
+  let replaceTotal = false, writingValue = false;
 
   function labelFor(el){
     if(!el) return 'Select a field';
@@ -1499,15 +1499,18 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
   function writeValue(){
     if(!active) return;
-    active.value = raw;
-    active.dispatchEvent(new Event('input', {bubbles:true}));
-    if(active.id==='sQty' || active.id==='sPrice' || active.id==='sDiscount'){
-      if(typeof calcS === 'function') calcS();
-    }
+    writingValue=true;
+    try{
+      active.value = active.type==='number' && raw.endsWith('.') ? raw.slice(0,-1) : raw;
+      active.dispatchEvent(new Event('input', {bubbles:true}));
+      if(active.id==='sQty' || active.id==='sPrice' || active.id==='sDiscount'){
+        if(typeof calcS === 'function') calcS();
+      }
+    }finally{writingValue=false}
   }
 
   document.addEventListener('input',e=>{
-    if(e.target===active){raw=String(active.value||'');refreshDisplay()}
+    if(e.target===active&&!writingValue){raw=String(active.value||'');refreshDisplay()}
   });
 
   // Some fields appear later in this HTML, so resolve targets at interaction time.
@@ -1653,7 +1656,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 <dialog id="salesPhoneDialog" aria-labelledby="salesPhoneTitle" style="width:min(900px,94vw);max-height:85vh;padding:20px;border:1px solid #aabbcc;border-radius:14px;background:var(--card,#fff);color:var(--text,#17243b);box-shadow:0 15px 60px #0005"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 id="salesPhoneTitle" style="margin:0">📱 Phone Bills</h2><small id="salesPhoneCount">Pending bills</small></div><div style="display:flex;gap:8px"><button type="button" id="salesPhoneRefresh" class="btn primary">Refresh</button><button type="button" id="salesPhoneClose" class="btn gray">✕ Close</button></div></div><div id="salesPhoneInbox" style="margin-top:12px"></div></dialog>
 <section id="reviewbills" class="section">
  <div class="section-heading"><div><h2>🔎 Review Bill</h2><p>লোকসান ও নির্ধারিত রেটের চেয়ে বেশি দামে বিক্রি যাচাই করুন</p></div><button type="button" class="btn gray" id="reviewBackBtn">← Dashboard</button></div>
- <div class="card" style="padding:16px;margin-bottom:16px"><input id="reviewBillSearch" placeholder="Bill No. / পণ্য / Customer / Date" style="width:100%;margin-bottom:10px"><button type="button" class="btn primary" id="reviewRecalculateBtn">আবার হিসাব করুন</button><p style="font-size:12px;line-height:1.6;margin-bottom:0">লোকসান: বিলের মোট বিক্রি − পণ্যের বর্তমান গড় ক্রয়মূল্য; Expense ও Return সমন্বয়ের আগে। ডান পাশে Discount-এর পরের বিক্রির Rate এই POS-এর বর্তমান নির্ধারিত Sale Rate-এর সঙ্গে মিলবে। নির্ধারিত Rate বদলালে তালিকাও বদলাতে পারে।</p><p id="reviewBillCoverage" style="font-size:12px;margin-bottom:0"></p></div>
+ <div class="card" style="padding:16px;margin-bottom:16px"><input id="reviewBillSearch" placeholder="Bill No. / পণ্য / Customer / Date" style="width:100%;margin-bottom:10px"><button type="button" class="btn primary" id="reviewRecalculateBtn">আবার হিসাব করুন</button><p style="font-size:12px;line-height:1.6;margin-bottom:0">লোকসান: বিলের মোট বিক্রি − পণ্যের বর্তমান গড় ক্রয়মূল্য; Expense ও Return সমন্বয়ের আগে। ডান পাশে Discount-এর পরের বিক্রির Rate এই POS-এর বর্তমান নির্ধারিত Sale Rate-এর সঙ্গে মিলবে। নির্ধারিত Rate বদলালে তালিকাও বদলাতে পারে।</p><p style="font-size:12px">Remove করলে শুধু ওই পাশের Review তালিকা থেকে সরবে। মূল Bill, Stock ও হিসাব থাকবে।</p><p id="reviewBillCoverage" style="font-size:12px;margin-bottom:0"></p></div>
  <div class="review-bill-columns"><div class="card" style="padding:16px;min-width:0"><div class="panel-head"><h3>লোকসানের বিল</h3><span id="reviewLossCount" class="soft-label"></span></div><div id="reviewLossList" class="review-bill-list"></div></div><div class="card" style="padding:16px;min-width:0"><div class="panel-head"><h3>নির্ধারিত রেটের চেয়ে বেশি</h3><span id="reviewHigherCount" class="soft-label"></span></div><div id="reviewHigherList" class="review-bill-list"></div></div></div>
  <style>.review-bill-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.review-bill-list{max-height:68vh;overflow:auto;padding:2px}.review-bill-entry{border:1px solid var(--line,#dfe7ef);border-radius:10px;margin:10px 0;padding:12px}.review-bill-entry header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.review-bill-entry p{margin:7px 0;font-size:13px}.review-bill-entry summary{cursor:pointer;font-size:13px;margin:8px 0}.review-bill-entry li{padding:6px 0;font-size:13px;overflow-wrap:anywhere}.review-bill-entry ul{padding-left:20px}.review-bill-entry strong{font-size:16px}.review-loss{color:#dc2626}.review-higher{color:#b45309}@media(max-width:800px){.review-bill-columns{grid-template-columns:1fr}.review-bill-list{max-height:60vh}}</style>
 </section>
@@ -4418,7 +4421,7 @@ async function goTab(tab){
       if(tab==='accounts')renderAccounts();
       if(tab==='purchasereturn')renderPurchaseReturnHistory();
  if(tab==='openingcredit')renderOpeningCreditHistory();
- if(tab==='reviewbills')renderReviewBills();
+ if(tab==='reviewbills'){await loadReviewDismissals();renderReviewBills()}
  const names={reviewbills:'Review Bill',phonesale:'Phone Sale',openingcredit:'Opening Credit',dashboard:'Dashboard',sales:'POS / Sales',purchase:'Purchase',openingstock:'Opening Stock',purchasereturn:'Purchase Return',stock:'Inventory / Stock',stockalerts:'Stock Alert',returns:'Sales Return',expense:'Expense',credit:'Credit Collection',creditcustomers:'Credit Customers',reports:'Reports',barcode:'Barcode Print',billhistory:'Bill History',accounts:'Accounts',settings:'Settings'};
  if($('pageTitle'))$('pageTitle').textContent=names[tab]||'Bhai Bhai System';
  window.scrollTo({top:0,behavior:'smooth'});
@@ -4659,6 +4662,34 @@ $('phoneSyncCatalog').onclick=async()=>{try{phoneCatalogSignature='';await syncP
 $('phoneStaffForm').onsubmit=async e=>{e.preventDefault();const button=$('phoneStaffSave');button.disabled=true;try{await phoneOwnerRpc('staff_save',{username:$('phoneStaffUser').value.trim().toLowerCase(),password:$('phoneStaffPass').value,active:$('phoneStaffActive').checked});$('phoneStaffPass').value='';await openPhoneSales();alert('Staff login saved. Reset করলে আগের login বন্ধ হবে।')}catch(e){alert(e.message)}finally{button.disabled=false}};
 $('phoneRecover').onclick=async()=>{if(saleCart.length||pendingSale)return alert('আগের বিলটি শেষ করুন।');const raw=localStorage.getItem('bbbm_phone_recovery');if(!raw)return alert('কোনো recovery bill নেই।');if(confirm('শুধু অসম্পূর্ণ বিল হলে Restore করুন। আগেই Sale হয়ে থাকলে করবেন না।'))await importPhoneBill(JSON.parse(raw))};
 
+let reviewDismissals=new Set(),reviewDismissalError='';
+function reviewBillKey(b){
+ const rows=b.rows||b;
+ if(rows[0]?.billNo)return 'invoice|'+String(rows[0].billNo);
+ const ids=rows.map(r=>r.id).filter(v=>v!=null).map(String).sort();
+ return ids.length===rows.length?'rows|'+ids.join(','):'legacy|'+JSON.stringify([rows[0]?.date,rows[0]?.saleTime,rows[0]?.creditPhone,rows[0]?.creditName,rows[0]?.paymentMethod||'Cash']);
+}
+function reviewDismissalKey(kind,b){return JSON.stringify([kind,reviewBillKey(b)])}
+async function loadReviewDismissals(){
+ try{
+  const loaded=new Set();
+  for(let start=0;;start+=500){
+   const result=await cloud.from('bbbm_bill_review_dismissals').select('bill_key,kind').order('bill_key').order('kind').range(start,start+499);
+   if(result.error)throw result.error;
+   (result.data||[]).forEach(r=>loaded.add(JSON.stringify([r.kind,r.bill_key])));
+   if((result.data||[]).length<500)break;
+  }
+  reviewDismissals=loaded;reviewDismissalError='';
+ }catch(e){reviewDismissalError='সরানো বিলের তালিকা লোড হয়নি। আবার হিসাব করুন চাপুন।'}
+}
+async function dismissReviewBill(kind,b,button){
+ button.disabled=true;
+ try{
+  const result=await cloud.from('bbbm_bill_review_dismissals').upsert({bill_key:reviewBillKey(b),kind,dismissed_by:currentUser.id},{onConflict:'bill_key,kind',ignoreDuplicates:true});
+  if(result.error)throw result.error;
+  reviewDismissals.add(reviewDismissalKey(kind,b));renderReviewBills();
+ }catch(e){button.disabled=false;alert('Review তালিকা থেকে সরানো যায়নি: '+(e.message||e))}
+}
 // Review existing loaded bills without making extra cloud requests.
 function buildReviewBillData(groups,stock,purchases,getMeta){
  const latest={};(purchases||[]).forEach(p=>{latest[String(p.barcode)]=p});
@@ -4690,17 +4721,17 @@ function buildReviewBillData(groups,stock,purchases,getMeta){
 function renderReviewBills(){
  const data=buildReviewBillData(allBillTransactions(),stockMap(),db.purchases,metaFor),q=$('reviewBillSearch').value.trim().toLowerCase();
  const matches=b=>!q||b.rows.some(s=>[s.billNo,s.item,s.barcode,s.date,s.creditName,s.creditPhone].some(v=>String(v||'').toLowerCase().includes(q)));
- const loss=data.loss.filter(matches),higher=data.higher.filter(matches),esc=openingCreditEscape;
+ const loss=data.loss.filter(b=>matches(b)&&!reviewDismissals.has(reviewDismissalKey('loss',b))),higher=data.higher.filter(b=>matches(b)&&!reviewDismissals.has(reviewDismissalKey('higher',b))),esc=openingCreditEscape;
  $('reviewLossCount').textContent=loss.length+' bills';$('reviewHigherCount').textContent=higher.length+' bills · '+higher.reduce((n,b)=>n+b.higher.length,0)+' items';
- $('reviewBillCoverage').textContent=data.billCount+'টি বিল পরীক্ষা করা হয়েছে।'+(data.unknownRateCount?' '+data.unknownRateCount+'টি পণ্যের নির্ধারিত Rate নেই, তাই বেশি দামের তুলনায় নেই।':'')+(data.unknownCostLines?' '+data.unknownCostLines+'টি লাইনে ক্রয়দর পাওয়া যায়নি; সেই বিলের লোকসান নিশ্চিত করা যায়নি।':'')+(data.unitMismatchLines?' '+data.unitMismatchLines+'টি লাইনের Unit মেলেনি, তাই Rate তুলনায় রাখা হয়নি।':'');
+ $('reviewBillCoverage').textContent=(reviewDismissalError?reviewDismissalError+' ':'')+data.billCount+'টি বিল পরীক্ষা করা হয়েছে।'+(data.unknownRateCount?' '+data.unknownRateCount+'টি পণ্যের নির্ধারিত Rate নেই, তাই বেশি দামের তুলনায় নেই।':'')+(data.unknownCostLines?' '+data.unknownCostLines+'টি লাইনে ক্রয়দর পাওয়া যায়নি; সেই বিলের লোকসান নিশ্চিত করা যায়নি।':'')+(data.unitMismatchLines?' '+data.unitMismatchLines+'টি লাইনের Unit মেলেনি, তাই Rate তুলনায় রাখা হয়নি।':'');
  const header=b=>`<header><b>Bill #${esc(billNoLabel(b.rows))}</b><span>${esc(b.rows[0].date||'')}</span></header><p>${esc(b.rows[0].creditName||b.rows[0].paymentMethod||'Cash')} · ${b.rows.length} items · বিল ${money(b.sales)}</p>`;
- $('reviewLossList').innerHTML=loss.length?loss.map((b,i)=>`<article class="review-bill-entry">${header(b)}<p>গড় ক্রয়মূল্য: ${money(b.cost)}</p><strong class="review-loss">লোকসান: ${money(-b.profit)}</strong><details><summary>পণ্যের হিসাব</summary><ul>${b.lines.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>ক্রয় ${money(l.cost)} · বিক্রি ${money(l.amount)} · ${l.profit<0?'লোকসান '+money(-l.profit):'লাভ '+money(l.profit)}</li>`).join('')}</ul></details><button type="button" class="btn primary smallbtn" data-review-kind="loss" data-review-index="${i}">বিল খুলুন / Review</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে লোকসানের বিল নেই।</p>';
- $('reviewHigherList').innerHTML=higher.length?higher.map((b,i)=>`<article class="review-bill-entry">${header(b)}<strong class="review-higher">নির্ধারিত রেটের চেয়ে বেশি: ${money(b.extra)}</strong><ul>${b.higher.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>নির্ধারিত Rate: ${money(l.fixed)} / ${esc(l.sale.unit||'')}<br>বিক্রির Rate: ${money(l.actual)} / ${esc(l.sale.unit||'')}<br>পার্থক্য: ${money(l.actual-l.fixed)} / Unit · মোট ${money(l.extra)}</li>`).join('')}</ul><button type="button" class="btn primary smallbtn" data-review-kind="higher" data-review-index="${i}">বিল খুলুন / Review</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে নির্ধারিত রেটের বেশি বিক্রি নেই।</p>';
- ['reviewLossList','reviewHigherList'].forEach(id=>{$(id).onclick=async e=>{const button=e.target.closest('[data-review-kind]');if(!button)return;const group=(button.dataset.reviewKind==='loss'?loss:higher)[Number(button.dataset.reviewIndex)];if(!group)return;await goTab('billhistory');showBillHistoryDetail(group.rows,'review')}});
+ $('reviewLossList').innerHTML=loss.length?loss.map((b,i)=>`<article class="review-bill-entry">${header(b)}<p>গড় ক্রয়মূল্য: ${money(b.cost)}</p><strong class="review-loss">লোকসান: ${money(-b.profit)}</strong><details><summary>পণ্যের হিসাব</summary><ul>${b.lines.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>ক্রয় ${money(l.cost)} · বিক্রি ${money(l.amount)} · ${l.profit<0?'লোকসান '+money(-l.profit):'লাভ '+money(l.profit)}</li>`).join('')}</ul></details><button type="button" class="btn primary smallbtn" data-review-kind="loss" data-review-index="${i}">বিল খুলুন / Review</button> <button type="button" class="btn gray smallbtn" data-review-kind="loss" data-review-index="${i}" data-review-remove="1">Remove</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে লোকসানের বিল নেই।</p>';
+ $('reviewHigherList').innerHTML=higher.length?higher.map((b,i)=>`<article class="review-bill-entry">${header(b)}<strong class="review-higher">নির্ধারিত রেটের চেয়ে বেশি: ${money(b.extra)}</strong><ul>${b.higher.map(l=>`<li><b>${esc(l.sale.item)}</b> · ${fmtQty(l.qty)} ${esc(l.sale.unit||'')}<br>নির্ধারিত Rate: ${money(l.fixed)} / ${esc(l.sale.unit||'')}<br>বিক্রির Rate: ${money(l.actual)} / ${esc(l.sale.unit||'')}<br>পার্থক্য: ${money(l.actual-l.fixed)} / Unit · মোট ${money(l.extra)}</li>`).join('')}</ul><button type="button" class="btn primary smallbtn" data-review-kind="higher" data-review-index="${i}">বিল খুলুন / Review</button> <button type="button" class="btn gray smallbtn" data-review-kind="higher" data-review-index="${i}" data-review-remove="1">Remove</button></article>`).join(''):'<p class="muted">এই অনুসন্ধানে নির্ধারিত রেটের বেশি বিক্রি নেই।</p>';
+ ['reviewLossList','reviewHigherList'].forEach(id=>{$(id).onclick=async e=>{const button=e.target.closest('[data-review-kind]');if(!button)return;const group=(button.dataset.reviewKind==='loss'?loss:higher)[Number(button.dataset.reviewIndex)];if(!group)return;if(button.dataset.reviewRemove){await dismissReviewBill(button.dataset.reviewKind,group,button);return}await goTab('billhistory');showBillHistoryDetail(group.rows,'review')}});
 }
 $('dashReviewBillsMetric').onclick=()=>goTab('reviewbills');
 $('reviewBackBtn').onclick=()=>goTab('dashboard');
-$('reviewRecalculateBtn').onclick=renderReviewBills;
+$('reviewRecalculateBtn').onclick=async()=>{await loadReviewDismissals();renderReviewBills()};
 $('reviewBillSearch').addEventListener('input',renderReviewBills);
 
 // ===== Accounts =====
@@ -5254,7 +5285,6 @@ window.addEventListener('DOMContentLoaded', function(){
 <script id="bbbm-safe-ui-js">
 (function(){
   const cats=[
-    ['Cables',/\b(?:BIZLI|BRB)\s+(?:CABLES?|CABELS)\b/i],
     ['রড',/rod|rebar|steel bar|রড/i],
     ['পাইপ',/pipe|pvc|gi pipe|পাইপ/i],
     ['তারকাটা / লোহা / স্ক্রু',/nail|perak|perek|screw|পেরেক|স্ক্রু/i],
@@ -5292,7 +5322,7 @@ window.addEventListener('DOMContentLoaded', function(){
     if(mode==='sale'&&byId('salesPhoneBtn'))byId('salesPhoneBtn').parentElement.appendChild(wrap);else heading.appendChild(wrap);
     const btn=wrap.querySelector('.bbbm-nb-btn'), panel=wrap.querySelector('.bbbm-nb-panel');
     const search=wrap.querySelector('.bbbm-nb-search'), catbox=wrap.querySelector('.bbbm-nb-cats'), items=wrap.querySelector('.bbbm-nb-items');
-    let active='রড',selectedCableBrand='',selectedCableSize='';
+    let active='রড';
     cats.forEach(([name])=>{
       const b=document.createElement('button'); b.type='button'; b.className='bbbm-nb-cat'; b.textContent=name;
       if(name===active)b.classList.add('active');
@@ -5302,24 +5332,8 @@ window.addEventListener('DOMContentLoaded', function(){
     function render(){
       let map={}; try{map=stockMap()}catch(e){}
       const q=(search.value||'').trim().toLowerCase();
-      if(active==='Cables'&&!q){
-        items.innerHTML='';
-        const choice=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='bbbm-nb-item';b.textContent=label;b.onclick=fn;items.appendChild(b)};
-        if(!selectedCableBrand){['Bizli cables','BRB cables'].forEach(brand=>choice(brand,()=>{selectedCableBrand=brand;render()}));return}
-        choice('← '+(selectedCableSize?'সাইজ নির্বাচন':'ব্র্যান্ড নির্বাচন'),()=>{if(selectedCableSize)selectedCableSize='';else selectedCableBrand='';render()});
-        if(!selectedCableSize){['1','1.3','1.5','2','2.5','3','3.5','4','6'].forEach(size=>choice(size+' RM',()=>{selectedCableSize=size;render()}));return}
-        ['Red','Black','Yellow','Green'].forEach(color=>{
-          const name=selectedCableBrand+' '+selectedCableSize+' RM '+color,x=Object.values(map).find(row=>String(row.item).toLowerCase()===name.toLowerCase());
-          choice(name+' · Stock: '+(x?x.current:0)+' Meter',()=>{
-            if(!x||(mode==='sale'&&Number(x.current)<=0)){alert('এই Cable-এর স্টক নেই। আগে Purchase করুন।');return}
-            byId(mode==='sale'?'sBarcode':'pBarcode').value=x.barcode;
-            if(mode==='sale'){fillSaleFromBarcode();byId('sQty').value='1';if(typeof calcS==='function')calcS()}else fillPurchaseFromBarcode();
-            panel.classList.remove('open');
-          });
-        });return;
-      }
       const rx=(cats.find(x=>x[0]===active)||cats[cats.length-1])[1];
-      let rows=Object.values(map).filter(x=>x && x.barcode && (Number(x.current)>0||(mode==='purchase'&&active==='Cables')));
+      let rows=Object.values(map).filter(x=>x && x.barcode && Number(x.current)>0);
       rows=rows.filter(x=>{
         const n=String(x.item||'');
         const categoryOK=active==='অন্যান্য'
@@ -6222,7 +6236,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.64';
+  const POS_VERSION='POS Safe v8.65';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
