@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.63</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.64</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2708,8 +2708,8 @@ function cableVariant(row){
  const name=String(row.item||'').trim().replace(/\.$/,'').replace(/\s+/g,' ');
  const match=name.match(/^(BIZLI|BRB)\s+(?:CABLES?|CABELS)\s+(\d+(?:\.[\dO]+)?)\s*(?:RM\s*)?(RED|BLACK|YELLOW|GREEN)(?:\s+([12]))?$/i);
  if(!match)return null;
- if(match[4]&&match[3].toUpperCase()!=='BLACK')return null;
  const size=String(Number(match[2].toUpperCase().replace(/O/g,'0')));
+ if(match[4]&&match[3].toUpperCase()!=='BLACK'&&!(match[3].toUpperCase()==='RED'&&match[4]==='1'&&size==='2'))return null;
  if(!['1','1.3','1.5','2','2.5','3','3.5','4','6'].includes(size))return null;
  return {key:match[1].toUpperCase()+'|'+size+'|'+match[3].toUpperCase(),brand:match[1].toUpperCase(),size,color:match[3].toUpperCase()};
 }
@@ -6222,7 +6222,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.63';
+  const POS_VERSION='POS Safe v8.64';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
