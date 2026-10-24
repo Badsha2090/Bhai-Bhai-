@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.62</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.63</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2052,14 +2052,14 @@ body.bbbm-dark-mode .expense-kb-mode.active,body.bbbm-dark-mode .expense-num-gri
       </label>
       <button type="button" class="btn primary" id="accSaveOpeningCash">Save Opening Cash</button>
     </div>
-    <div id="accOpeningCashMsg" class="msg"></div>
+    <div id="accCloudCashStatus" class="msg" role="status">Cloud cash লোড হচ্ছে…</div><button type="button" id="accRefreshCloudCash" class="btn gray smallbtn">↻ Refresh Cash</button><div id="accOpeningCashMsg" class="msg"></div>
     <div class="row accounts-opening-row" style="margin-top:12px">
       <label style="flex:1">আরও নগদ যোগ করুন (৳)
         <input id="accAddCashInput" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="নতুন যোগ করা টাকা">
       </label>
       <button type="button" class="btn primary" id="accAddCashBtn">＋ Add Cash</button>
     </div>
-    <p class="muted">Add Cash দিলে আগের টাকার সাথে যোগ হবে এবং আজকের তারিখ থেকে Reports-এর Total Cash-এ থাকবে। এই POS-এর ব্রাউজারে সংরক্ষিত থাকে।</p>
+    <p class="muted">Add Cash দিলে আগের টাকার সাথে যোগ হবে এবং আজকের তারিখ থেকে Reports-এর Total Cash-এ থাকবে। Cloud-এ সংরক্ষিত থাকে; দুই POS-এর একই হিসাব।</p>
   </div>
 
   <div class="card history-card">
@@ -2159,6 +2159,7 @@ if(!window.supabase||!window.supabase.createClient){
 const cloud=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10), money=n=>'৳'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 let currentUser=null, openingCredits=[], db={purchases:[],sales:[]}, productMeta=safeGet('bbbm_product_meta_v2',{});
+let cashCloudState=null,cashCloudBusy=false,cashCloudMessage='Cloud cash লোড হচ্ছে…';
 function safeGet(k,def){try{let v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
@@ -2263,7 +2264,8 @@ async function loadCloudData(){
     loadAllCloudRows('bbbm_sales_returns'),
     loadAllCloudRows('bbbm_expenses'),
     loadAllCloudRows('bbbm_credit_collections'),
-    loadAllCloudRows('bbbm_purchase_returns')
+    loadAllCloudRows('bbbm_purchase_returns'),
+    loadCashFunding()
   ]);
   if(pr.error)throw pr.error;if(sr.error)throw sr.error;if(prr.error)throw prr.error;
   openingCredits=(sr.data||[]).filter(x=>x.barcode==='__OPENING_CREDIT__').map(x=>({id:x.id,userId:x.user_id,listPrice:+x.total,discountPct:+x.discount_pct||0,item:'Previous Due',barcode:x.barcode,qty:1,price:+x.total,total:+x.total,date:x.sale_date,by:x.by_name,unit:'PCS',paymentMethod:'Credit',creditName:x.credit_name||'',creditPhone:x.credit_phone||'',billNo:x.invoice_no||x.bill_no||'',saleTime:x.sale_time||''}));
@@ -3518,7 +3520,8 @@ function reportCashCutoff(){
  const [year,number]=month.split('-').map(Number);
  return new Date(Date.UTC(year,number,0)).toISOString().slice(0,10);
 }
-function reportCashThroughDate(data,cutoff,opening=accOpeningMap(),added=safeGet('bbbm_accounts_added_cash_v1',{})){
+function reportCashThroughDate(data,cutoff,opening=accOpeningMap(),added=accAddedMap()){
+ if(opening==null||added==null)return null;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(cutoff))return null;
  const through=date=>{const key=String(date||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(key)&&key<=cutoff};
  const cash=row=>(row.paymentMethod||'Cash')==='Cash';
@@ -3543,7 +3546,8 @@ function renderReport(){
  const cutoff=reportCashCutoff(),cashAsOf=reportCashThroughDate(db,cutoff);
  $('repTotalCash').textContent=cashAsOf==null?'—':money(cashAsOf);
  $('repTotalCashLabel').textContent='💵 Total Cash / '+($('reportType').value==='daily'?'দিনের শেষের':'মাসের শেষের')+' নগদ ব্যালেন্স';
- $('repTotalCashBasis').textContent=(cutoff?cutoff+' দিনের শেষ পর্যন্ত':'তারিখ নির্বাচন করুন।')+(cutoff?' Opening Cash + Added Cash + Cash Sales + Cash Collection − Cash Refund − Expenses − Net Purchase (Purchase − Purchase Return)':'');
+ $('repTotalCashBasis').textContent=cashAsOf==null?cashCloudMessage:(cutoff?cutoff+' দিনের শেষ পর্যন্ত':'তারিখ নির্বাচন করুন।')+(cutoff?' Opening Cash + Added Cash + Cash Sales + Cash Collection − Cash Refund − Expenses − Net Purchase (Purchase − Purchase Return)':'');
+ if(cashAsOf!=null)$('repTotalCashBasis').textContent+=' · '+cashCloudMessage;
 }
 $('reportDate').value=today();$('reportMonth').value=today().slice(0,7);
 $('reportType').onchange=function(){$('reportDateWrap').classList.toggle('hidden',this.value!=='daily');$('reportMonthWrap').classList.toggle('hidden',this.value!=='monthly');renderReport()};
@@ -4398,6 +4402,7 @@ async function goTab(tab){
  if(tab==='accounts' && !askSecureCode('Accounts'))return;
  if(tab==='settings' && !askSecureCode('Settings'))return;
  await stopScanner();
+ if(tab==='accounts'||tab==='reports'){await loadCashFunding();renderReport()}
  if(tab!=='creditcustomers'){
    const d=$('creditCustomerDetailView'),l=$('creditCustomerListView');
    if(d)d.classList.add('hidden');if(l)l.classList.remove('hidden');
@@ -4713,13 +4718,43 @@ function accTodayKey(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function accOpeningMap(){try{return safeGet(ACC_OPENING_KEY,{})||{}}catch(e){return {}}}
-function accAddedCents(){return Object.values(safeGet('bbbm_accounts_added_cash_v1',{})||{}).reduce((n,v)=>n+purchaseMoneyCents(v),0n)}
+function accOpeningMap(){return cashCloudState?cashCloudState.opening:null}
+function accAddedMap(){return cashCloudState?cashCloudState.added:null}
+function accAddedCents(){return Object.values(accAddedMap()||{}).reduce((n,v)=>n+purchaseMoneyCents(v),0n)}
 function accInvestment(){
- const key='bbbm_accounts_investment_v1';let state=safeGet(key,null);
- if(!state){state={base:8282900,addedBaseline:accAddedCents().toString()};if(!safeSet(key,state))return null}
- else if(state.base===840400){state={...state,base:8282900};if(!safeSet(key,state))return null}
- try{return Number(purchaseMoneyCents(state.base)+accAddedCents()-BigInt(state.addedBaseline))/100}catch(e){return null}
+ if(!cashCloudState)return null;
+ return Number(purchaseMoneyCents(cashCloudState.investment_base)+accAddedCents()-purchaseMoneyCents(cashCloudState.added_baseline))/100;
+}
+function applyCashCloudState(state){
+ if(!state||!state.opening||!state.added)throw Error('Cloud cash data পাওয়া যায়নি।');
+ if(!cashCloudState||Number(state.revision)>=Number(cashCloudState.revision))cashCloudState=state;
+}
+function legacyCashPayload(){
+ const opening=safeGet(ACC_OPENING_KEY,{})||{},added=safeGet('bbbm_accounts_added_cash_v1',{})||{};
+ const positive=Object.values(opening).concat(Object.values(added)).some(v=>Number(v)>0);if(!positive)return null;
+ const total=Object.values(added).reduce((n,v)=>n+purchaseMoneyCents(v),0n),invest=safeGet('bbbm_accounts_investment_v1',null);
+ const baseline=invest&&invest.addedBaseline!=null?BigInt(invest.addedBaseline):total;
+ return {opening,added,added_baseline:Number(baseline<total?baseline:total)/100};
+}
+async function cashAccountRpc(action,payload={}){
+ const r=await cloud.rpc('bbbm_cash_account',{p_action:action,p_payload:payload});if(r.error)throw r.error;applyCashCloudState(r.data);return r.data;
+}
+async function loadCashFunding(){
+ try{
+  await cashAccountRpc('get');
+  const legacy=legacyCashPayload(),marker='bbbm_cash_legacy_cloud_v1';
+  if(legacy&&!safeGet(marker,false)){
+   const state=await cashAccountRpc('import_legacy',legacy);
+   if(state.legacy_conflict){cashCloudMessage='Cloud-এর টাকা দেখানো হচ্ছে। এই ব্রাউজারের পুরোনো জমার হিসাব আলাদা—আবার যোগ না দিয়ে আগে মিলিয়ে নিন।';return}
+   safeSet(marker,true);
+  }
+  cashCloudMessage=cashCloudState.legacy_imported?'✅ Cloud cash synced — দুই POS-এর একই হিসাব।':'আগের Opening Cash থাকা ব্রাউজারে এই আপডেট খুলুন—সেখান থেকে আগের টাকা একবার Cloud-এ আসবে।';
+ }catch(e){cashCloudMessage='Cloud cash sync হয়নি: '+(e.message||e)+'। Accounts-এর Refresh চাপুন।'}
+ if($('accCloudCashStatus'))$('accCloudCashStatus').textContent=cashCloudMessage;
+}
+function renderCashCloudStatus(){
+ if($('accCloudCashStatus'))$('accCloudCashStatus').textContent=cashCloudMessage;
+ ['accSaveOpeningCash','accAddCashBtn'].forEach(id=>{if($(id))$(id).disabled=cashCloudBusy||!cashCloudState});
 }
 function accPeriodBounds(mode,month,from,to){
  if(mode==='monthly'){
@@ -4740,7 +4775,7 @@ function accPeriodTotals(data,stock,from,to){
 function renderAccountsOverview(){
  const stock=stockMap(),stockValue=Object.values(stock).reduce((n,x)=>n+(Number(x.value)||0),0),credit=outstandingCreditAll(),cash=reportCashThroughDate(db,accTodayKey());
  const invest=accInvestment();$('accInvest').textContent=invest==null?'সংরক্ষণ হয়নি':accMoney(invest);
- $('accAssetStock').textContent=accMoney(stockValue);$('accAssetCredit').textContent=accMoney(credit);$('accAssetCash').textContent=accMoney(cash);$('accAssetTotal').textContent=accMoney(stockValue+credit+cash);
+ $('accAssetStock').textContent=accMoney(stockValue);$('accAssetCredit').textContent=accMoney(credit);$('accAssetCash').textContent=cash==null?'—':accMoney(cash);$('accAssetTotal').textContent=cash==null?'—':accMoney(stockValue+credit+cash);
  const monthly=$('accPeriodMode').value==='monthly';$('accMonthWrap').hidden=!monthly;$('accFromWrap').hidden=monthly;$('accToWrap').hidden=monthly;
  const bounds=accPeriodBounds($('accPeriodMode').value,$('accPeriodMonth').value,$('accPeriodFrom').value,$('accPeriodTo').value);
  if(!bounds){['accPeriodExpense','accPeriodPurchase','accPeriodProfit'].forEach(id=>$(id).textContent='—');$('accPeriodNet').textContent='';$('accPeriodCaption').textContent='সঠিক শুরু ও শেষ তারিখ দিন।';return}
@@ -4752,6 +4787,7 @@ $('accPeriodMonth').value=accTodayKey().slice(0,7);$('accPeriodFrom').value=accT
 ['accPeriodMode','accPeriodMonth','accPeriodFrom','accPeriodTo'].forEach(id=>$(id).addEventListener('change',renderAccountsOverview));
 function renderAccounts(){
   if(!$('accounts'))return;
+  renderCashCloudStatus();
   renderAccountsOverview();
   const today=accTodayKey();
   const sales=db.sales||[], purchases=realPurchases(), expenses=db.expenses||[], collections=db.collections||[];
@@ -4764,12 +4800,12 @@ function renderAccounts(){
   const todayCollections=collections.filter(x=>accDateKey(x.date)===today).reduce((a,x)=>a+(+x.amount||0),0);
   const due=typeof outstandingCreditAll==='function'?outstandingCreditAll():0;
 
-  const opening=+(accOpeningMap()[today]||0);
-  const added=+(safeGet('bbbm_accounts_added_cash_v1',{})?.[today]||0);
+  const opening=+(accOpeningMap()?.[today]||0);
+  const added=+(accAddedMap()?.[today]||0);
   // Purchases/expenses are treated as cash out for drawer estimate.
   const cashInHand=opening+added+todayCashSales+todayCollections-todayPurchases-todayExpenses;
 
-  if($('accCashInHand'))$('accCashInHand').textContent=accMoney(cashInHand);
+  if($('accCashInHand'))$('accCashInHand').textContent=cashCloudState?accMoney(cashInHand):'—';
   if($('accTodayCashSale'))$('accTodayCashSale').textContent=accMoney(todayCashSales);
   if($('accTodayCollection'))$('accTodayCollection').textContent=accMoney(todayCollections);
   if($('accTodayPurchase'))$('accTodayPurchase').textContent=accMoney(todayPurchases);
@@ -4799,27 +4835,28 @@ function renderAccounts(){
     `<tr${i===rows.length-1?' style="font-weight:900"':''}><td>${r[0]}</td><td>${accMoney(r[1])}</td><td>${r[2]}</td></tr>`
   ).join('');
 }
-if($('accSaveOpeningCash'))$('accSaveOpeningCash').onclick=function(){
+if($('accSaveOpeningCash'))$('accSaveOpeningCash').onclick=async function(){
+  if(cashCloudBusy||!cashCloudState)return;
   const v=Number($('accOpeningCashInput').value||0);
   if(!Number.isFinite(v)||v<0||!Number.isSafeInteger(Math.round(v*100))||Math.abs(v*100-Math.round(v*100))>0.000001){alert('সঠিক টাকা লিখুন, সর্বোচ্চ দুই দশমিক পর্যন্ত।');return}
-  const map=accOpeningMap();
-  map[accTodayKey()]=v;
-  if(!safeSet(ACC_OPENING_KEY,map)){alert('টাকা সংরক্ষণ হয়নি।');return}
-  if($('accOpeningCashMsg'))$('accOpeningCashMsg').textContent='✅ Opening cash saved.';
-  renderAccounts();
-  renderReport();
+  const date=accTodayKey(),expected=Number(accOpeningMap()[date]||0);cashCloudBusy=true;renderCashCloudStatus();
+  try{await cashAccountRpc('save_opening',{date,amount:v,expected});cashCloudMessage='✅ Opening Cash Cloud-এ সেভ হয়েছে।';$('accOpeningCashMsg').textContent=cashCloudMessage}
+  catch(e){$('accOpeningCashMsg').textContent='সেভ নিশ্চিত হয়নি: '+(e.message||e);await loadCashFunding()}
+  finally{cashCloudBusy=false;renderAccounts();renderReport()}
 };
-if($('accAddCashBtn'))$('accAddCashBtn').onclick=function(){
- if(accInvestment()==null){alert('বিনিয়োগের হিসাব সংরক্ষণ হয়নি।');return}
- const amount=Number($('accAddCashInput').value),key='bbbm_accounts_added_cash_v1',date=accTodayKey();
+if($('accAddCashBtn'))$('accAddCashBtn').onclick=async function(){
+ if(cashCloudBusy||!cashCloudState)return;
+ const pendingKey='bbbm_cloud_cash_pending_v1',pending=safeGet(pendingKey,null);
+ const amount=pending?Number(pending.amount):Number($('accAddCashInput').value),date=pending?pending.date:accTodayKey();
  if(!Number.isFinite(amount)||amount<=0||!Number.isSafeInteger(Math.round(amount*100))||Math.abs(amount*100-Math.round(amount*100))>0.000001){alert('যোগ করার সঠিক টাকা লিখুন, সর্বোচ্চ দুই দশমিক পর্যন্ত।');return}
- const map=safeGet(key,{})||{},cents=purchaseMoneyCents(map[date]||0)+purchaseMoneyCents(amount);
- if(cents>BigInt(Number.MAX_SAFE_INTEGER)){alert('টাকার পরিমাণ বেশি হয়েছে।');return}
- map[date]=Number(cents)/100;
- if(!safeSet(key,map)){alert('টাকা সংরক্ষণ হয়নি।');return}
- $('accAddCashInput').value='';$('accOpeningCashMsg').textContent='✅ '+money(amount)+' নগদ যোগ হয়েছে। Reports-এও যোগ হয়েছে।';
- renderAccounts();renderReport();
+ const operation=pending||{date,amount,operation_id:crypto.randomUUID()};
+ if(!safeSet(pendingKey,operation)){alert('জমার তথ্য সংরক্ষণ হয়নি।');return}
+ cashCloudBusy=true;renderCashCloudStatus();
+ try{await cashAccountRpc('add',operation);localStorage.removeItem(pendingKey);$('accAddCashInput').value='';cashCloudMessage='✅ Cloud cash synced';$('accOpeningCashMsg').textContent='✅ '+money(amount)+' Cloud-এ যোগ হয়েছে।'}
+ catch(e){$('accOpeningCashMsg').textContent='যোগ নিশ্চিত হয়নি: '+(e.message||e)+'। Add Cash আবার চাপলে আগের জমাটিই যাচাই হবে—দুবার যোগ হবে না।'}
+ finally{cashCloudBusy=false;renderAccounts();renderReport()}
 };
+if($('accRefreshCloudCash'))$('accRefreshCloudCash').onclick=async()=>{if(cashCloudBusy)return;await loadCashFunding();renderAccounts();renderReport()};
 
 // ===== Bhai Bhai working backup (inside main app scope) =====
 const BACKUP_KEY='bbbm_auto_backups_v1', BACKUP_MAX=14;
@@ -4843,7 +4880,8 @@ function makeBackupSnapshot(){
     app:'Bhai Bhai Building Materials',
     createdAt:new Date().toISOString(),
     db:JSON.parse(JSON.stringify(db||{})),
-    productMeta:JSON.parse(JSON.stringify(productMeta||{}))
+    productMeta:JSON.parse(JSON.stringify(productMeta||{})),
+    cashFunding:cashCloudState?JSON.parse(JSON.stringify(cashCloudState)):null
   };
 }
 function renderBackupPanel(){
@@ -6184,7 +6222,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.62';
+  const POS_VERSION='POS Safe v8.63';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
