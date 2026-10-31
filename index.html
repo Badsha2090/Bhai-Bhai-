@@ -1227,7 +1227,7 @@ body.bbbm-dark-mode .inventory-total-types{background:#164e63;border-color:#0e74
 
             <div class="dashboard-privacy-bar">
   <button type="button" id="posUpdateBtn" class="btn gray pos-update-btn">🔄 POS Update</button>
-  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.65</span>
+  <span id="posVersionBadge" class="pos-version-badge">POS Safe v8.66</span>
   <span id="offlineSyncBadge" class="offline-sync-badge">✅ Synced</span>
   <button type="button" id="dashDarkModeBtn" class="btn gray dash-dark-mode-btn">🌙 Dark Mode</button>
   <button type="button" id="dashShowValuesBtn" class="btn gray dash-show-values-btn">👁 Show Values (5s)</button>
@@ -2200,6 +2200,26 @@ function pendingLocalRecords(){
 }
 function addPending(item){const q=pendingQueue();q.push(item);writePendingQueue(q);return item}
 function removePending(id){writePendingQueue(pendingQueue().filter(x=>x.id!==id))}
+const OFFLINE_INVOICE_MAP_KEY='bbbm_offline_invoice_map_v1';
+function rememberSyncedInvoice(item,invoiceNo){
+ const mapping=safeGet(OFFLINE_INVOICE_MAP_KEY,{});
+ for(const row of item.localRecords||[]){
+  if(String(row.billNo||'').startsWith('OFF-'))mapping[String(row.billNo)]=String(invoiceNo);
+ }
+ safeSet(OFFLINE_INVOICE_MAP_KEY,mapping);
+}
+function syncedBillNumber(billNo){
+ const key=String(billNo||'');
+ return key.startsWith('OFF-')?String(safeGet(OFFLINE_INVOICE_MAP_KEY,{})[key]||''):key;
+}
+function collectionCloudBillNumber(sale){
+ const bill=syncedBillNumber(sale.billNo);
+ if(sale._pending||!/^\d+$/.test(bill)||BigInt(bill)<=0n||BigInt(bill)>9223372036854775807n){
+  throw new Error('এই বিলের Cloud Sync এখনো শেষ হয়নি। Internet চালু রেখে POS Update / Sync করুন, তারপর আবার Collection দিন। টাকা জমা হয়নি।');
+ }
+ return bill;
+}
+
 async function syncPendingNow(){
   if(syncRunning||!currentUser||navigator.onLine===false){updateOfflineSyncBadge();return false}
   const q=pendingQueue();if(!q.length){updateOfflineSyncBadge();return true}
@@ -2216,17 +2236,18 @@ async function syncPendingNow(){
           let invoiceNo=Number(item.invoiceNo||0);
           if(invoiceNo){
             const chk=await cloud.from('bbbm_sales').select('invoice_no').eq('invoice_no',invoiceNo).limit(1);
-            if(!chk.error&&chk.data&&chk.data.length){removePending(item.id);changed=true;continue}
+            if(chk.error)throw chk.error;
+            if(chk.data&&chk.data.length){rememberSyncedInvoice(item,invoiceNo);removePending(item.id);changed=true;continue}
           }else{
             const inv=await cloud.rpc('next_bbbm_invoice_no');
             if(inv.error)throw inv.error;invoiceNo=Number(inv.data);
             if(!invoiceNo)throw new Error('Invoice number could not be generated');
           }
           const rows=(item.rows||[]).map(r=>({...r,user_id:currentUser.id,invoice_no:invoiceNo}));
-          item.invoiceNo=invoiceNo;writePendingQueue(q);
+          item.invoiceNo=invoiceNo;writePendingQueue(pendingQueue().map(entry=>entry.id===item.id?{...entry,invoiceNo}:entry));
           const saved=item.paidNow>0?await cloud.rpc('bbbm_save_paid_credit',{p_rows:rows,p_paid:item.paidNow,p_method:item.paidMethod||'Cash'}):await cloud.from('bbbm_sales').insert(rows);
           if(saved.error)throw saved.error;
-          removePending(item.id);changed=true;
+          rememberSyncedInvoice(item,invoiceNo);removePending(item.id);changed=true;
         }
       }catch(err){console.warn('Pending sync failed',item&&item.id,err);break}
     }
@@ -3160,12 +3181,16 @@ $('creditForm').onsubmit=async function(e){
  const btn=this.querySelector('button[type="submit"]');creditCollectionSaving=true;btn.disabled=true;
  let saved=false;
  try{
+  if(pendingQueue().some(entry=>entry.type==='sale'))await syncPendingNow();
   await loadCloudData();
-  const bills=key?customerDueBills(key):[x],due=bills.reduce((sum,b)=>sum+invoiceDue(b.billNo),0);
+  const mappedBill=x?syncedBillNumber(x.billNo):'';
+  const refreshedSale=x?[...(db.sales||[]),...openingCredits].find(row=>String(row.billNo)===mappedBill&&row.paymentMethod==='Credit'&&creditCustomerKey(row)===creditCustomerKey(x)):null;
+  if(x&&!refreshedSale)throw new Error('বিলটি এখনো Cloud-এ পাওয়া যায়নি। POS Update / Sync করে আবার Collection দিন। টাকা জমা হয়নি।');
+  const bills=key?customerDueBills(key):[refreshedSale],due=bills.reduce((sum,b)=>sum+invoiceDue(b.billNo),0);
   if(Math.round(amount*100)>Math.round(due*100))throw new Error('Maximum collection: '+money(due));
   const parts=allocateCreditCollection(bills,amount,invoiceDue);
   if(!parts.length)throw new Error('এই customer-এর কোনো due নেই।');
-  const rows=parts.map(p=>({user_id:currentUser.id,sale_bill_no:p.sale.billNo,customer_name:p.sale.creditName||null,customer_phone:p.sale.creditPhone||null,amount:p.amount,payment_method:method,collection_date:date,note:note||null,by_name:currentUser.name}));
+  const rows=parts.map(p=>({user_id:currentUser.id,sale_bill_no:collectionCloudBillNumber(p.sale),customer_name:p.sale.creditName||null,customer_phone:p.sale.creditPhone||null,amount:p.amount,payment_method:method,collection_date:date,note:note||null,by_name:currentUser.name}));
   const r=await cloud.from('bbbm_credit_collections').insert(rows);
   if(r.error)throw r.error;saved=true;
   selectedCreditSale=null;selectedCreditCustomerKey=null;this.reset();$('cDate').value=today();this.classList.add('hidden');$('creditInfo').classList.add('hidden');$('cSearch').value='';
@@ -6236,7 +6261,7 @@ fill();apply(load());document.querySelectorAll('.nav button[data-tab="settings"]
 
 <script id="bbbm-pos-update-js">
 (function(){
-  const POS_VERSION='POS Safe v8.65';
+  const POS_VERSION='POS Safe v8.66';
   function initPosUpdate(){
     const btn=document.getElementById('posUpdateBtn');
     const badge=document.getElementById('posVersionBadge');
